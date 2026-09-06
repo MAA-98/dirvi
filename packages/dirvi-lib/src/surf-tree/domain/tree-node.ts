@@ -1,20 +1,38 @@
+/**
+ * Compares two node names.
+ *
+ * The comparator defines name identity. In particular, it is used
+ * when locating entries in a forest and when traversing paths.
+ */
 export type NameEquals<Name extends {}> = (left: Name, right: Name) => boolean;
 
+/**
+ * The common part of every tree node.
+ */
 type TreeNodeBase<Name extends {}> = {
   name: Name;
 };
 
+/**
+ * A node with no children.
+ *
+ * A leaf does not have a `branches` property. Therefore, a node can be
+ * classified at runtime by checking whether it has a `branches` property.
+ */
 export type TreeNodeLeaf<Name extends {}> = TreeNodeBase<Name> & {
   branches?: never;
 };
 
-// ChildNode is the generic type for the actual full type that
-// makes up the tree entries.
-//
-// Note: `null` branches means not loaded.
-//
-// ASSUMPTION:
-// Among branches of a node, names are unique.
+/**
+ * A node that may have children.
+ *
+ * `branches === null` means that the children are not currently loaded.
+ * `branches === []` means that the children are loaded and there are no
+ * children.
+ *
+ * The names of sibling nodes are assumed to be unique according to the
+ * configured `NameEquals` function.
+ */
 export type TreeNodeBranch<
   Name extends {},
   ChildNode extends TreeNode<Name, ChildNode>,
@@ -22,13 +40,33 @@ export type TreeNodeBranch<
   branches: ChildNode[] | null;
 };
 
+/**
+ * A node in a tree.
+ *
+ * `ChildNode` is the concrete application-specific node type. It may contain
+ * additional properties, provided that it has the shape of either a leaf or a
+ * branch.
+ */
 export type TreeNode<
   Name extends {},
   ChildNode extends TreeNode<Name, ChildNode>,
 > = TreeNodeLeaf<Name> | TreeNodeBranch<Name, ChildNode>;
 
-// ChildNode is a type that extends TreeNode<Name>, and is the main
-// tree node type of interest.
+/**
+ * Operations for inspecting and immutably updating a tree forest.
+ *
+ * A forest is represented by an array of root-level nodes. A path is an array
+ * of names beginning at a root node and continuing through its descendants.
+ *
+ * For example, given:
+ *
+ *   root
+ *   └── child
+ *
+ * the path to `child` is `['root', 'child']`.
+ *
+ * An empty path does not identify a node and is treated as invalid.
+ */
 export type TreeNodeApi<
   Name extends {},
   ChildNode extends TreeNode<Name, ChildNode>,
@@ -39,15 +77,53 @@ export type TreeNodeApi<
 
   isTreeNodeLeaf(node: ChildNode): node is ChildNode & TreeNodeLeaf<Name>;
 
+  /**
+   * Returns a node's branches.
+   *
+   * Returns:
+   *
+   * - an array when the node is a loaded branch;
+   * - `null` when the node is a branch whose children are not loaded;
+   * - `undefined` when the node is a leaf.
+   */
   getBranches(node: ChildNode): ChildNode[] | null | undefined;
 
   /**
-   * Returns the node at the path.
+   * Returns the node at `path`.
+   *
+   * The path must begin at one of the supplied forest entries. An empty path,
+   * a path containing an unknown name, or a path that attempts to traverse
+   * through a leaf or an unloaded branch returns `undefined`.
+   *
+   * A branch node at the end of a path is returned even when its branches are
+   * unloaded.
+   *
+   * This method returns the existing node object; it does not clone it.
    */
   getAtPath(entries: ChildNode[], path: Name[]): ChildNode | undefined;
 
   /**
-   * Replaces the branches of the branch node at the path.
+   * Replaces the branches of the branch node at `path`.
+   *
+   * The operation is immutable:
+   *
+   * - the input forest is not modified;
+   * - new arrays are created for the forest and each ancestor along the path;
+   * - nodes unrelated to the path retain their original object identity.
+   *
+   * `newBranches === null` marks the target branch as unloaded.
+   * `newBranches === []` marks it as loaded with no children.
+   *
+   * The supplied `newBranches` array is stored as provided; it is not cloned.
+   * Consequently, callers should avoid mutating that array after passing it to
+   * this method.
+   *
+   * Returns `undefined` when:
+   * - `path` is empty;
+   * - the path does not exist;
+   * - an intermediate node is a leaf;
+   * - an intermediate branch has unloaded children;
+   * - the target node is a leaf.
    */
   setBranchesAtPath(
     entries: ChildNode[],
@@ -70,11 +146,11 @@ export function createTreeNodeApi<
     path: Name[],
     replacement: ChildNode,
   ): ChildNode[] | undefined => {
-    const [currentName, ...remainingPath] = path;
-
-    if (currentName === undefined) {
+    if (path.length === 0) {
       return undefined;
     }
+
+    const [currentName, ...remainingPath] = path;
 
     const childIndex = entries.findIndex((candidate) =>
       nameEquals(candidate.name, currentName),
