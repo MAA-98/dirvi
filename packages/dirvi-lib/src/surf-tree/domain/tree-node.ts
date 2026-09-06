@@ -1,10 +1,10 @@
-export type NameEquals<Name> = (left: Name, right: Name) => boolean;
+export type NameEquals<Name extends {}> = (left: Name, right: Name) => boolean;
 
-type TreeNodeBase<Name> = {
+type TreeNodeBase<Name extends {}> = {
   name: Name;
 };
 
-export type TreeNodeLeaf<Name> = TreeNodeBase<Name> & {
+export type TreeNodeLeaf<Name extends {}> = TreeNodeBase<Name> & {
   branches?: never;
 };
 
@@ -16,19 +16,23 @@ export type TreeNodeLeaf<Name> = TreeNodeBase<Name> & {
 // ASSUMPTION:
 // Among branches of a node, names are unique.
 export type TreeNodeBranch<
-  Name,
+  Name extends {},
   ChildNode extends TreeNode<Name, ChildNode>,
 > = TreeNodeBase<Name> & {
   branches: ChildNode[] | null;
 };
 
-export type TreeNode<Name, ChildNode extends TreeNode<Name, ChildNode>> =
-  | TreeNodeLeaf<Name>
-  | TreeNodeBranch<Name, ChildNode>;
+export type TreeNode<
+  Name extends {},
+  ChildNode extends TreeNode<Name, ChildNode>,
+> = TreeNodeLeaf<Name> | TreeNodeBranch<Name, ChildNode>;
 
 // ChildNode is a type that extends TreeNode<Name>, and is the main
 // tree node type of interest.
-export type TreeNodeApi<Name, ChildNode extends TreeNode<Name, ChildNode>> = {
+export type TreeNodeApi<
+  Name extends {},
+  ChildNode extends TreeNode<Name, ChildNode>,
+> = {
   isTreeNodeBranch(
     node: ChildNode,
   ): node is ChildNode & TreeNodeBranch<Name, ChildNode>;
@@ -37,14 +41,14 @@ export type TreeNodeApi<Name, ChildNode extends TreeNode<Name, ChildNode>> = {
 
   getBranches(node: ChildNode): ChildNode[] | null | undefined;
 
+  /**
+   * Returns the node at the path.
+   */
   getAtPath(entries: ChildNode[], path: Name[]): ChildNode | undefined;
 
-  setAtPath(
-    entries: ChildNode[],
-    path: Name[],
-    replacement: ChildNode,
-  ): ChildNode[] | undefined;
-
+  /**
+   * Replaces the branches of the branch node at the path.
+   */
   setBranchesAtPath(
     entries: ChildNode[],
     path: Name[],
@@ -53,9 +57,70 @@ export type TreeNodeApi<Name, ChildNode extends TreeNode<Name, ChildNode>> = {
 };
 
 export function createTreeNodeApi<
-  Name,
+  Name extends {},
   ChildNode extends TreeNode<Name, ChildNode>,
 >(nameEquals: NameEquals<Name>): TreeNodeApi<Name, ChildNode> {
+  /**
+   * Replaces the whole node at the path. Since it also replaces the name,
+   * and hence the node's path, it doesn't make sense to have it as part of
+   * the API.
+   */
+  const setAtPathHelper = (
+    entries: ChildNode[],
+    path: Name[],
+    replacement: ChildNode,
+  ): ChildNode[] | undefined => {
+    const [currentName, ...remainingPath] = path;
+
+    if (currentName === undefined) {
+      return undefined;
+    }
+
+    const childIndex = entries.findIndex((candidate) =>
+      nameEquals(candidate.name, currentName),
+    );
+
+    if (childIndex === -1) {
+      return undefined;
+    }
+
+    const child = entries[childIndex];
+
+    let updatedChild: ChildNode;
+
+    if (remainingPath.length === 0) {
+      updatedChild = replacement;
+    } else {
+      if (!treeNode.isTreeNodeBranch(child)) {
+        return undefined;
+      }
+
+      if (child.branches === null) {
+        return undefined;
+      }
+
+      const updatedBranches = setAtPathHelper(
+        child.branches,
+        remainingPath,
+        replacement,
+      );
+
+      if (updatedBranches === undefined) {
+        return undefined;
+      }
+
+      updatedChild = {
+        ...child,
+        branches: updatedBranches,
+      } as ChildNode;
+    }
+
+    const updatedEntries = [...entries];
+    updatedEntries[childIndex] = updatedChild;
+
+    return updatedEntries;
+  };
+
   const treeNode: TreeNodeApi<Name, ChildNode> = {
     isTreeNodeBranch(
       node,
@@ -104,60 +169,6 @@ export function createTreeNodeApi<
       return undefined;
     },
 
-    setAtPath(entries, path, replacement) {
-      const [currentName, ...remainingPath] = path;
-
-      if (currentName === undefined) {
-        return undefined;
-      }
-
-      const childIndex = entries.findIndex((candidate) =>
-        nameEquals(candidate.name, currentName),
-      );
-
-      if (childIndex === -1) {
-        return undefined;
-      }
-
-      const child = entries[childIndex];
-
-      let updatedChild: ChildNode;
-
-      if (remainingPath.length === 0) {
-        updatedChild = replacement;
-      } else {
-        if (!treeNode.isTreeNodeBranch(child)) {
-          return undefined;
-        }
-
-        if (child.branches === null) {
-          return undefined;
-        }
-
-        const updatedBranches = treeNode.setAtPath(
-          child.branches,
-          remainingPath,
-          replacement,
-        );
-
-        if (updatedBranches === undefined) {
-          return undefined;
-        }
-
-        // The intersection preserves ChildNode's additional properties,
-        // while the updated branches preserve the recursive tree shape.
-        updatedChild = {
-          ...child,
-          branches: updatedBranches,
-        } as ChildNode;
-      }
-
-      const updatedEntries = [...entries];
-      updatedEntries[childIndex] = updatedChild;
-
-      return updatedEntries;
-    },
-
     setBranchesAtPath(entries, path, newBranches) {
       if (path.length === 0) {
         return undefined;
@@ -169,7 +180,7 @@ export function createTreeNodeApi<
         return undefined;
       }
 
-      return treeNode.setAtPath(entries, path, {
+      return setAtPathHelper(entries, path, {
         ...node,
         branches: newBranches,
       } as ChildNode);

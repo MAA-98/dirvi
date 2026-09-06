@@ -32,7 +32,7 @@ export async function getDirLazyEntries(
         return {
           kind: 'directory',
           name,
-          branches: null, // This directory has not been expanded.
+          branches: null, // Directory not expanded.
         };
       }
 

@@ -77,7 +77,6 @@ export function App({ cwdAddress, initialState, print, onError }: AppProps) {
         return;
 
       case 'setInputState':
-        console.log('setInputState', effect.inputState);
         setInputState(effect.inputState);
         return;
 

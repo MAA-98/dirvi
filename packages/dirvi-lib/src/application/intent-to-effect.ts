@@ -141,7 +141,7 @@ function normalInteractRightToEffect(state: PosixState): Effect | undefined {
   }
 
   if (currentEntry.kind === 'directory') {
-    if (currentEntry.branches === undefined) {
+    if (currentEntry.branches === null) {
       return {
         effectType: 'loadDir',
         path,

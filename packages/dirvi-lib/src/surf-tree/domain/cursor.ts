@@ -32,7 +32,7 @@ export type CursorApi<Name> = {
   cursorBelongsToSubtree(cursor: Cursor<Name>, entryPath: Name[]): boolean;
 };
 
-export function createCursorApi<Name>(
+export function createCursorApi<Name extends {}>(
   nameEquals: NameEquals<Name>,
 ): CursorApi<Name> {
   const cursorApi: CursorApi<Name> = {
@@ -85,7 +85,7 @@ export function createCursorApi<Name>(
   return cursorApi;
 }
 
-function isStrictPathPrefix<Name>(
+function isStrictPathPrefix<Name extends {}>(
   prefix: Name[],
   path: Name[],
   nameEquals: NameEquals<Name>,
