@@ -5,17 +5,16 @@ import { useEffect, useMemo, useReducer, useState } from 'react';
 import {
   Effect,
   InputState,
-  intentToEffect,
+  IntentToEffect,
   PosixName,
   PosixNode,
   State,
-  TreeNode,
   userInputToIntent,
 } from 'dirvi-lib';
 
 import type { EventMessage } from '../domain/event-message.js';
 import { ViewRowComponent } from './components/ViewRowComponent.js';
-import { effectToAction } from '../application/effect-to-action.js';
+import { EffectToAction } from '../application/effect-to-action.js';
 import { StatusBar } from './components/StatusBar.js';
 import { inkInputToUserInput } from '../infrastructure/ink-input-to-user-input.js';
 import { AppApi } from '../domain/app-api.js';
@@ -47,6 +46,8 @@ type AppProps = {
   appApi: AppApi<PosixName, PosixNode>;
   initialState: State<PosixName, PosixNode>;
   reducer: Reducer<PosixName, PosixNode>;
+  intentToEffect: IntentToEffect<PosixName, PosixNode>;
+  effectToAction: EffectToAction<PosixName, PosixNode>;
   print?: (message: EventMessage<PosixName, PosixNode>) => void;
   onError?: (error: Error) => void;
 };
@@ -55,6 +56,8 @@ export function App({
   appApi,
   initialState,
   reducer,
+  intentToEffect,
+  effectToAction,
   print,
   onError,
 }: AppProps) {
@@ -91,7 +94,9 @@ export function App({
     });
   }, [state, print, navigation]);
 
-  function executeEffect(effect: Effect | undefined): void {
+  function executeEffect(
+    effect: Effect<PosixName, PosixNode> | undefined,
+  ): void {
     if (effect === undefined) {
       return;
     }
@@ -113,7 +118,7 @@ export function App({
         setInputState(effect.inputState);
         return;
 
-      case 'loadDir': {
+      case 'loadBranchEntries': {
         void appApi
           .loadBranches(effect.path)
           .then((entries) => {
@@ -134,7 +139,7 @@ export function App({
         return;
       }
 
-      case 'printFile':
+      case 'emitPath':
         print?.({
           type: 'file',
           path: effect.path,

@@ -11,7 +11,7 @@ import {
   createFoldNodeApi,
   createStateApi,
 } from '../tree-surfer/index.js';
-import { createNavNodeApi, NavNode } from '../tree-surfer/domain/nav-node.js';
+import { createNavNodeApi, NavNode } from '../tree-surfer/nav-node.js';
 import { UnixPath } from './unix-path.js';
 
 // Name

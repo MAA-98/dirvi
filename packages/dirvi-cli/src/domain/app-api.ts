@@ -2,6 +2,7 @@ import {
   CursorApi,
   FoldNodeApi,
   NavNodeApi,
+  StateApi,
   TreeNode,
   TreeNodeApi,
 } from 'dirvi-lib';
@@ -32,6 +33,8 @@ export type AppApi<
   foldNodeApi: FoldNodeApi<Name, BufferNode>;
 
   cursorApi: CursorApi<Name>;
+
+  stateApi: StateApi<Name, BufferNode>;
 
   navNodeApi: NavNodeApi<Name, BufferNode>;
 };

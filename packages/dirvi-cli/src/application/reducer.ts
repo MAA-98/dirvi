@@ -1,12 +1,4 @@
-import {
-  FoldNodeApi,
-  PosixFoldNodeApi,
-  PosixNodeApi,
-  PosixState,
-  State,
-  TreeNode,
-  TreeNodeApi,
-} from 'dirvi-lib';
+import { FoldNodeApi, State, TreeNode, TreeNodeApi } from 'dirvi-lib';
 import { ReducerAction } from './reducer-action.js';
 
 export type Reducer<

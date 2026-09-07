@@ -1,12 +1,19 @@
 import { Text } from 'ink';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { PosixName, PosixNode, State, TreeNode } from 'dirvi-lib';
+import {
+  createIntentToEffect,
+  PosixName,
+  PosixNode,
+  State,
+  TreeNode,
+} from 'dirvi-lib';
 
 import type { EventMessage } from '../domain/event-message.js';
 import { App } from './App.js';
 import { AppApi } from '../domain/app-api.js';
 import { createReducer } from '../application/reducer.js';
+import { createEffectToAction } from '../application/effect-to-action.js';
 
 type LoadingAppProps<
   Name extends PropertyKey,
@@ -116,11 +123,34 @@ export function LoadingApp({
     return <Text dimColor>Loading.</Text>;
   }
 
+  // Pure function deps
+  const reducer = useMemo(
+    () => createReducer(appApi.treeNodeApi, appApi.foldNodeApi),
+    [appApi.treeNodeApi, appApi.foldNodeApi],
+  );
+
+  const intentToEffect = useMemo(
+    () =>
+      createIntentToEffect(
+        appApi.stateApi,
+        appApi.cursorApi,
+        appApi.treeNodeApi,
+      ),
+    [appApi.stateApi, appApi.cursorApi, appApi.treeNodeApi],
+  );
+
+  const effectToAction = useMemo(
+    () => createEffectToAction(appApi.navNodeApi, appApi.treeNodeApi),
+    [appApi.navNodeApi, appApi.treeNodeApi],
+  );
+
   return (
     <App
       appApi={appApi}
       initialState={initialState}
-      reducer={createReducer(appApi.treeNodeApi, appApi.foldNodeApi)}
+      reducer={reducer}
+      intentToEffect={intentToEffect}
+      effectToAction={effectToAction}
       print={print}
       onError={onError}
     />

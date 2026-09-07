@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { InputState } from '../domain/input-state.js';
-import type { UserInput } from '../domain/user-input.js';
-
+import type { InputState, UserInput } from '../domain/index.js';
 import { userInputToIntent } from './user-input-to-intent.js';
 
 function normalInputState(normalBuffer = ''): InputState {

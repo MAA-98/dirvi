@@ -1,6 +1,4 @@
-import { UserInput } from '../domain/user-input.js';
-import { InputState } from '../domain/input-state.js';
-import { Intent } from '../domain/intent.js';
+import { UserInput, InputState, Intent } from '../domain/index.js';
 
 // Derive the intent from the user input and the current input state.
 export function userInputToIntent(

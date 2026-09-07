@@ -2,6 +2,7 @@ import {
   createCursorApi,
   createFoldNodeApi,
   createNavNodeApi,
+  createStateApi,
   createTreeNodeApi,
   getCwdAbsPath,
   getDirLazyEntries,
@@ -20,6 +21,7 @@ export function loadPosixAppProps(): AppApi<PosixName, PosixNode> {
   const treeNodeApi = createTreeNodeApi<PosixName, PosixNode>(nameEquals);
   const foldNodeApi = createFoldNodeApi<PosixName, PosixNode>(nameEquals);
   const cursorApi = createCursorApi<PosixName>(nameEquals);
+  const stateApi = createStateApi<PosixName, PosixNode>(treeNodeApi, cursorApi);
   const navNodeApi = createNavNodeApi<PosixName, PosixNode>(
     treeNodeApi,
     foldNodeApi,
@@ -29,7 +31,6 @@ export function loadPosixAppProps(): AppApi<PosixName, PosixNode> {
 
   return {
     name: `Posix(${cwdAddress})`,
-
     emptyForestMessage: 'The directory is empty.',
 
     loadBranches: (path) => {
@@ -40,6 +41,7 @@ export function loadPosixAppProps(): AppApi<PosixName, PosixNode> {
     treeNodeApi,
     foldNodeApi,
     cursorApi,
+    stateApi,
     navNodeApi,
   };
 }
