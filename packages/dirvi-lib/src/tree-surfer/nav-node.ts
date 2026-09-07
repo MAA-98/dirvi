@@ -94,9 +94,8 @@ export type NavNodeApi<
     cursor: Cursor<Name>,
   ): Cursor<Name> | undefined;
 
-  visibleFilesPaths(
+  visibleLeavesPaths(
     navigation: NavNode<Name, BufferNode>,
-    isFile: (entry: NavEntry<Name, BufferNode>) => boolean,
     parentPath?: Name[],
   ): Name[][];
 };
@@ -325,9 +324,8 @@ export function createNavNodeApi<
       };
     },
 
-    visibleFilesPaths(
+    visibleLeavesPaths(
       navigation: NavNode<Name, BufferNode>,
-      isFile: (entry: NavEntry<Name, BufferNode>) => boolean,
       parentPath: Name[] = [],
     ): Name[][] {
       const paths: Name[][] = [];
@@ -340,20 +338,14 @@ export function createNavNodeApi<
           // loaded/opened, so there are no visible descendant files.
           if (entry.branches !== null) {
             paths.push(
-              ...navNodeApi.visibleFilesPaths(
-                entry.branches,
-                isFile,
-                entryPath,
-              ),
+              ...navNodeApi.visibleLeavesPaths(entry.branches, entryPath),
             );
           }
 
           continue;
         }
 
-        if (isFile(entry)) {
-          paths.push(entryPath);
-        }
+        paths.push(entryPath);
       }
 
       return paths;

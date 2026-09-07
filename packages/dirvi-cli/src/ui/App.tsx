@@ -1,4 +1,3 @@
-import { join } from 'node:path';
 import { Box, Text, useApp, useInput, useWindowSize } from 'ink';
 import { useEffect, useMemo, useReducer, useState } from 'react';
 
@@ -6,9 +5,8 @@ import {
   Effect,
   InputState,
   IntentToEffect,
-  PosixName,
-  PosixNode,
   State,
+  TreeNode,
   userInputToIntent,
 } from 'dirvi-lib';
 
@@ -21,38 +19,23 @@ import { AppApi } from '../domain/app-api.js';
 import { Reducer } from '../application/reducer.js';
 import { useView } from './hooks/useView.js';
 
-// type AppProps<
-//   Name extends PropertyKey,
-//   BufferNode extends TreeNode<Name, BufferNode>,
-// > = {
-//   appApi: AppApi<Name, BufferNode>;
-//   initialState: State<Name, BufferNode>;
-//   reducer: Reducer<Name, BufferNode>;
-//   print?: (message: EventMessage<Name, BufferNode>) => void;
-//   onError?: (error: Error) => void;
-// };
-//
-// export function App<
-//   Name extends PropertyKey,
-//   BufferNode extends TreeNode<Name, BufferNode>,
-// >({
-//    appApi,
-//    initialState,
-//    reducer,
-//    print,
-//    onError
-// }: AppProps<Name, BufferNode>) {
-type AppProps = {
-  appApi: AppApi<PosixName, PosixNode>;
-  initialState: State<PosixName, PosixNode>;
-  reducer: Reducer<PosixName, PosixNode>;
-  intentToEffect: IntentToEffect<PosixName, PosixNode>;
-  effectToAction: EffectToAction<PosixName, PosixNode>;
-  print?: (message: EventMessage<PosixName, PosixNode>) => void;
+type AppProps<
+  Name extends PropertyKey,
+  BufferNode extends TreeNode<Name, BufferNode>,
+> = {
+  appApi: AppApi<Name, BufferNode>;
+  initialState: State<Name, BufferNode>;
+  reducer: Reducer<Name, BufferNode>;
+  intentToEffect: IntentToEffect<Name, BufferNode>;
+  effectToAction: EffectToAction<Name, BufferNode>;
+  print?: (message: EventMessage<Name, BufferNode>) => void;
   onError?: (error: Error) => void;
 };
 
-export function App({
+export function App<
+  Name extends PropertyKey,
+  BufferNode extends TreeNode<Name, BufferNode>,
+>({
   appApi,
   initialState,
   reducer,
@@ -60,7 +43,7 @@ export function App({
   effectToAction,
   print,
   onError,
-}: AppProps) {
+}: AppProps<Name, BufferNode>) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const navigation = useMemo(
     () => appApi.navNodeApi.from(state.buffer, state.foldNode),
@@ -81,22 +64,19 @@ export function App({
   );
   const [exitStatus, setExitStatus] = useState<string | undefined>();
 
-  // Print view on changes
+  // Print on changes: view, paths of visible leaves
   useEffect(() => {
     print?.({ type: 'view', view: state });
 
-    const visibleFilesPaths = appApi.navNodeApi
-      .visibleFilesPaths(navigation, (entry) => entry.kind === 'file')
-      .map((path) => join(...path));
-    print?.({
-      type: 'displayed-files-paths',
-      paths: visibleFilesPaths,
-    });
-  }, [state, print, navigation]);
+    const visibleLeavesPaths = appApi.navNodeApi.visibleLeavesPaths(navigation);
 
-  function executeEffect(
-    effect: Effect<PosixName, PosixNode> | undefined,
-  ): void {
+    print?.({
+      type: 'displayed-leaves-paths',
+      paths: visibleLeavesPaths,
+    });
+  }, [appApi.navNodeApi, state, print, navigation]);
+
+  function executeEffect(effect: Effect<Name, BufferNode> | undefined): void {
     if (effect === undefined) {
       return;
     }
@@ -195,7 +175,7 @@ export function App({
     <Box flexDirection="column" height={terminalRows}>
       <Box flexDirection="column" flexGrow={1} flexShrink={1}>
         {view.rows.length === 0 ? (
-          <Text dimColor>Directory is empty.</Text>
+          <Text dimColor>Empty.</Text>
         ) : (
           view.rows.map((row) => <ViewRowComponent key={row.id} row={row} />)
         )}

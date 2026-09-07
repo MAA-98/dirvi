@@ -2,6 +2,7 @@ import { EventMessage } from '../domain/event-message.js';
 import { loadPosixAppProps } from '../infrastructure/load-posix-app-props.js';
 import { LoadingApp } from './LoadingApp.js';
 import { PosixName, PosixNode, TreeNode } from 'dirvi-lib';
+import { join } from 'node:path';
 
 export type ShellAppProps<Name, BufferNode> = {
   print?: (message: string) => void;
@@ -17,7 +18,15 @@ export function AppShell<
   const appProps = loadPosixAppProps();
   const emitEventMsg = print
     ? (message: EventMessage<PosixName, PosixNode>) => {
-        print(`${JSON.stringify(message)}\n`);
+        const externalMessage =
+          message.type === 'displayed-leaves-paths'
+            ? {
+                ...message,
+                paths: message.paths.map((path) => join(...path)),
+              }
+            : message;
+
+        print(`${JSON.stringify(externalMessage)}\n`);
       }
     : undefined;
 

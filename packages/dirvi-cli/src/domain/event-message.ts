@@ -9,8 +9,8 @@ export type EventMessage<
       view: State<Name, BufferNode>;
     }
   | {
-      type: 'displayed-files-paths';
-      paths: string[];
+      type: 'displayed-leaves-paths';
+      paths: Name[][];
     }
   | {
       type: 'file';

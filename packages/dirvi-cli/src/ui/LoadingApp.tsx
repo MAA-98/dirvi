@@ -1,13 +1,7 @@
 import { Text } from 'ink';
 import { useEffect, useMemo, useState } from 'react';
 
-import {
-  createIntentToEffect,
-  PosixName,
-  PosixNode,
-  State,
-  TreeNode,
-} from 'dirvi-lib';
+import { createIntentToEffect, State, TreeNode } from 'dirvi-lib';
 
 import type { EventMessage } from '../domain/event-message.js';
 import { App } from './App.js';
@@ -53,25 +47,11 @@ function createInitialState<
 // with state, we create it here rather than in App.
 //
 // Displays the given message if the initial tree nodes are empty.
-// export function LoadingApp<
-//   Name extends PropertyKey,
-//   BufferNode extends TreeNode<Name, BufferNode>,
-// >({
-//   appApi,
-//   print,
-//   onError
-// }: LoadingAppProps<Name, BufferNode>) {
-//   const [initialState, setInitialState] = useState<
-//     State<Name, BufferNode> | undefined
-//   >();
-export function LoadingApp({
-  appApi,
-  print,
-  onError,
-}: LoadingAppProps<PosixName, PosixNode>) {
-  const [initialState, setInitialState] = useState<
-    State<PosixName, PosixNode> | undefined
-  >();
+export function LoadingApp<
+  Name extends PropertyKey,
+  BufferNode extends TreeNode<Name, BufferNode>,
+>({ appApi, print, onError }: LoadingAppProps<Name, BufferNode>) {
+  const [initialState, setInitialState] = useState<State<Name, BufferNode>>();
   const [empty, setEmpty] = useState(false);
   const [error, setError] = useState<Error>();
 
@@ -111,18 +91,6 @@ export function LoadingApp({
     };
   }, [appApi, onError]);
 
-  if (error !== undefined) {
-    return <Text color="red">{error.message}</Text>;
-  }
-
-  if (empty) {
-    return <Text dimColor>{appApi.emptyForestMessage}</Text>;
-  }
-
-  if (initialState === undefined) {
-    return <Text dimColor>Loading.</Text>;
-  }
-
   // Pure function deps
   const reducer = useMemo(
     () => createReducer(appApi.treeNodeApi, appApi.foldNodeApi),
@@ -143,6 +111,18 @@ export function LoadingApp({
     () => createEffectToAction(appApi.navNodeApi, appApi.treeNodeApi),
     [appApi.navNodeApi, appApi.treeNodeApi],
   );
+
+  if (error !== undefined) {
+    return <Text color="red">{error.message}</Text>;
+  }
+
+  if (empty) {
+    return <Text dimColor>{appApi.emptyForestMessage}</Text>;
+  }
+
+  if (initialState === undefined) {
+    return <Text dimColor>Loading.</Text>;
+  }
 
   return (
     <App
