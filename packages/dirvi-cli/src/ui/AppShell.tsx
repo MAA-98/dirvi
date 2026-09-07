@@ -1,57 +1,27 @@
-import { Text } from 'ink';
 import { EventMessage } from '../domain/event-message.js';
-import { App } from './App.js';
-import { useEffect, useState } from 'react';
-import { loadInitialPosixProps } from '../infrastructure/load-initial-posix-props.js';
-import { PosixAppProps } from '../application/posix-app.js';
+import { loadPosixAppProps } from '../infrastructure/load-posix-app-props.js';
+import { LoadingApp } from './LoadingApp.js';
+import { PosixName, PosixNode, TreeNode } from 'dirvi-lib';
 
-export type ShellAppProps = {
-  print?: (message: EventMessage) => void;
+export type ShellAppProps<Name, BufferNode> = {
+  print?: (message: string) => void;
   onError?: (error: Error) => void;
 };
 
-export function AppShell({ print, onError }: ShellAppProps) {
-  const [props, setProps] = useState<PosixAppProps>();
-  const [error, setError] = useState<Error>();
-
-  useEffect(() => {
-    let mounted = true;
-
-    loadInitialPosixProps()
-      .then((props) => {
-        if (mounted) {
-          setProps(props);
-        }
-      })
-      .catch((cause: unknown) => {
-        const nextError =
-          cause instanceof Error ? cause : new Error(String(cause));
-
-        if (mounted) {
-          setError(nextError);
-          onError?.(nextError);
-        }
-      });
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  if (props === undefined) {
-    return <Text dimColor>Loading.</Text>;
-  }
-
-  if (props.initialState === null) {
-    return <Text dimColor>Empty.</Text>;
-  }
+// App Shell is for choosing the active app, then loading the api,
+// and showing the app.
+export function AppShell<
+  Name extends PropertyKey,
+  BufferNode extends TreeNode<Name, BufferNode>,
+>({ print, onError }: ShellAppProps<Name, BufferNode>) {
+  const appProps = loadPosixAppProps();
+  const emitEventMsg = print
+    ? (message: EventMessage<PosixName, PosixNode>) => {
+        print(`${JSON.stringify(message)}\n`);
+      }
+    : undefined;
 
   return (
-    <App
-      cwdAddress={props.cwdAddress}
-      initialState={props.initialState}
-      print={print}
-      onError={onError}
-    />
+    <LoadingApp appApi={appProps} print={emitEventMsg} onError={onError} />
   );
 }

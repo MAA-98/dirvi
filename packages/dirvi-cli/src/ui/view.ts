@@ -1,17 +1,36 @@
-import { PosixCursor, PosixName, PosixNavNode, PosixNode } from 'dirvi-lib';
+import {
+  Cursor,
+  isNavBranch,
+  NameEquals,
+  nameSeqEqual,
+  NavEntry,
+  NavNode,
+  TreeNode,
+} from 'dirvi-lib';
 
-export type ViewRowType = 'file' | 'directory' | 'fold';
+export type ViewRowType = 'leaf' | 'branch' | 'fold';
 
-// Encodes the display of blocks of rows, so renderer stays dumb
-// by just writing all blocks in sequence.
+// A flat display model for the renderer.
 //
-// id useful for React key.
+// The renderer does not need to understand navigation, branches, folds,
+// cursors, or paths. It only needs to render these rows in order.
 export type ViewRow = {
+  // Stable identity used as React/Ink's key.
   id: string;
+
+  // Number of directory levels between this row and the root.
   indent: number;
+
+  // Whether the row is selected.
   selected: boolean;
+
+  // Whether this row currently has the cursor.
   cursor: boolean;
+
+  // Text displayed by the renderer.
   content: string;
+
+  // Used by the renderer to choose the row presentation.
   type: ViewRowType;
 };
 
@@ -20,17 +39,28 @@ export type View = {
 };
 
 export const View = {
-  createRows(navigation: PosixNavNode, cursor: PosixCursor): ViewRow[] {
-    return viewRowsAtNode(navigation, [], cursor);
+  createRows<
+    Name extends PropertyKey,
+    BufferNode extends TreeNode<Name, BufferNode>,
+  >(
+    navigation: NavNode<Name, BufferNode>,
+    cursor: Cursor<Name>,
+    nameEquals: NameEquals<Name>,
+  ): ViewRow[] {
+    return viewRowsAtNode(navigation, [], cursor, nameEquals);
   },
 
-  create(
-    navigation: PosixNavNode,
-    cursor: PosixCursor,
+  create<
+    Name extends PropertyKey,
+    BufferNode extends TreeNode<Name, BufferNode>,
+  >(
+    navigation: NavNode<Name, BufferNode>,
+    cursor: Cursor<Name>,
     viewportHeight: number,
     viewportStart: number,
+    nameEquals: NameEquals<Name>,
   ): View {
-    const rows = View.createRows(navigation, cursor);
+    const rows = View.createRows(navigation, cursor, nameEquals);
 
     return {
       rows: rows.slice(viewportStart, viewportStart + viewportHeight),
@@ -38,34 +68,75 @@ export const View = {
   },
 };
 
-function viewRowsAtNode(
-  node: PosixNavNode,
-  parentPath: PosixName[],
-  cursor: PosixCursor,
+/**
+ * Converts one NavNode and its descendants into display ViewRows.
+ *
+ * `node` is the directory currently being visited.
+ *
+ * `parentPath` is the path of that directory. For example:
+ *
+ *   []              root directory
+ *   ['src']         root/src
+ *   ['src', 'lib']  root/src/lib
+ *
+ * The function uses a depth-first, pre-order traversal:
+ *
+ *   1. Add an entry's row.
+ *   2. If the entry is an opened branch, recursively add its children.
+ *   3. After all visible entries, add the directory's fold row.
+ *
+ * This ordering is what makes the flat row list visually represent a tree.
+ */
+function viewRowsAtNode<
+  Name extends PropertyKey,
+  BufferNode extends TreeNode<Name, BufferNode>,
+>(
+  node: NavNode<Name, BufferNode>,
+  parentPath: Name[],
+  cursor: Cursor<Name>,
+  nameEquals: NameEquals<Name>,
 ): ViewRow[] {
   const rows: ViewRow[] = [];
 
+  /*
+   * `node.entries` contains only the entries currently visible in this
+   * directory. Folded entries are kept separately in `node.foldedEntries`
+   * and are represented by one fold row added below.
+   */
   for (const entry of node.entries) {
+    // If cursor at entry, needs to be rendered differently
     const isCursor =
       cursor.kind === 'entry' &&
-      PosixName.seqEqual(cursor.parentPath, parentPath) &&
-      PosixName.equals(cursor.entryName, entry.name);
+      nameSeqEqual(cursor.parentPath, parentPath, nameEquals) &&
+      nameEquals(cursor.entryName, entry.name);
 
+    // Add entry before visiting branches
     rows.push(viewRowForEntry(entry, parentPath, isCursor));
 
-    if (entry.kind !== 'directory' || entry.branches === null) {
+    // Case where there's no branches
+    if (!isNavBranch(entry) || entry.branches === null) {
       continue;
     }
 
     rows.push(
-      ...viewRowsAtNode(entry.branches, [...parentPath, entry.name], cursor),
+      ...viewRowsAtNode(
+        entry.branches,
+        [...parentPath, entry.name],
+        cursor,
+        nameEquals,
+      ),
     );
   }
 
+  /*
+   * Folded entries are not rendered individually. They are represented
+   * by one synthetic row placed after all visible entries and descendants
+   * of this directory.
+   */
   if (node.foldedEntries.length > 0) {
     const isCursor =
       cursor.kind === 'fold' &&
-      PosixName.seqEqual(cursor.parentPath, parentPath);
+      nameSeqEqual(cursor.parentPath, parentPath, nameEquals);
 
     rows.push({
       id: foldId(parentPath),
@@ -80,9 +151,12 @@ function viewRowsAtNode(
   return rows;
 }
 
-function viewRowForEntry(
-  entry: PosixNavNode['entries'][number],
-  parentPath: PosixName[],
+function viewRowForEntry<
+  Name extends PropertyKey,
+  BufferNode extends TreeNode<Name, BufferNode>,
+>(
+  entry: NavEntry<Name, BufferNode>,
+  parentPath: Name[],
   cursor: boolean,
 ): ViewRow {
   return {
@@ -95,36 +169,27 @@ function viewRowForEntry(
   };
 }
 
-function entryId(parentPath: PosixName[], entryName: string): string {
+function entryId<Name extends PropertyKey>(
+  parentPath: Name[],
+  entryName: Name,
+): string {
   return `entry:${JSON.stringify([...parentPath, entryName])}`;
 }
 
-function foldId(parentPath: PosixName[]): string {
+function foldId<Name extends PropertyKey>(parentPath: Name[]): string {
   return `fold:${JSON.stringify(parentPath)}`;
 }
 
-function content(entry: PosixNavNode['entries'][number]): string {
-  switch (entry.kind) {
-    case 'file':
-      return entry.name;
-
-    case 'directory':
-      return `${entry.name}/`;
-
-    case 'symlink':
-      return `${entry.name}`;
-  }
+function content<
+  Name extends PropertyKey,
+  BufferNode extends TreeNode<Name, BufferNode>,
+>(entry: NavEntry<Name, BufferNode>): string {
+  return isNavBranch(entry) ? `${String(entry.name)}/` : String(entry.name);
 }
 
-function type(entry: PosixNavNode['entries'][number]): ViewRowType {
-  switch (entry.kind) {
-    case 'file':
-      return 'file';
-
-    case 'directory':
-      return 'directory';
-
-    case 'symlink':
-      return 'file';
-  }
+function type<
+  Name extends PropertyKey,
+  BufferNode extends TreeNode<Name, BufferNode>,
+>(entry: NavEntry<Name, BufferNode>): ViewRowType {
+  return isNavBranch(entry) ? 'branch' : 'leaf';
 }

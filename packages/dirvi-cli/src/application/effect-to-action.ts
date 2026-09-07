@@ -5,6 +5,8 @@ import {
   PosixState,
   PosixNavApi,
   PosixNodeApi,
+  PosixNode,
+  PosixName,
 } from 'dirvi-lib';
 
 import type { ReducerAction } from './reducer-action.js';
@@ -13,7 +15,7 @@ export function effectToAction(
   effectAction: EffectAction,
   navigation: PosixNavNode,
   state: PosixState,
-): ReducerAction | undefined {
+): ReducerAction<PosixName, PosixNode> | undefined {
   switch (effectAction.effectActionType) {
     case 'nextEntry': {
       const cursor = PosixNavApi.nextCursor(navigation, state.cursor);

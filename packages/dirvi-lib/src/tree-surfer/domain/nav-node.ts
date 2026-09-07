@@ -9,24 +9,6 @@ import {
 } from './tree-node.js';
 
 /**
- * The derived tree as navigated: list of visible entries and folded entries.
- */
-export type NavNode<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
-> = {
-  /**
-   * Currently visible entries.
-   */
-  entries: NavEntry<Name, BufferNode>[];
-
-  /**
-   * Currently loaded entries hidden by this directory's fold.
-   */
-  foldedEntries: NavEntry<Name, BufferNode>[];
-};
-
-/**
  * A navigation entry preserves the original buffer-node properties, but
  * replaces a branch's buffer children with a NavNode.
  */
@@ -47,12 +29,30 @@ export type NavBranch<
   branches: NavNode<Name, BufferNode> | null;
 };
 
-function isNavBranch<
+export function isNavBranch<
   Name extends PropertyKey,
   BufferNode extends TreeNode<Name, BufferNode>,
 >(entry: NavEntry<Name, BufferNode>): entry is NavBranch<Name, BufferNode> {
   return 'branches' in entry;
 }
+
+/**
+ * The derived tree as navigated: list of visible entries and folded entries.
+ */
+export type NavNode<
+  Name extends PropertyKey,
+  BufferNode extends TreeNode<Name, BufferNode>,
+> = {
+  /**
+   * Currently visible entries.
+   */
+  entries: NavEntry<Name, BufferNode>[];
+
+  /**
+   * Currently loaded entries hidden by this directory's fold.
+   */
+  foldedEntries: NavEntry<Name, BufferNode>[];
+};
 
 // --- API ---
 export type NavNodeApi<

@@ -1,4 +1,4 @@
-import { NameEquals } from './tree-node.js';
+import { NameEquals, nameSeqEqual } from './tree-node.js';
 
 export const CursorKind = {
   Entry: 'entry',
@@ -45,12 +45,7 @@ export function createCursorApi<Name extends {}>(
     },
 
     equal(left, right) {
-      if (
-        left.parentPath.length !== right.parentPath.length ||
-        !left.parentPath.every((name, index) =>
-          nameEquals(name, right.parentPath[index]),
-        )
-      ) {
+      if (!nameSeqEqual(left.parentPath, right.parentPath, nameEquals)) {
         return false;
       }
 
@@ -90,12 +85,9 @@ function isStrictPathPrefix<Name extends {}>(
   path: Name[],
   nameEquals: NameEquals<Name>,
 ): boolean {
-  return (
-    prefix.length < path.length &&
-    prefix.every((name, index) => {
-      const pathName = path[index];
+  if (prefix.length >= path.length) {
+    return false;
+  }
 
-      return pathName !== undefined && nameEquals(name, pathName);
-    })
-  );
+  return nameSeqEqual(prefix, path.slice(0, prefix.length), nameEquals);
 }

@@ -1,12 +1,17 @@
 import { z } from 'zod';
-import type { TreeNode, Cursor, FoldNode, State } from '../surf-tree/index.js';
+import type {
+  TreeNode,
+  Cursor,
+  FoldNode,
+  State,
+} from '../tree-surfer/index.js';
 import {
   createTreeNodeApi,
   createCursorApi,
   createFoldNodeApi,
   createStateApi,
-} from '../surf-tree/index.js';
-import { createNavNodeApi, NavNode } from '../surf-tree/domain/nav-node.js';
+} from '../tree-surfer/index.js';
+import { createNavNodeApi, NavNode } from '../tree-surfer/domain/nav-node.js';
 import { UnixPath } from './unix-path.js';
 
 // Name

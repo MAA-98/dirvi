@@ -7,6 +7,30 @@
 export type NameEquals<Name extends {}> = (left: Name, right: Name) => boolean;
 
 /**
+ * Compares two sequences of names using the supplied name comparator.
+ *
+ * The comparator is used instead of `===` because names may have
+ * application-specific equality rules.
+ */
+export function nameSeqEqual<Name extends {}>(
+  left: readonly Name[],
+  right: readonly Name[],
+  nameEquals: NameEquals<Name>,
+): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  for (let index = 0; index < left.length; index += 1) {
+    if (!nameEquals(left[index]!, right[index]!)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
  * The common part of every tree node.
  */
 type TreeNodeBase<Name extends {}> = {
@@ -76,6 +100,8 @@ export type TreeNodeApi<
   ): node is ChildNode & TreeNodeBranch<Name, ChildNode>;
 
   isTreeNodeLeaf(node: ChildNode): node is ChildNode & TreeNodeLeaf<Name>;
+
+  nameEquals: NameEquals<Name>;
 
   /**
    * Returns a node's branches.
@@ -207,6 +233,8 @@ export function createTreeNodeApi<
     isTreeNodeLeaf(node): node is ChildNode & TreeNodeLeaf<Name> {
       return !treeNode.isTreeNodeBranch(node);
     },
+
+    nameEquals,
 
     getBranches(node) {
       return treeNode.isTreeNodeBranch(node) ? node.branches : undefined;

@@ -14,12 +14,11 @@ const program = new Command();
 // Write UI to stderr
 const uiOutput = process.stderr;
 
-// Write Views to stdout. The newline makes each update a
-// separate JSON Lines message.
+// The newline makes each message a separate JSON Lines message.
 // Note: if you pipe output you'll need to use FORCE_COLOR=3
 // to keep interactive screen colored.
-const emitEventMsg = (message: EventMessage) => {
-  process.stdout.write(`${JSON.stringify(message)}\n`);
+const emitStdoutMsg = (message: string) => {
+  process.stdout.write(message);
 };
 
 const enterAlternateScreen = '\u001b[?1049h\u001b[2J\u001b[H\u001b[?25l';
@@ -58,7 +57,7 @@ program
     try {
       const app = render(
         <AppShell
-          print={process.stdout.isTTY ? undefined : emitEventMsg}
+          print={process.stdout.isTTY ? undefined : emitStdoutMsg}
           onError={(error) => {
             appError = error;
           }}

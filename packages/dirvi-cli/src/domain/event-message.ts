@@ -1,9 +1,12 @@
-import { PosixName, PosixState, State } from 'dirvi-lib';
+import { State, TreeNode } from 'dirvi-lib';
 
-export type EventMessage =
+export type EventMessage<
+  Name extends PropertyKey,
+  BufferNode extends TreeNode<Name, BufferNode>,
+> =
   | {
       type: 'view';
-      view: PosixState;
+      view: State<Name, BufferNode>;
     }
   | {
       type: 'displayed-files-paths';
@@ -11,5 +14,5 @@ export type EventMessage =
     }
   | {
       type: 'file';
-      path: PosixName[];
+      path: Name[];
     };

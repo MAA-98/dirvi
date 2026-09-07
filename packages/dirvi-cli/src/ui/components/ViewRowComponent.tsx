@@ -5,7 +5,7 @@ export function ViewRowComponent({ row }: { row: ViewRow }) {
   const prefix = '';
 
   switch (row.type) {
-    case 'file':
+    case 'leaf':
       return (
         <Box paddingLeft={row.indent * 2}>
           <Text inverse={row.selected}>
@@ -15,7 +15,7 @@ export function ViewRowComponent({ row }: { row: ViewRow }) {
         </Box>
       );
 
-    case 'directory':
+    case 'branch':
       return (
         <Box paddingLeft={row.indent * 2}>
           <Text inverse={row.selected} color="blue">

@@ -4,35 +4,64 @@ import { useEffect, useMemo, useReducer, useState } from 'react';
 
 import {
   Effect,
-  getDirLazyEntries,
   InputState,
   intentToEffect,
-  PosixNavApi,
-  PosixState,
+  PosixName,
+  PosixNode,
+  State,
+  TreeNode,
   userInputToIntent,
 } from 'dirvi-lib';
-import type { UnixAbsolutePath } from 'dirvi-lib';
 
-import { useView } from './hooks/useView.js';
-import { reducer } from '../application/reducer.js';
 import type { EventMessage } from '../domain/event-message.js';
 import { ViewRowComponent } from './components/ViewRowComponent.js';
 import { effectToAction } from '../application/effect-to-action.js';
 import { StatusBar } from './components/StatusBar.js';
 import { inkInputToUserInput } from '../infrastructure/ink-input-to-user-input.js';
+import { AppApi } from '../domain/app-api.js';
+import { Reducer } from '../application/reducer.js';
+import { useView } from './hooks/useView.js';
 
-export type AppProps = {
-  cwdAddress: UnixAbsolutePath;
-  initialState: PosixState;
-  print?: (message: EventMessage) => void;
+// type AppProps<
+//   Name extends PropertyKey,
+//   BufferNode extends TreeNode<Name, BufferNode>,
+// > = {
+//   appApi: AppApi<Name, BufferNode>;
+//   initialState: State<Name, BufferNode>;
+//   reducer: Reducer<Name, BufferNode>;
+//   print?: (message: EventMessage<Name, BufferNode>) => void;
+//   onError?: (error: Error) => void;
+// };
+//
+// export function App<
+//   Name extends PropertyKey,
+//   BufferNode extends TreeNode<Name, BufferNode>,
+// >({
+//    appApi,
+//    initialState,
+//    reducer,
+//    print,
+//    onError
+// }: AppProps<Name, BufferNode>) {
+type AppProps = {
+  appApi: AppApi<PosixName, PosixNode>;
+  initialState: State<PosixName, PosixNode>;
+  reducer: Reducer<PosixName, PosixNode>;
+  print?: (message: EventMessage<PosixName, PosixNode>) => void;
   onError?: (error: Error) => void;
 };
 
-export function App({ cwdAddress, initialState, print, onError }: AppProps) {
+export function App({
+  appApi,
+  initialState,
+  reducer,
+  print,
+  onError,
+}: AppProps) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const navigation = useMemo(
-    () => PosixNavApi.from(state.buffer, state.foldNode),
-    [state.buffer, state.foldNode],
+    () => appApi.navNodeApi.from(state.buffer, state.foldNode),
+    [appApi.navNodeApi, state.buffer, state.foldNode],
   );
 
   const [inputState, setInputState] = useState<InputState>({
@@ -41,22 +70,26 @@ export function App({ cwdAddress, initialState, print, onError }: AppProps) {
   });
 
   const { rows: terminalRows } = useWindowSize();
-  const view = useView(navigation, state, terminalRows);
+  const view = useView(
+    navigation,
+    state,
+    terminalRows,
+    appApi.treeNodeApi.nameEquals,
+  );
   const [exitStatus, setExitStatus] = useState<string | undefined>();
 
   // Print view on changes
   useEffect(() => {
     print?.({ type: 'view', view: state });
 
-    const visibleFilesPaths = PosixNavApi.visibleFilesPaths(
-      navigation,
-      (entry) => entry.kind === 'file',
-    ).map((path) => join(...path));
+    const visibleFilesPaths = appApi.navNodeApi
+      .visibleFilesPaths(navigation, (entry) => entry.kind === 'file')
+      .map((path) => join(...path));
     print?.({
       type: 'displayed-files-paths',
       paths: visibleFilesPaths,
     });
-  }, [state, print, navigation, cwdAddress]);
+  }, [state, print, navigation]);
 
   function executeEffect(effect: Effect | undefined): void {
     if (effect === undefined) {
@@ -81,9 +114,8 @@ export function App({ cwdAddress, initialState, print, onError }: AppProps) {
         return;
 
       case 'loadDir': {
-        const address = join(cwdAddress, ...effect.path);
-
-        void getDirLazyEntries(address)
+        void appApi
+          .loadBranches(effect.path)
           .then((entries) => {
             dispatch({
               kind: 'updateDir',
