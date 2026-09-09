@@ -1,5 +1,5 @@
 import { TreeNode, TreeNodeApi } from './tree-node.js';
-import { FoldNode } from './fold-node.js';
+import { FoldNode, FoldNodeApi } from './fold-node.js';
 import { Cursor, CursorApi } from './cursor.js';
 
 export type State<
@@ -36,58 +36,87 @@ export function createStateApi<
   BufferNode extends TreeNode<Name, BufferNode>,
 >(
   treeNodeApi: TreeNodeApi<Name, BufferNode>,
+  foldNodeApi: FoldNodeApi<Name, BufferNode>,
   cursorApi: CursorApi<Name>,
 ): StateApi<Name, BufferNode> {
-  async function reloadLoadedDescendants(
-    newEntriesWoLoadedBranches: BufferNode[],
-    oldEntriesWSomeLoadedBranches: BufferNode[],
+  async function reload(
+    oldBuffer: BufferNode[],
+    oldFoldNode: FoldNode<Name> | undefined,
     parentPath: Name[],
-    loadBranches: (path: Name[]) => Promise<BufferNode[]>,
-  ): Promise<BufferNode[]> {
-    let updatedEntries = newEntriesWoLoadedBranches;
+    loadBranches: LoadBranches<Name, BufferNode>,
+  ): Promise<{
+    buffer: BufferNode[];
+    foldNode: FoldNode<Name> | undefined;
+  }> {
+    // Build the new entries at this level.
+    let newBuffer = await loadBranches(parentPath);
 
-    for (const oldEntry of oldEntriesWSomeLoadedBranches) {
+    // Build the fold node for this level from the old fold node.
+    let newFoldNode = oldFoldNode;
+
+    if (newFoldNode !== undefined) {
+      const foldedEntries = newBuffer.filter((entry) =>
+        newFoldNode?.folds.some((foldedName) =>
+          treeNodeApi.nameEquals(entry.name, foldedName),
+        ),
+      );
+
+      newFoldNode = foldNodeApi.setFoldedEntries(newFoldNode, foldedEntries);
+    }
+
+    // Reload descendants that were already loaded in the old buffer.
+    for (const oldEntry of oldBuffer) {
       const oldBranches = treeNodeApi.getBranches(oldEntry);
 
-      // Ignore leaves and branches that were not loaded before.
       if (oldBranches === undefined || oldBranches === null) {
         continue;
       }
 
-      // Find the new entry with the same name as this entry
-      const newEntry = updatedEntries.find((entry) =>
+      const newEntry = newBuffer.find((entry) =>
         treeNodeApi.nameEquals(entry.name, oldEntry.name),
       );
 
-      // Skip if not a branch to add to
       if (newEntry === undefined || !treeNodeApi.isTreeNodeBranch(newEntry)) {
         continue;
       }
 
-      const path = [...parentPath, oldEntry.name];
-      // Load new entries at the branch
-      const newBranches = await loadBranches(path);
+      const entryPath = [...parentPath, oldEntry.name];
 
-      // Recursively reload descendants before replacing this entry's branches.
-      const reloadedBranches = await reloadLoadedDescendants(
-        newBranches,
+      const oldChildFoldNode =
+        newFoldNode === undefined
+          ? undefined
+          : foldNodeApi.getAtPath(newFoldNode, [oldEntry.name]);
+
+      const reloadedChild = await reload(
         oldBranches,
-        path,
+        oldChildFoldNode,
+        entryPath,
         loadBranches,
       );
 
-      const nextEntries = treeNodeApi.setBranchesAtPath(
-        updatedEntries,
+      const updatedBuffer = treeNodeApi.setBranchesAtPath(
+        newBuffer,
         [oldEntry.name],
-        reloadedBranches,
+        reloadedChild.buffer,
       );
 
-      if (nextEntries !== undefined) {
-        updatedEntries = nextEntries;
+      if (updatedBuffer !== undefined) {
+        newBuffer = updatedBuffer;
+      }
+
+      if (newFoldNode !== undefined && reloadedChild.foldNode !== undefined) {
+        newFoldNode = foldNodeApi.modifyAtPath(
+          newFoldNode,
+          [oldEntry.name],
+          () => reloadedChild.foldNode!,
+        );
       }
     }
 
-    return updatedEntries;
+    return {
+      buffer: newBuffer,
+      foldNode: newFoldNode,
+    };
   }
 
   return {
@@ -103,18 +132,17 @@ export function createStateApi<
     },
 
     async resync(oldState, loadBranches) {
-      const rootEntries = await loadBranches([]);
-
-      const buffer = await reloadLoadedDescendants(
-        rootEntries,
+      const reloaded = await reload(
         oldState.buffer,
+        oldState.foldNode,
         [],
         loadBranches,
       );
 
       return {
         ...oldState,
-        buffer,
+        buffer: reloaded.buffer,
+        foldNode: reloaded.foldNode ?? foldNodeApi.createEmpty(),
       };
     },
   };

@@ -45,6 +45,7 @@ export function App<
   onError,
 }: AppProps<Name, BufferNode>) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  // Give `subscribeToResync` callback a way to see current state:
   const stateRef = useRef(state);
   stateRef.current = state;
 
@@ -79,7 +80,8 @@ export function App<
     });
   }, [appApi.navNodeApi, state, print, navigation]);
 
-  // Subscribe to directory watcher
+  // Subscribe to directory watcher, do not
+  // resubscribe on every state change.
   useEffect(() => {
     let active = true;
 
