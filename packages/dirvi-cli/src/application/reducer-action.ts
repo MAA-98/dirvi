@@ -6,9 +6,14 @@ export type ReducerAction<Name, BufferNode> =
       cursor: Cursor<Name>;
     }
   | {
-      kind: 'updateDir';
+      kind: 'updateBranch';
       path: Name[];
       entries: BufferNode[] | null; // null for unloaded
+    }
+  | {
+      kind: 'updateBuffer';
+      oldEntries: BufferNode[];
+      entries: BufferNode[];
     }
   | {
       kind: 'fold';

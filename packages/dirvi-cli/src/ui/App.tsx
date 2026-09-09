@@ -1,5 +1,5 @@
 import { Box, Text, useApp, useInput, useWindowSize } from 'ink';
-import { useEffect, useMemo, useReducer, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import {
   Effect,
@@ -45,6 +45,9 @@ export function App<
   onError,
 }: AppProps<Name, BufferNode>) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
   const navigation = useMemo(
     () => appApi.navNodeApi.from(state.buffer, state.foldNode),
     [appApi.navNodeApi, state.buffer, state.foldNode],
@@ -76,6 +79,40 @@ export function App<
     });
   }, [appApi.navNodeApi, state, print, navigation]);
 
+  // Subscribe to directory watcher
+  useEffect(() => {
+    let active = true;
+
+    const unsubscribe = appApi.subscribeToResync(() => {
+      const oldState = stateRef.current;
+
+      void appApi.stateApi
+        .resync(oldState, appApi.loadBranches)
+        .then((nextState) => {
+          if (!active) {
+            return;
+          }
+
+          dispatch({
+            kind: 'updateBuffer',
+            oldEntries: oldState.buffer,
+            entries: nextState.buffer,
+          });
+        })
+        .catch((error: unknown) => {
+          const appError =
+            error instanceof Error ? error : new Error(String(error));
+
+          onError?.(appError);
+        });
+    });
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [appApi, onError]);
+
   function executeEffect(effect: Effect<Name, BufferNode> | undefined): void {
     if (effect === undefined) {
       return;
@@ -103,7 +140,7 @@ export function App<
           .loadBranches(effect.path)
           .then((entries) => {
             dispatch({
-              kind: 'updateDir',
+              kind: 'updateBranch',
               path: effect.path,
               entries,
             });

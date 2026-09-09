@@ -1,11 +1,10 @@
 import { readdir, readlink } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import type { UnixAbsolutePath } from '../domain/unix-path.js';
-import { UnixPathSchema } from '../domain/unix-path.js';
-import { PosixNameSchema, PosixNode } from '../domain/posix-node.js';
+import type { UnixAbsolutePath, PosixNode } from 'dirvi-lib';
+import { UnixPathSchema, PosixNameSchema } from 'dirvi-lib';
 
-export async function getDirLazyEntries(
+export async function getDirEntries(
   address: UnixAbsolutePath,
 ): Promise<PosixNode[]> {
   const directoryEntries = await readdir(address, {

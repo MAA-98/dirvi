@@ -3,6 +3,7 @@ import { loadPosixAppApi } from '../infrastructure/load-posix-app-api.js';
 import { LoadingApp } from './LoadingApp.js';
 import { PosixName, PosixNode, TreeNode } from 'dirvi-lib';
 import { join } from 'node:path';
+import { useMemo } from 'react';
 
 export type ShellAppProps<Name, BufferNode> = {
   directory?: string;
@@ -16,8 +17,9 @@ export function AppShell<
   Name extends PropertyKey,
   BufferNode extends TreeNode<Name, BufferNode>,
 >({ directory, print, onError }: ShellAppProps<Name, BufferNode>) {
-  
-  const posixAppApi = loadPosixAppApi(directory);
+  // Api owns directory watcher and subscriptions
+  const posixAppApi = useMemo(() => loadPosixAppApi(directory), [directory]);
+
   const emitEventMsg = print
     ? (message: EventMessage<PosixName, PosixNode>) => {
         const externalMessage =

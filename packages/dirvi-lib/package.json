@@ -10,8 +10,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
     "clean": "rm -rf dist",
+    "build": "pnpm clean && tsc",
     "typecheck": "tsc --noEmit",
     "format": "prettier . --write"
   },

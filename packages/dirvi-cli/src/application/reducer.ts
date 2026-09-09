@@ -24,7 +24,7 @@ export function createReducer<
           cursor: action.cursor,
         };
 
-      case 'updateDir':
+      case 'updateBranch':
         const buffer = treeNodeApi.setBranchesAtPath(
           state.buffer,
           action.path,
@@ -38,6 +38,17 @@ export function createReducer<
         return {
           ...state,
           buffer,
+        };
+
+      case 'updateBuffer':
+        // A newer update has already been applied.
+        if (state.buffer !== action.oldEntries) {
+          return state;
+        }
+
+        return {
+          ...state,
+          buffer: action.entries,
         };
 
       case 'fold': {

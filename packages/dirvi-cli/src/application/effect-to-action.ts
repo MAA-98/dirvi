@@ -61,7 +61,7 @@ export function createEffectToAction<
 
       case 'setBranchEntries':
         return {
-          kind: 'updateDir',
+          kind: 'updateBranch',
           path: effectAction.path,
           entries: effectAction.entries,
         };

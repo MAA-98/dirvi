@@ -1,15 +1,13 @@
 import { join } from 'node:path';
 import { watch, type FSWatcher } from 'node:fs';
-import {
-  getDirLazyEntries,
-  NameEquals,
-  PosixName,
-  PosixNode,
-} from 'dirvi-lib';
+import { NameEquals, PosixName, PosixNode } from 'dirvi-lib';
 import { AppApi, createAppApis } from '../domain/app-api.js';
 import { getUnixAbsPath } from './get-unix-abs-path.js';
+import { getDirEntries } from './get-dir-entries.js';
 
-export function loadPosixAppApi(directory?: string): AppApi<PosixName, PosixNode> {
+export function loadPosixAppApi(
+  directory?: string,
+): AppApi<PosixName, PosixNode> {
   const unixAbsPath = getUnixAbsPath(directory ?? process.cwd());
   const nameEquals: NameEquals<PosixName> = (first, second) => {
     return first === second;
@@ -23,7 +21,7 @@ export function loadPosixAppApi(directory?: string): AppApi<PosixName, PosixNode
 
     loadBranches: (path) => {
       const address = join(unixAbsPath, ...path);
-      return getDirLazyEntries(address);
+      return getDirEntries(address);
     },
 
     subscribeToResync,
@@ -81,8 +79,7 @@ function createFsResyncSubscription(
     );
 
     watcher.on('error', () => {
-      // The directory may have been removed or become inaccessible.
-      // The next resync/load operation will report the actual error.
+      // The next loadBranches call will report the relevant error.
     });
   }
 

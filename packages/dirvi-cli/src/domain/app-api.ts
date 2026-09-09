@@ -1,9 +1,13 @@
 import {
   createCursorApi,
-  createFoldNodeApi, createNavNodeApi, createStateApi,
+  createFoldNodeApi,
+  createNavNodeApi,
+  createStateApi,
   createTreeNodeApi,
   CursorApi,
-  FoldNodeApi, NameEquals,
+  FoldNodeApi,
+  LoadBranches,
+  NameEquals,
   NavNodeApi,
   StateApi,
   TreeNode,
@@ -29,7 +33,7 @@ export type AppApi<
    *
    * The empty path represents the root branch.
    */
-  loadBranches: (path: Name[]) => Promise<BufferNode[]>;
+  loadBranches: LoadBranches<Name, BufferNode>;
 
   /**
    * Subscribes to external data changes that require the tree state

@@ -54,22 +54,15 @@ export function LoadingApp<
   const [initialState, setInitialState] = useState<State<Name, BufferNode>>();
   const [empty, setEmpty] = useState(false);
   const [error, setError] = useState<Error>();
-  
+
+  // Load root branches and set initial state
   useEffect(() => {
     let mounted = true;
-    let requestId = 0;
 
-    async function loadRoot() {
-      const currentRequestId = ++requestId;
-
-      setInitialState(undefined);
-      setEmpty(false);
-      setError(undefined);
-
-      try {
-        const rootBranches = await appApi.loadBranches([]);
-
-        if (!mounted || currentRequestId !== requestId) {
+    appApi
+      .loadBranches([])
+      .then((rootBranches) => {
+        if (!mounted) {
           return;
         }
 
@@ -81,66 +74,23 @@ export function LoadingApp<
         setInitialState(
           createInitialState(rootBranches, appApi.foldNodeApi.createEmpty),
         );
-      } catch (cause: unknown) {
-        if (!mounted || currentRequestId !== requestId) {
-          return;
-        }
-
+      })
+      .catch((cause: unknown) => {
         const nextError =
           cause instanceof Error ? cause : new Error(String(cause));
 
+        if (!mounted) {
+          return;
+        }
+
         setError(nextError);
         onError?.(nextError);
-      }
-    }
-
-    void loadRoot();
-
-    const unsubscribe = appApi.subscribeToResync(() => {
-      void loadRoot();
-    });
+      });
 
     return () => {
       mounted = false;
-      unsubscribe();
     };
   }, [appApi, onError]);
-  
-  // useEffect(() => {
-  //   let mounted = true;
-  //
-  //   appApi
-  //     .loadBranches([])
-  //     .then((rootBranches) => {
-  //       if (!mounted) {
-  //         return;
-  //       }
-  //
-  //       if (rootBranches.length === 0) {
-  //         setEmpty(true);
-  //         return;
-  //       }
-  //
-  //       setInitialState(
-  //         createInitialState(rootBranches, appApi.foldNodeApi.createEmpty),
-  //       );
-  //     })
-  //     .catch((cause: unknown) => {
-  //       const nextError =
-  //         cause instanceof Error ? cause : new Error(String(cause));
-  //
-  //       if (!mounted) {
-  //         return;
-  //       }
-  //
-  //       setError(nextError);
-  //       onError?.(nextError);
-  //     });
-  //
-  //   return () => {
-  //     mounted = false;
-  //   };
-  // }, [appApi, onError]);
 
   // --- Pure function deps ---
   const reducer = useMemo(
@@ -162,7 +112,7 @@ export function LoadingApp<
     () => createEffectToAction(appApi.navNodeApi, appApi.treeNodeApi),
     [appApi.navNodeApi, appApi.treeNodeApi],
   );
-  
+
   // --- JSX ---
 
   if (error !== undefined) {

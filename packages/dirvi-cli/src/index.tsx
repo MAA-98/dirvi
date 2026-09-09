@@ -49,7 +49,7 @@ program
     const options = program.opts<{
       directory?: string;
     }>();
-    
+
     let appError: Error | undefined;
 
     const useAlternateScreen = uiOutput.isTTY === true;
