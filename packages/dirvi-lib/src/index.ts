@@ -8,7 +8,6 @@ export * from './domain/posix-node.js';
 export * from './domain/unix-path.js';
 export * from './tree-surfer-ui/domain/user-input.js';
 
-export * from './infrastructure/get-cwd.js';
 export * from './infrastructure/get-dir-lazy-entries.js';
 
 export * from './tree-surfer/index.js';

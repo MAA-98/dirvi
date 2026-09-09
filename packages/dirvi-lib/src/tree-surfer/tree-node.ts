@@ -107,7 +107,6 @@ export type TreeNodeApi<
    * Returns a node's branches.
    *
    * Returns:
-   *
    * - an array when the node is a loaded branch;
    * - `null` when the node is a branch whose children are not loaded;
    * - `undefined` when the node is a leaf.

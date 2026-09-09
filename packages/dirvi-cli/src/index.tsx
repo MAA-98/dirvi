@@ -3,13 +3,13 @@ import { Command } from 'commander';
 import { render } from 'ink';
 
 import { AppShell } from './ui/AppShell.js';
-import { EventMessage } from './domain/event-message.js';
 
 const program = new Command();
 
 // ---*--- TERMINAL ALTERNATE SCREEN ---*---
-// Restore the terminal during normal cleanup and as a
-// last-resort fallback when Node is exiting.
+// Restore the terminal away from alternate screen
+// during normal cleanup and as a last-resort fallback
+// when Node is exiting.
 
 // Write UI to stderr
 const uiOutput = process.stderr;
@@ -44,7 +44,12 @@ program
   .description('View and manage directories.')
   .version('0.4.0')
   .helpOption('--help')
+  .option('-d, --directory <path>', 'Directory to browse')
   .action(async () => {
+    const options = program.opts<{
+      directory?: string;
+    }>();
+    
     let appError: Error | undefined;
 
     const useAlternateScreen = uiOutput.isTTY === true;
@@ -57,6 +62,7 @@ program
     try {
       const app = render(
         <AppShell
+          directory={options.directory}
           print={process.stdout.isTTY ? undefined : emitStdoutMsg}
           onError={(error) => {
             appError = error;

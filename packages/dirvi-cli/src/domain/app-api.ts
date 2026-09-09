@@ -1,6 +1,9 @@
 import {
+  createCursorApi,
+  createFoldNodeApi, createNavNodeApi, createStateApi,
+  createTreeNodeApi,
   CursorApi,
-  FoldNodeApi,
+  FoldNodeApi, NameEquals,
   NavNodeApi,
   StateApi,
   TreeNode,
@@ -28,6 +31,14 @@ export type AppApi<
    */
   loadBranches: (path: Name[]) => Promise<BufferNode[]>;
 
+  /**
+   * Subscribes to external data changes that require the tree state
+   * to be loaded again.
+   *
+   * Returns an unsubscribe function.
+   */
+  subscribeToResync: (listener: () => void) => () => void;
+
   treeNodeApi: TreeNodeApi<Name, BufferNode>;
 
   foldNodeApi: FoldNodeApi<Name, BufferNode>;
@@ -38,3 +49,35 @@ export type AppApi<
 
   navNodeApi: NavNodeApi<Name, BufferNode>;
 };
+
+export function createAppApis<
+  Name extends PropertyKey,
+  BufferNode extends TreeNode<Name, BufferNode>,
+>(
+  nameEquals: NameEquals<Name>,
+): {
+  treeNodeApi: TreeNodeApi<Name, BufferNode>;
+  foldNodeApi: FoldNodeApi<Name, BufferNode>;
+  cursorApi: CursorApi<Name>;
+  stateApi: StateApi<Name, BufferNode>;
+  navNodeApi: NavNodeApi<Name, BufferNode>;
+} {
+  const treeNodeApi = createTreeNodeApi<Name, BufferNode>(nameEquals);
+  const foldNodeApi = createFoldNodeApi<Name, BufferNode>(nameEquals);
+  const cursorApi = createCursorApi<Name>(nameEquals);
+  const stateApi = createStateApi<Name, BufferNode>(treeNodeApi, cursorApi);
+  const navNodeApi = createNavNodeApi<Name, BufferNode>(
+    treeNodeApi,
+    foldNodeApi,
+    cursorApi,
+    nameEquals,
+  );
+
+  return {
+    treeNodeApi,
+    foldNodeApi,
+    cursorApi,
+    stateApi,
+    navNodeApi,
+  };
+}

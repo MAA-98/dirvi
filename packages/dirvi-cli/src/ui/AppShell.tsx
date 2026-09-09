@@ -1,10 +1,11 @@
 import { EventMessage } from '../domain/event-message.js';
-import { loadPosixAppProps } from '../infrastructure/load-posix-app-props.js';
+import { loadPosixAppApi } from '../infrastructure/load-posix-app-api.js';
 import { LoadingApp } from './LoadingApp.js';
 import { PosixName, PosixNode, TreeNode } from 'dirvi-lib';
 import { join } from 'node:path';
 
 export type ShellAppProps<Name, BufferNode> = {
+  directory?: string;
   print?: (message: string) => void;
   onError?: (error: Error) => void;
 };
@@ -14,8 +15,9 @@ export type ShellAppProps<Name, BufferNode> = {
 export function AppShell<
   Name extends PropertyKey,
   BufferNode extends TreeNode<Name, BufferNode>,
->({ print, onError }: ShellAppProps<Name, BufferNode>) {
-  const appProps = loadPosixAppProps();
+>({ directory, print, onError }: ShellAppProps<Name, BufferNode>) {
+  
+  const posixAppApi = loadPosixAppApi(directory);
   const emitEventMsg = print
     ? (message: EventMessage<PosixName, PosixNode>) => {
         const externalMessage =
@@ -31,6 +33,6 @@ export function AppShell<
     : undefined;
 
   return (
-    <LoadingApp appApi={appProps} print={emitEventMsg} onError={onError} />
+    <LoadingApp appApi={posixAppApi} print={emitEventMsg} onError={onError} />
   );
 }
