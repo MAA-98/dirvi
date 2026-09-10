@@ -4,8 +4,8 @@ import {
   NameEquals,
   TreeNode,
   TreeNodeApi,
-  TreeNodeBranch,
-  TreeNodeLeaf,
+  BranchTreeNode,
+  LeafTreeNode,
 } from './tree-node.js';
 
 /**
@@ -20,12 +20,12 @@ export type NavEntry<
 export type NavLeaf<
   Name extends PropertyKey,
   BufferNode extends TreeNode<Name, BufferNode>,
-> = BufferNode & TreeNodeLeaf<Name>;
+> = BufferNode & LeafTreeNode<Name>;
 
 export type NavBranch<
   Name extends PropertyKey,
   BufferNode extends TreeNode<Name, BufferNode>,
-> = Omit<BufferNode & TreeNodeBranch<Name, BufferNode>, 'branches'> & {
+> = Omit<BufferNode & BranchTreeNode<Name, BufferNode>, 'branches'> & {
   branches: NavNode<Name, BufferNode> | null;
 };
 
@@ -94,6 +94,11 @@ export type NavNodeApi<
     cursor: Cursor<Name>,
   ): Cursor<Name> | undefined;
 
+  cursors(
+    navigation: NavNode<Name, BufferNode>,
+    parentPath?: Name[],
+  ): Cursor<Name>[];
+  
   visibleLeavesPaths(
     navigation: NavNode<Name, BufferNode>,
     parentPath?: Name[],
@@ -322,6 +327,10 @@ export function createNavNodeApi<
         parentPath: containingPath,
         entryName,
       };
+    },
+
+    cursors(navigation, parentPath = []) {
+      return cursorsInNode(navigation, parentPath);
     },
 
     visibleLeavesPaths(

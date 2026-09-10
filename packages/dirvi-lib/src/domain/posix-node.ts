@@ -83,14 +83,6 @@ export const PosixFoldNodeApi = createFoldNodeApi<PosixName, PosixNode>(
   PosixName.equals,
 );
 
-// State
-export type PosixState = State<PosixName, PosixNode>;
-
-export const PosixStateApi = createStateApi<PosixName, PosixNode>(
-  PosixNodeApi,
-  PosixCursorApi,
-);
-
 // Navigation Node
 export type PosixNavNode = NavNode<PosixName, PosixNode>;
 
@@ -99,4 +91,14 @@ export const PosixNavApi = createNavNodeApi<PosixName, PosixNode>(
   PosixFoldNodeApi,
   PosixCursorApi,
   PosixName.equals,
+);
+
+// State
+export type PosixState = State<PosixName, PosixNode>;
+
+export const PosixStateApi = createStateApi<PosixName, PosixNode>(
+  PosixNodeApi,
+  PosixFoldNodeApi,
+  PosixCursorApi,
+  PosixNavApi,
 );

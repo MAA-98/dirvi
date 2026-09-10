@@ -1,6 +1,7 @@
-import { TreeNode, TreeNodeApi } from './tree-node.js';
+import { nameSeqEqual, TreeNode, TreeNodeApi } from './tree-node.js';
 import { FoldNode, FoldNodeApi } from './fold-node.js';
-import { Cursor, CursorApi } from './cursor.js';
+import { Cursor, CursorApi, CursorKind } from './cursor.js';
+import { NavNodeApi } from './nav-node.js';
 
 export type State<
   Name extends PropertyKey,
@@ -38,6 +39,7 @@ export function createStateApi<
   treeNodeApi: TreeNodeApi<Name, BufferNode>,
   foldNodeApi: FoldNodeApi<Name, BufferNode>,
   cursorApi: CursorApi<Name>,
+  navNodeApi: NavNodeApi<Name, BufferNode>
 ): StateApi<Name, BufferNode> {
   async function reload(
     oldBuffer: BufferNode[],
@@ -66,7 +68,7 @@ export function createStateApi<
 
     // Reload descendants that were already loaded in the old buffer.
     for (const oldEntry of oldBuffer) {
-      const oldBranches = treeNodeApi.getBranches(oldEntry);
+      const oldBranches = treeNodeApi.getChildren(oldEntry);
 
       if (oldBranches === undefined || oldBranches === null) {
         continue;
@@ -118,9 +120,96 @@ export function createStateApi<
       foldNode: newFoldNode,
     };
   }
+  
+  function resyncCursor(
+    oldState: State<Name, BufferNode>,
+    newBuffer: BufferNode[],
+    newFoldNode: FoldNode<Name>,
+  ): Cursor<Name> | undefined {
+    const oldNavigation = navNodeApi.from(oldState.buffer, oldState.foldNode);
 
+    const newNavigation = navNodeApi.from(newBuffer, newFoldNode);
+
+    const oldCursors = navNodeApi.cursors(oldNavigation);
+    const newCursors = navNodeApi.cursors(newNavigation);
+
+    if (newCursors.length === 0) {
+      return undefined;
+    }
+
+    const oldCursorIndex = oldCursors.findIndex((candidate) =>
+      cursorApi.equal(candidate, oldState.cursor),
+    );
+
+    // The original cursor still exists.
+    if (oldCursorIndex !== -1) {
+      return newCursors[Math.min(oldCursorIndex, newCursors.length - 1)];
+    }
+    
+    const oldPath = cursorApi.getPath(oldState.cursor);
+
+    return findFallbackForPath(
+      oldPath ?? oldState.cursor.parentPath,
+      newCursors,
+    );
+  }
+  
+  function findFallbackForPath(
+    path: Name[],
+    newCursors: Cursor<Name>[],
+  ): Cursor<Name> | undefined {
+    // First try the parent entry, then each ancestor entry.
+    for (let length = path.length - 1; length > 0; length -= 1) {
+      const ancestorPath = path.slice(0, length);
+
+      const ancestorCursor = newCursors.find((candidate) =>
+        cursorMatchesEntryPath(candidate, ancestorPath),
+      );
+
+      if (ancestorCursor !== undefined) {
+        return ancestorCursor;
+      }
+    }
+
+    // Try to remain in the same root entry, if it still exists.
+    const rootName = path[0];
+
+    if (rootName !== undefined) {
+      const rootCursor = newCursors.find((candidate) => {
+        const candidatePath = cursorApi.getPath(candidate);
+
+        return (
+          candidatePath !== undefined &&
+          candidatePath.length > 0 &&
+          treeNodeApi.nameEquals(candidatePath[0]!, rootName)
+        );
+      });
+
+      if (rootCursor !== undefined) {
+        return rootCursor;
+      }
+    }
+
+    // Otherwise use the first available cursor.
+    return newCursors[0];
+  }
+  
+  function cursorMatchesEntryPath(cursor: Cursor<Name>, path: Name[]): boolean {
+    if (!cursorApi.isEntry(cursor)) {
+      return false;
+    }
+
+    const cursorPath = [...cursor.parentPath, cursor.entryName];
+
+    return nameSeqEqual(cursorPath, path, treeNodeApi.nameEquals);
+  }
+  
   return {
     getNodeAtCursor(state) {
+      if (state.cursor === undefined) {
+        return undefined;
+      }
+      
       const path = cursorApi.getPath(state.cursor);
 
       if (path === undefined) {
@@ -139,10 +228,18 @@ export function createStateApi<
         loadBranches,
       );
 
+      const foldNode = reloaded.foldNode ?? foldNodeApi.createEmpty();
+      
+      const cursor = resyncCursor(oldState, reloaded.buffer, foldNode) ?? {
+        kind: CursorKind.Fold,
+        parentPath: []
+      };
+
       return {
         ...oldState,
         buffer: reloaded.buffer,
-        foldNode: reloaded.foldNode ?? foldNodeApi.createEmpty(),
+        foldNode,
+        cursor,
       };
     },
   };

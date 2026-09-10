@@ -69,13 +69,13 @@ export function createAppApis<
   const treeNodeApi = createTreeNodeApi<Name, BufferNode>(nameEquals);
   const foldNodeApi = createFoldNodeApi<Name, BufferNode>(nameEquals);
   const cursorApi = createCursorApi<Name>(nameEquals);
-  const stateApi = createStateApi<Name, BufferNode>(treeNodeApi, cursorApi);
   const navNodeApi = createNavNodeApi<Name, BufferNode>(
     treeNodeApi,
     foldNodeApi,
     cursorApi,
     nameEquals,
   );
+  const stateApi = createStateApi<Name, BufferNode>(treeNodeApi, foldNodeApi, cursorApi, navNodeApi);
 
   return {
     treeNodeApi,
