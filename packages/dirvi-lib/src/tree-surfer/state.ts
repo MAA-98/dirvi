@@ -1,5 +1,5 @@
 import { nameSeqEqual, TreeNode, TreeNodeApi } from './tree-node.js';
-import { FoldNode, FoldNodeApi } from './fold-node.js';
+import { FoldChild, FoldNodeApi } from './fold-node.js';
 import { Cursor, CursorApi, CursorKind } from './cursor.js';
 import { NavNodeApi } from './nav-node.js';
 
@@ -8,7 +8,7 @@ export type State<
   BufferNode extends TreeNode<Name, BufferNode>,
 > = {
   buffer: BufferNode[];
-  foldNode: FoldNode<Name>;
+  foldNode: FoldChild<Name>;
   cursor: Cursor<Name>;
 };
 
@@ -43,12 +43,12 @@ export function createStateApi<
 ): StateApi<Name, BufferNode> {
   async function reload(
     oldBuffer: BufferNode[],
-    oldFoldNode: FoldNode<Name> | undefined,
+    oldFoldNode: FoldChild<Name> | undefined,
     parentPath: Name[],
     loadBranches: LoadBranches<Name, BufferNode>,
   ): Promise<{
     buffer: BufferNode[];
-    foldNode: FoldNode<Name> | undefined;
+    foldNode: FoldChild<Name> | undefined;
   }> {
     // Build the new entries at this level.
     let newBuffer = await loadBranches(parentPath);
@@ -124,7 +124,7 @@ export function createStateApi<
   function resyncCursor(
     oldState: State<Name, BufferNode>,
     newBuffer: BufferNode[],
-    newFoldNode: FoldNode<Name>,
+    newFoldNode: FoldChild<Name>,
   ): Cursor<Name> | undefined {
     const oldNavigation = navNodeApi.from(oldState.buffer, oldState.foldNode);
 

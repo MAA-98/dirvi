@@ -1,5 +1,5 @@
 import { Cursor, CursorApi } from './cursor.js';
-import { FoldNode, FoldNodeApi } from './fold-node.js';
+import { FoldChild, FoldNodeApi } from './fold-node.js';
 import {
   NameEquals,
   TreeNode,
@@ -61,7 +61,7 @@ export type NavNodeApi<
 > = {
   from(
     entries: BufferNode[],
-    foldNode: FoldNode<Name>,
+    foldNode: FoldChild<Name>,
   ): NavNode<Name, BufferNode>;
 
   getNodeAtPath(

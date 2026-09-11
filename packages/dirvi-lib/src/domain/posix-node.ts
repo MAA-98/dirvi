@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type {
   TreeNode,
   Cursor,
-  FoldNode,
+  FoldChild,
   State,
 } from '../tree-surfer/index.js';
 import {
@@ -77,7 +77,7 @@ export type PosixCursor = Cursor<PosixName>;
 export const PosixCursorApi = createCursorApi<PosixName>(PosixName.equals);
 
 // Fold Node
-export type PosixFoldNode = FoldNode<PosixName>;
+export type PosixFoldNode = FoldChild<PosixName>;
 
 export const PosixFoldNodeApi = createFoldNodeApi<PosixName, PosixNode>(
   PosixName.equals,

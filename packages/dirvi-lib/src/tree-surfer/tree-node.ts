@@ -1,3 +1,6 @@
+// ---*--- Name Equals ---*---
+// Type and helper
+
 /**
  * Compares two node names.
  *
@@ -30,10 +33,12 @@ export function nameSeqEqual<Name extends {}>(
   return true;
 }
 
+// ---*--- TreeNode Types ---*---
+
 /**
  * The common part of every tree node.
  */
-type TreeNodeBase<Name extends {}> = {
+export type TreeNodeBase<Name extends {}> = {
   name: Name;
 };
 
@@ -91,6 +96,8 @@ export type TreeNode<
   Name extends {},
   ChildNode extends TreeNode<Name, ChildNode>,
 > = LeafTreeNode<Name> | BranchTreeNode<Name, ChildNode>;
+
+// ---*--- Tree Node API Types ---*---
 
 /**
  * Selects a value from a node reached by a path.
@@ -239,6 +246,8 @@ export type TreeNodeApi<
     modifier: TreeNodeModifier<Name, ChildNode>,
   ): ChildNode[] | undefined;
 };
+
+// ---*--- Tree Node API Implementation ---*---
 
 /**
  * Creates an API for inspecting and immutably updating tree nodes.
