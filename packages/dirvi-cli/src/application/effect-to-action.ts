@@ -10,7 +10,7 @@ import {
   type TreeNode,
   NavNode,
   TreeNodeApi,
-  NavNodeApi,
+  NavNodeApi, CursorApi,
 } from 'dirvi-lib';
 
 import type { ReducerAction } from './reducer-action.js';
@@ -28,8 +28,9 @@ export function createEffectToAction<
   Name extends PropertyKey,
   BufferNode extends TreeNode<Name, BufferNode>,
 >(
-  navNodeApi: NavNodeApi<Name, BufferNode>,
   treeNodeApi: TreeNodeApi<Name, BufferNode>,
+  cursorApi: CursorApi<Name>,
+  navNodeApi: NavNodeApi<Name, BufferNode>,
 ): EffectToAction<Name, BufferNode> {
   function effectToAction(
     effectAction: EffectAction<Name, BufferNode>,
@@ -84,7 +85,7 @@ export function createEffectToAction<
 
         const path = [...state.cursor.parentPath, state.cursor.entryName];
 
-        const entry = treeNodeApi.getAtPath(state.buffer, path);
+        const entry = treeNodeApi.getAtPath(state.buffer, path, (node) => node);
 
         if (entry === undefined) {
           return undefined;
@@ -97,7 +98,7 @@ export function createEffectToAction<
 
         return {
           kind: 'fold',
-          parentPath: state.cursor.parentPath,
+          parentPath: [...state.cursor.parentPath],
           entry,
           cursor,
         };
@@ -110,7 +111,7 @@ export function createEffectToAction<
 
         const node = navNodeApi.getNodeAtPath(
           navigation,
-          state.cursor.parentPath,
+          [...state.cursor.parentPath],
         );
 
         if (node === undefined || node.foldedEntries.length === 0) {
@@ -121,7 +122,7 @@ export function createEffectToAction<
 
         return {
           kind: 'unfold',
-          parentPath: state.cursor.parentPath,
+          parentPath: [...state.cursor.parentPath],
           cursor: {
             kind: 'entry',
             parentPath: state.cursor.parentPath,

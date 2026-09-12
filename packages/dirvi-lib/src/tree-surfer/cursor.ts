@@ -9,13 +9,13 @@ export type CursorKind = (typeof CursorKind)[keyof typeof CursorKind];
 
 export type CursorEntry<Name> = {
   kind: typeof CursorKind.Entry;
-  parentPath: Name[];
+  parentPath: readonly Name[];
   entryName: Name;
 };
 
 export type CursorFold<Name> = {
   kind: typeof CursorKind.Fold;
-  parentPath: Name[];
+  parentPath: readonly Name[];
 };
 
 export type Cursor<Name> = CursorEntry<Name> | CursorFold<Name>;
@@ -80,9 +80,15 @@ export function createCursorApi<Name extends {}>(
   return cursorApi;
 }
 
+/**
+ * Returns true when the cursor is strictly below `entryPath`.
+ *
+ * A cursor on `entryPath` itself is not included. In particular, a fold
+ * cursor at an entry's path is not considered part of that entry's subtree.
+ */
 function isStrictPathPrefix<Name extends {}>(
-  prefix: Name[],
-  path: Name[],
+  prefix: readonly Name[],
+  path: readonly Name[],
   nameEquals: NameEquals<Name>,
 ): boolean {
   if (prefix.length >= path.length) {

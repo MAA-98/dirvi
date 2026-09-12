@@ -175,7 +175,7 @@ function normalInteractRightToEffect<
     return undefined;
   }
 
-  if (treeNodeApi.isTreeNodeBranch(currentEntry)) {
+  if (treeNodeApi.isBranch(currentEntry)) {
     if (currentEntry.branches === null) {
       return {
         effectType: 'loadBranchEntries',

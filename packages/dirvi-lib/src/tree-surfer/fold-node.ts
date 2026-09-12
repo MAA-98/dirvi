@@ -174,7 +174,7 @@ export function createFoldNodeService<
   foldNodeApi: FoldNodeApi<Name>,
   createChild: (name: Name) => FoldNode<Name>,
 ): FoldNodeService<Name> {
-  const service: FoldNodeService<Name> = {
+  return {
     createEmptyRoot() {
       return {
         branches: [],
@@ -352,6 +352,4 @@ export function createFoldNodeService<
     result[childIndex] = updatedChild;
     return result;
   }
-
-  return service;
 }

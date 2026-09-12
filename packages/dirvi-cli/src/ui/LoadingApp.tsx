@@ -23,7 +23,7 @@ function createInitialState<
   BufferNode extends TreeNode<Name, BufferNode>,
 >(
   rootBranches: State<Name, BufferNode>['buffer'],
-  createEmptyFoldNode: () => State<Name, BufferNode>['foldNode'],
+  createEmptyFoldRoot: () => State<Name, BufferNode>['foldNode'],
 ): State<Name, BufferNode> {
   if (rootBranches.length === 0) {
     throw new Error(
@@ -33,20 +33,15 @@ function createInitialState<
 
   return {
     buffer: rootBranches,
-    foldNode: createEmptyFoldNode(),
+    foldNode: createEmptyFoldRoot(),
     cursor: {
       kind: 'entry',
       parentPath: [],
-      entryName: rootBranches[0].name,
+      entryName: rootBranches[0]!.name,
     },
   };
 }
 
-// Loads the initial state and other dependencies of the
-// App given the AppApi. Because the reducer doesn't change
-// with state, we create it here rather than in App.
-//
-// Displays the given message if the initial tree nodes are empty.
 export function LoadingApp<
   Name extends PropertyKey,
   BufferNode extends TreeNode<Name, BufferNode>,
@@ -55,7 +50,6 @@ export function LoadingApp<
   const [empty, setEmpty] = useState(false);
   const [error, setError] = useState<Error>();
 
-  // Load root branches and set initial state
   useEffect(() => {
     let mounted = true;
 
@@ -72,7 +66,9 @@ export function LoadingApp<
         }
 
         setInitialState(
-          createInitialState(rootBranches, appApi.foldNodeApi.createEmpty),
+          createInitialState(rootBranches, () =>
+            appApi.foldNodeService.createEmptyRoot(),
+          ),
         );
       })
       .catch((cause: unknown) => {
@@ -93,9 +89,10 @@ export function LoadingApp<
   }, [appApi, onError]);
 
   // --- Pure function deps ---
+
   const reducer = useMemo(
-    () => createReducer(appApi.treeNodeApi, appApi.foldNodeApi),
-    [appApi.treeNodeApi, appApi.foldNodeApi],
+    () => createReducer(appApi.treeNodeApi, appApi.foldNodeService),
+    [appApi.treeNodeApi, appApi.foldNodeService],
   );
 
   const intentToEffect = useMemo(
@@ -107,10 +104,15 @@ export function LoadingApp<
       ),
     [appApi.stateApi, appApi.cursorApi, appApi.treeNodeApi],
   );
-
+  
   const effectToAction = useMemo(
-    () => createEffectToAction(appApi.navNodeApi, appApi.treeNodeApi),
-    [appApi.navNodeApi, appApi.treeNodeApi],
+    () =>
+      createEffectToAction(
+        appApi.treeNodeApi,
+        appApi.cursorApi,
+        appApi.navNodeApi,
+      ),
+    [appApi.treeNodeApi, appApi.navNodeApi, appApi.cursorApi],
   );
 
   // --- JSX ---
