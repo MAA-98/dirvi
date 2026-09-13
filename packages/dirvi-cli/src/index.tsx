@@ -14,18 +14,12 @@ const program = new Command();
 // Write UI to stderr
 const uiOutput = process.stderr;
 
-// The newline makes each message a separate JSON Lines message.
-// Note: if you pipe output you'll need to use FORCE_COLOR=3
-// to keep interactive screen colored.
-const emitStdoutMsg = (message: string) => {
-  process.stdout.write(message);
-};
-
 const enterAlternateScreen = '\u001b[?1049h\u001b[2J\u001b[H\u001b[?25l';
 const leaveAlternateScreen = '\u001b[?25h\u001b[?1049l';
 
 // Idempotent terminal restoration
 let alternateScreenActive = false;
+
 const restoreTerminal = () => {
   if (!alternateScreenActive) {
     return;
@@ -42,7 +36,7 @@ process.on('exit', restoreTerminal);
 program
   .name('direx')
   .description('View and manage directories.')
-  .version('0.4.0')
+  .version('0.5.0')
   .helpOption('--help')
   .option('-d, --directory <path>', 'Directory to browse')
   .action(async () => {
@@ -66,7 +60,17 @@ program
           {...(options.directory === undefined
             ? {}
             : { directory: options.directory })}
-          {...(stdoutIsInteractive ? {} : { print: emitStdoutMsg })}
+          
+          {...(stdoutIsInteractive
+            ? {}
+            : {
+                print: (message: string) => {
+                  // The newline makes each message a separate JSON Lines message.
+                  // Note: if you pipe output you'll need to use FORCE_COLOR=3
+                  // to keep interactive screen colored.
+                  process.stdout.write(message);
+                },
+              })}
           onError={(error) => {
             appError = error;
           }}
