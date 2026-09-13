@@ -1,22 +1,25 @@
 import type { InputState } from './input-state.js';
-import type { TreeNode } from '../../tree-surfer/index.js';
+import {
+  SerializableKey,
+  TreeNode,
+} from '../../tree-surfer/tree-node/tree-node.types.js';
 
 // Still pure actions, but more semantic than ReducerActions.
 export type Effect<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 > =
   | {
       effectType: 'dispatchEffectAction';
-      action: EffectAction<Name, BufferNode>;
+      action: EffectAction<Id, BufferNode>;
     }
   | {
       effectType: 'loadBranchEntries';
-      path: Name[];
+      path: Id[];
     }
   | {
       effectType: 'emitPath';
-      path: Name[];
+      path: Id[];
     }
   | {
       effectType: 'quit';
@@ -29,8 +32,8 @@ export type Effect<
 
 // Actions for reducer, still at effects-level though.
 export type EffectAction<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 > =
   | {
       effectActionType: 'nextEntry';
@@ -40,7 +43,7 @@ export type EffectAction<
     }
   | {
       effectActionType: 'setBranchEntries';
-      path: Name[];
+      path: Id[];
       entries: BufferNode[] | null;
     }
   | {

@@ -1,41 +1,33 @@
-import {
-  State,
-  EffectAction,
-  PosixNavNode,
-  PosixState,
-  PosixNavApi,
-  PosixNodeApi,
-  PosixNode,
-  PosixName,
-  type TreeNode,
-  NavNode,
-  TreeNodeApi,
-  NavNodeApi,
-} from 'dirvi-lib';
-
 import type { ReducerAction } from './reducer-action.js';
+import {
+  SerializableKey,
+  TreeNode,
+  TreeNodeApi,
+} from 'dirvi-lib/dist/tree-surfer/tree-node/tree-node.types.js';
+import { CursorApi, EffectAction, NavNode, NavNodeApi, State } from 'dirvi-lib';
 
 export type EffectToAction<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 > = (
-  effectAction: EffectAction<Name, BufferNode>,
-  navigation: NavNode<Name, BufferNode>,
-  state: State<Name, BufferNode>,
-) => ReducerAction<Name, BufferNode> | undefined;
+  effectAction: EffectAction<Id, BufferNode>,
+  navigation: NavNode<Id, BufferNode>,
+  state: State<Id, BufferNode>,
+) => ReducerAction<Id, BufferNode> | undefined;
 
 export function createEffectToAction<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 >(
-  navNodeApi: NavNodeApi<Name, BufferNode>,
-  treeNodeApi: TreeNodeApi<Name, BufferNode>,
-): EffectToAction<Name, BufferNode> {
+  treeNodeApi: TreeNodeApi<Id, BufferNode>,
+  cursorApi: CursorApi<Id>,
+  navNodeApi: NavNodeApi<Id, BufferNode>,
+): EffectToAction<Id, BufferNode> {
   function effectToAction(
-    effectAction: EffectAction<Name, BufferNode>,
-    navigation: NavNode<Name, BufferNode>,
-    state: State<Name, BufferNode>,
-  ): ReducerAction<Name, BufferNode> | undefined {
+    effectAction: EffectAction<Id, BufferNode>,
+    navigation: NavNode<Id, BufferNode>,
+    state: State<Id, BufferNode>,
+  ): ReducerAction<Id, BufferNode> | undefined {
     switch (effectAction.effectActionType) {
       case 'nextEntry': {
         const cursor = navNodeApi.nextCursor(navigation, state.cursor);
@@ -82,9 +74,9 @@ export function createEffectToAction<
           return undefined;
         }
 
-        const path = [...state.cursor.parentPath, state.cursor.entryName];
+        const path = [...state.cursor.parentPath, state.cursor.entryId];
 
-        const entry = treeNodeApi.getAtPath(state.buffer, path);
+        const entry = treeNodeApi.getAtPath(state.buffer, path, (node) => node);
 
         if (entry === undefined) {
           return undefined;
@@ -97,7 +89,7 @@ export function createEffectToAction<
 
         return {
           kind: 'fold',
-          parentPath: state.cursor.parentPath,
+          parentPath: [...state.cursor.parentPath],
           entry,
           cursor,
         };
@@ -108,10 +100,9 @@ export function createEffectToAction<
           return undefined;
         }
 
-        const node = navNodeApi.getNodeAtPath(
-          navigation,
-          state.cursor.parentPath,
-        );
+        const node = navNodeApi.getNodeAtPath(navigation, [
+          ...state.cursor.parentPath,
+        ]);
 
         if (node === undefined || node.foldedEntries.length === 0) {
           return undefined;
@@ -121,11 +112,11 @@ export function createEffectToAction<
 
         return {
           kind: 'unfold',
-          parentPath: state.cursor.parentPath,
+          parentPath: [...state.cursor.parentPath],
           cursor: {
             kind: 'entry',
             parentPath: state.cursor.parentPath,
-            entryName: firstFoldedEntry.name,
+            entryId: firstFoldedEntry.id,
           },
         };
       }

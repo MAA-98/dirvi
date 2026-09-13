@@ -1,7 +1,12 @@
 import { Text } from 'ink';
 import { useEffect, useMemo, useState } from 'react';
 
-import { createIntentToEffect, State, TreeNode } from 'dirvi-lib';
+import {
+  createIntentToEffect,
+  SerializableKey,
+  State,
+  TreeNode,
+} from 'dirvi-lib';
 
 import type { EventMessage } from '../domain/event-message.js';
 import { App } from './App.js';
@@ -10,21 +15,21 @@ import { createReducer } from '../application/reducer.js';
 import { createEffectToAction } from '../application/effect-to-action.js';
 
 type LoadingAppProps<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 > = {
-  appApi: AppApi<Name, BufferNode>;
-  print?: (message: EventMessage<Name, BufferNode>) => void;
+  appApi: AppApi<Id, BufferNode>;
+  print?: (message: EventMessage<Id, BufferNode>) => void;
   onError?: (error: Error) => void;
 };
 
 function createInitialState<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 >(
-  rootBranches: State<Name, BufferNode>['buffer'],
-  createEmptyFoldNode: () => State<Name, BufferNode>['foldNode'],
-): State<Name, BufferNode> {
+  rootBranches: State<Id, BufferNode>['buffer'],
+  createEmptyFoldRoot: () => State<Id, BufferNode>['foldNode'],
+): State<Id, BufferNode> {
   if (rootBranches.length === 0) {
     throw new Error(
       'createInitialState cannot create a state for an empty forest',
@@ -33,29 +38,23 @@ function createInitialState<
 
   return {
     buffer: rootBranches,
-    foldNode: createEmptyFoldNode(),
+    foldNode: createEmptyFoldRoot(),
     cursor: {
       kind: 'entry',
       parentPath: [],
-      entryName: rootBranches[0].name,
+      entryId: rootBranches[0]!.id,
     },
   };
 }
 
-// Loads the initial state and other dependencies of the
-// App given the AppApi. Because the reducer doesn't change
-// with state, we create it here rather than in App.
-//
-// Displays the given message if the initial tree nodes are empty.
 export function LoadingApp<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
->({ appApi, print, onError }: LoadingAppProps<Name, BufferNode>) {
-  const [initialState, setInitialState] = useState<State<Name, BufferNode>>();
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
+>({ appApi, print, onError }: LoadingAppProps<Id, BufferNode>) {
+  const [initialState, setInitialState] = useState<State<Id, BufferNode>>();
   const [empty, setEmpty] = useState(false);
   const [error, setError] = useState<Error>();
 
-  // Load root branches and set initial state
   useEffect(() => {
     let mounted = true;
 
@@ -72,7 +71,9 @@ export function LoadingApp<
         }
 
         setInitialState(
-          createInitialState(rootBranches, appApi.foldNodeApi.createEmpty),
+          createInitialState(rootBranches, () =>
+            appApi.foldNodeService.createEmptyRoot(),
+          ),
         );
       })
       .catch((cause: unknown) => {
@@ -93,9 +94,10 @@ export function LoadingApp<
   }, [appApi, onError]);
 
   // --- Pure function deps ---
+
   const reducer = useMemo(
-    () => createReducer(appApi.treeNodeApi, appApi.foldNodeApi),
-    [appApi.treeNodeApi, appApi.foldNodeApi],
+    () => createReducer(appApi.treeNodeApi, appApi.foldNodeService),
+    [appApi.treeNodeApi, appApi.foldNodeService],
   );
 
   const intentToEffect = useMemo(
@@ -109,8 +111,13 @@ export function LoadingApp<
   );
 
   const effectToAction = useMemo(
-    () => createEffectToAction(appApi.navNodeApi, appApi.treeNodeApi),
-    [appApi.navNodeApi, appApi.treeNodeApi],
+    () =>
+      createEffectToAction(
+        appApi.treeNodeApi,
+        appApi.cursorApi,
+        appApi.navNodeApi,
+      ),
+    [appApi.treeNodeApi, appApi.navNodeApi, appApi.cursorApi],
   );
 
   // --- JSX ---
@@ -134,8 +141,8 @@ export function LoadingApp<
       reducer={reducer}
       intentToEffect={intentToEffect}
       effectToAction={effectToAction}
-      print={print}
-      onError={onError}
+      {...(print === undefined ? {} : { print })}
+      {...(onError === undefined ? {} : { onError })}
     />
   );
 }

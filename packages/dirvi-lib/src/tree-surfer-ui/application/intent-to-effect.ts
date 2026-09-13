@@ -1,36 +1,33 @@
-import type { Effect, EffectAction, Intent } from '../domain/index.js';
 import {
-  CursorApi,
-  State,
-  StateApi,
+  SerializableKey,
   TreeNode,
   TreeNodeApi,
-} from '../../tree-surfer/index.js';
+} from '../../tree-surfer/tree-node/tree-node.types.js';
+import { Effect, EffectAction, Intent } from '../domain/index.js';
+import { CursorApi, State, StateApi } from '../../tree-surfer/index.js';
 
 // Effect derived from intent and the state.
 export type IntentToEffect<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 > = (
   intent: Intent,
-  state: State<Name, BufferNode>,
-) => Effect<Name, BufferNode> | undefined;
+  state: State<Id, BufferNode>,
+) => Effect<Id, BufferNode> | undefined;
 
 // Factory method, since Apis are needed to derive intent
 export function createIntentToEffect<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 >(
-  stateApi: StateApi<Name, BufferNode>,
-  cursorApi: CursorApi<Name>,
-  treeNodeApi: TreeNodeApi<Name, BufferNode>,
-): IntentToEffect<Name, BufferNode> {
+  stateApi: StateApi<Id, BufferNode>,
+  cursorApi: CursorApi<Id>,
+  treeNodeApi: TreeNodeApi<Id, BufferNode>,
+): IntentToEffect<Id, BufferNode> {
   return (intent, state) => {
     switch (intent.intentType) {
       case 'setNormalBuffer':
-        return normalBufferToEffectResult<Name, BufferNode>(
-          intent.normalBuffer,
-        );
+        return normalBufferToEffectResult<Id, BufferNode>(intent.normalBuffer);
 
       case 'normalRight':
         return normalInteractRightToEffect(
@@ -44,12 +41,12 @@ export function createIntentToEffect<
         return normalInteractLeftToEffect(state);
 
       case 'normalDown':
-        return dispatchAction<Name, BufferNode>({
+        return dispatchAction<Id, BufferNode>({
           effectActionType: 'nextEntry',
         });
 
       case 'normalUp':
-        return dispatchAction<Name, BufferNode>({
+        return dispatchAction<Id, BufferNode>({
           effectActionType: 'prevEntry',
         });
 
@@ -100,9 +97,9 @@ export function createIntentToEffect<
 }
 
 function dispatchAction<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
->(action: EffectAction<Name, BufferNode>): Effect<Name, BufferNode> {
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
+>(action: EffectAction<Id, BufferNode>): Effect<Id, BufferNode> {
   return {
     effectType: 'dispatchEffectAction',
     action,
@@ -115,9 +112,9 @@ function dispatchAction<
 // - Prefix of a possible motion, updates normal buffer.
 // - Not a prefix, clears the buffer.
 function normalBufferToEffectResult<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
->(updatedNormalBuffer: string): Effect<Name, BufferNode> {
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
+>(updatedNormalBuffer: string): Effect<Id, BufferNode> {
   switch (updatedNormalBuffer) {
     case 'z':
       return {
@@ -129,17 +126,17 @@ function normalBufferToEffectResult<
       };
 
     case 'za':
-      return dispatchAction<Name, BufferNode>({
+      return dispatchAction<Id, BufferNode>({
         effectActionType: 'toggleFold',
       });
 
     case 'zc':
-      return dispatchAction<Name, BufferNode>({
+      return dispatchAction<Id, BufferNode>({
         effectActionType: 'fold',
       });
 
     case 'zo':
-      return dispatchAction<Name, BufferNode>({
+      return dispatchAction<Id, BufferNode>({
         effectActionType: 'unfold',
       });
 
@@ -155,14 +152,14 @@ function normalBufferToEffectResult<
 }
 
 function normalInteractRightToEffect<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 >(
-  state: State<Name, BufferNode>,
-  stateApi: StateApi<Name, BufferNode>,
-  cursorApi: CursorApi<Name>,
-  treeNodeApi: TreeNodeApi<Name, BufferNode>,
-): Effect<Name, BufferNode> | undefined {
+  state: State<Id, BufferNode>,
+  stateApi: StateApi<Id, BufferNode>,
+  cursorApi: CursorApi<Id>,
+  treeNodeApi: TreeNodeApi<Id, BufferNode>,
+): Effect<Id, BufferNode> | undefined {
   const currentEntry = stateApi.getNodeAtCursor(state);
 
   if (currentEntry === undefined) {
@@ -175,15 +172,15 @@ function normalInteractRightToEffect<
     return undefined;
   }
 
-  if (treeNodeApi.isTreeNodeBranch(currentEntry)) {
-    if (currentEntry.branches === null) {
+  if (treeNodeApi.isBranch(currentEntry)) {
+    if (currentEntry.children === null) {
       return {
         effectType: 'loadBranchEntries',
         path,
       };
     }
 
-    return dispatchAction<Name, BufferNode>({
+    return dispatchAction<Id, BufferNode>({
       effectActionType: 'setBranchEntries',
       path,
       entries: null,
@@ -197,14 +194,14 @@ function normalInteractRightToEffect<
 }
 
 function normalInteractLeftToEffect<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
->(state: State<Name, BufferNode>): Effect<Name, BufferNode> | undefined {
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
+>(state: State<Id, BufferNode>): Effect<Id, BufferNode> | undefined {
   if (state.cursor.parentPath.length === 0) {
     return undefined;
   }
 
-  return dispatchAction<Name, BufferNode>({
+  return dispatchAction<Id, BufferNode>({
     effectActionType: 'navigateToParent',
   });
 }

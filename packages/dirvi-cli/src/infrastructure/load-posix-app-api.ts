@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { watch, type FSWatcher } from 'node:fs';
-import { NameEquals, PosixName, PosixNode } from 'dirvi-lib';
+import { PosixName, PosixNode } from 'dirvi-lib';
 import { AppApi, createAppApis } from '../domain/app-api.js';
 import { getUnixAbsPath } from './get-unix-abs-path.js';
 import { getDirEntries } from './get-dir-entries.js';
@@ -9,10 +9,7 @@ export function loadPosixAppApi(
   directory?: string,
 ): AppApi<PosixName, PosixNode> {
   const unixAbsPath = getUnixAbsPath(directory ?? process.cwd());
-  const nameEquals: NameEquals<PosixName> = (first, second) => {
-    return first === second;
-  };
-  const apis = createAppApis<PosixName, PosixNode>(nameEquals);
+  const apis = createAppApis<PosixName, PosixNode>();
   const subscribeToResync = createFsResyncSubscription(join(unixAbsPath));
 
   return {

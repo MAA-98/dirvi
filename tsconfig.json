@@ -10,7 +10,8 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "types": ["node"],
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "exactOptionalPropertyTypes": true
   },
   "include": ["src"]
 }

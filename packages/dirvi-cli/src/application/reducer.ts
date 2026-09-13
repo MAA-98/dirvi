@@ -1,21 +1,28 @@
-import { FoldNodeApi, State, TreeNode, TreeNodeApi } from 'dirvi-lib';
+import {
+  FoldNodeApi,
+  FoldNodeService,
+  SerializableKey,
+  State,
+  TreeNode,
+  TreeNodeApi,
+} from 'dirvi-lib';
 import { ReducerAction } from './reducer-action.js';
 
 export type Reducer<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 > = (
-  state: State<Name, BufferNode>,
-  action: ReducerAction<Name, BufferNode>,
-) => State<Name, BufferNode>;
+  state: State<Id, BufferNode>,
+  action: ReducerAction<Id, BufferNode>,
+) => State<Id, BufferNode>;
 
 export function createReducer<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 >(
-  treeNodeApi: TreeNodeApi<Name, BufferNode>,
-  foldNodeApi: FoldNodeApi<Name, BufferNode>,
-): Reducer<Name, BufferNode> {
+  treeNodeApi: TreeNodeApi<Id, BufferNode>,
+  foldNodeService: FoldNodeService<Id>,
+): Reducer<Id, BufferNode> {
   return (state, action) => {
     switch (action.kind) {
       case 'changeCursor':
@@ -25,10 +32,20 @@ export function createReducer<
         };
 
       case 'updateBranch':
-        const buffer = treeNodeApi.setBranchesAtPath(
+        const buffer = treeNodeApi.modifyAtPath(
           state.buffer,
           action.path,
-          action.entries,
+          (node) => {
+            // A branch update cannot turn a leaf into a branch.
+            if (!treeNodeApi.isBranch(node)) {
+              return undefined;
+            }
+
+            return {
+              ...node,
+              children: action.entries,
+            } as BufferNode;
+          },
         );
 
         if (buffer === undefined) {
@@ -40,23 +57,31 @@ export function createReducer<
           buffer,
         };
 
-      case 'updateBuffer':
+      case 'setState': {
         // A newer update has already been applied.
-        if (state.buffer !== action.oldEntries) {
+        if (state !== action.oldState) {
           return state;
         }
 
         return {
-          ...state,
-          buffer: action.entries,
+          ...action.newState,
         };
+      }
 
       case 'fold': {
-        const foldNode = foldNodeApi.addFoldedEntryAtPath(
+        const foldNode = foldNodeService.addFoldedEntryAtPath(
           state.foldNode,
           action.parentPath,
-          action.entry,
+          action.entry.id,
         );
+
+        /*
+         * addFoldedEntryAtPath creates missing fold paths, so this should
+         * normally never be undefined. Preserve the existing state if it is.
+         */
+        if (foldNode === undefined) {
+          return state;
+        }
 
         return {
           ...state,
@@ -66,11 +91,18 @@ export function createReducer<
       }
 
       case 'unfold': {
-        const foldNode = foldNodeApi.modifyAtPath(
+        const foldNode = foldNodeService.clearFoldedEntriesAtPath(
           state.foldNode,
           action.parentPath,
-          (node) => foldNodeApi.clearFoldedEntries(node),
         );
+
+        /*
+         * Unlike adding a fold, clearing only operates on an existing path.
+         * An undefined result means that the fold path no longer exists.
+         */
+        if (foldNode === undefined) {
+          return state;
+        }
 
         return {
           ...state,

@@ -1,18 +1,18 @@
-import { State, TreeNode } from 'dirvi-lib';
+import { SerializableKey, State, TreeNode } from 'dirvi-lib';
 
 export type EventMessage<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 > =
   | {
       type: 'view';
-      view: State<Name, BufferNode>;
+      view: State<Id, BufferNode>;
     }
   | {
       type: 'displayed-leaves-paths';
-      paths: Name[][];
+      paths: Id[][];
     }
   | {
       type: 'file';
-      path: Name[];
+      path: Id[];
     };

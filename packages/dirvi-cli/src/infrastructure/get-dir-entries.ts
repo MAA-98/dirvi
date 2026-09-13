@@ -13,7 +13,7 @@ export async function getDirEntries(
 
   return Promise.all(
     directoryEntries.map(async (directoryEntry): Promise<PosixNode> => {
-      const name = PosixNameSchema.parse(directoryEntry.name);
+      const id = PosixNameSchema.parse(directoryEntry.name);
 
       if (directoryEntry.isSymbolicLink()) {
         const target = UnixPathSchema.parse(
@@ -22,7 +22,7 @@ export async function getDirEntries(
 
         return {
           kind: 'symlink',
-          name,
+          id,
           target,
         };
       }
@@ -30,15 +30,15 @@ export async function getDirEntries(
       if (directoryEntry.isDirectory()) {
         return {
           kind: 'directory',
-          name,
-          branches: null, // Directory not expanded.
+          id: id,
+          children: null, // Directory not expanded.
         };
       }
 
       if (directoryEntry.isFile()) {
         return {
           kind: 'file',
-          name,
+          id: id,
         };
       }
 

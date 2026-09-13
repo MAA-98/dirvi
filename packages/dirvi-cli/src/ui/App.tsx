@@ -5,6 +5,7 @@ import {
   Effect,
   InputState,
   IntentToEffect,
+  SerializableKey,
   State,
   TreeNode,
   userInputToIntent,
@@ -20,21 +21,21 @@ import { Reducer } from '../application/reducer.js';
 import { useView } from './hooks/useView.js';
 
 type AppProps<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 > = {
-  appApi: AppApi<Name, BufferNode>;
-  initialState: State<Name, BufferNode>;
-  reducer: Reducer<Name, BufferNode>;
-  intentToEffect: IntentToEffect<Name, BufferNode>;
-  effectToAction: EffectToAction<Name, BufferNode>;
-  print?: (message: EventMessage<Name, BufferNode>) => void;
+  appApi: AppApi<Id, BufferNode>;
+  initialState: State<Id, BufferNode>;
+  reducer: Reducer<Id, BufferNode>;
+  intentToEffect: IntentToEffect<Id, BufferNode>;
+  effectToAction: EffectToAction<Id, BufferNode>;
+  print?: (message: EventMessage<Id, BufferNode>) => void;
   onError?: (error: Error) => void;
 };
 
 export function App<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 >({
   appApi,
   initialState,
@@ -43,7 +44,7 @@ export function App<
   effectToAction,
   print,
   onError,
-}: AppProps<Name, BufferNode>) {
+}: AppProps<Id, BufferNode>) {
   const [state, dispatch] = useReducer(reducer, initialState);
   // Give `subscribeToResync` callback a way to see current state:
   const stateRef = useRef(state);
@@ -60,12 +61,7 @@ export function App<
   });
 
   const { rows: terminalRows } = useWindowSize();
-  const view = useView(
-    navigation,
-    state,
-    terminalRows,
-    appApi.treeNodeApi.nameEquals,
-  );
+  const view = useView(navigation, state, appApi.cursorApi, terminalRows);
   const [exitStatus, setExitStatus] = useState<string | undefined>();
 
   // Print on changes: view, paths of visible leaves
@@ -90,15 +86,15 @@ export function App<
 
       void appApi.stateApi
         .resync(oldState, appApi.loadBranches)
-        .then((nextState) => {
+        .then((newState) => {
           if (!active) {
             return;
           }
 
           dispatch({
-            kind: 'updateBuffer',
-            oldEntries: oldState.buffer,
-            entries: nextState.buffer,
+            kind: 'setState',
+            oldState: oldState,
+            newState: newState,
           });
         })
         .catch((error: unknown) => {
@@ -115,7 +111,7 @@ export function App<
     };
   }, [appApi, onError]);
 
-  function executeEffect(effect: Effect<Name, BufferNode> | undefined): void {
+  function executeEffect(effect: Effect<Id, BufferNode> | undefined): void {
     if (effect === undefined) {
       return;
     }

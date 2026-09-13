@@ -53,6 +53,7 @@ program
     let appError: Error | undefined;
 
     const useAlternateScreen = uiOutput.isTTY === true;
+    const stdoutIsInteractive = process.stdout.isTTY === true;
 
     if (useAlternateScreen) {
       uiOutput.write(enterAlternateScreen);
@@ -62,8 +63,10 @@ program
     try {
       const app = render(
         <AppShell
-          directory={options.directory}
-          print={process.stdout.isTTY ? undefined : emitStdoutMsg}
+          {...(options.directory === undefined
+            ? {}
+            : { directory: options.directory })}
+          {...(stdoutIsInteractive ? {} : { print: emitStdoutMsg })}
           onError={(error) => {
             appError = error;
           }}
