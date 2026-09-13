@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as fc from 'fast-check';
 
-import { createTreeNodeApi } from './tree-node.js';
+import { createTreeNodeApi } from './tree-node.impl.js';
 
 import {
   forestAndPathAndExpectedArb,
@@ -12,9 +12,7 @@ import type {
   StringNode
 } from './tree-node.arb.js'
 
-const stringNodeApi = createTreeNodeApi<string, StringNode>(
-  (left, right) => left === right,
-);
+const stringNodeApi = createTreeNodeApi<string, StringNode>();
 
 describe('tree node API', () => {
   it('getAtPath returns the node at the generated path', () => {
@@ -33,18 +31,18 @@ describe('tree node API', () => {
   it('getAtPath applies the selector', () => {
     const entries: StringNode[] = [
       {
-        name: 'root',
-        branches: [{ name: 'child' }],
+        id: 'root',
+        children: [{ id: 'child' }],
       },
     ];
 
     expect(
-      stringNodeApi.getAtPath(entries, ['root', 'child'], (node) => node.name),
+      stringNodeApi.getAtPath(entries, ['root', 'child'], (node) => node.id),
     ).toBe('child');
   });
 
   it('getAtPath returns undefined for an empty path', () => {
-    const entries: StringNode[] = [{ name: 'root' }];
+    const entries: StringNode[] = [{ id: 'root' }];
 
     expect(
       stringNodeApi.getAtPath(entries, [], (node) => node),
@@ -54,8 +52,8 @@ describe('tree node API', () => {
   it('getAtPath returns undefined through a closed branch', () => {
     const entries: StringNode[] = [
       {
-        name: 'root',
-        branches: null,
+        id: 'root',
+        children: null,
       },
     ];
 
@@ -65,19 +63,19 @@ describe('tree node API', () => {
   });
 
   it('getAtPath returns undefined when the selector returns undefined', () => {
-    const entries: StringNode[] = [{ name: 'root' }];
+    const entries: StringNode[] = [{ id: 'root' }];
 
     expect(
       stringNodeApi.getAtPath(entries, ['root'], () => undefined),
     ).toBeUndefined();
   });
 
-  it('getChildByName returns the matching child', () => {
-    const child: StringNode = { name: 'child' };
+  it('getChildById returns the matching child', () => {
+    const child: StringNode = { id: 'child' };
 
     const root: StringNode = {
-      name: 'root',
-      branches: [child],
+      id: 'root',
+      children: [child],
     };
 
     expect(stringNodeApi.isOpenBranch(root)).toBe(true);
@@ -86,8 +84,8 @@ describe('tree node API', () => {
       return;
     }
 
-    expect(stringNodeApi.getChildByName(root, 'child')).toBe(child);
-    expect(stringNodeApi.getChildByName(root, 'missing')).toBeUndefined();
+    expect(stringNodeApi.getChildById(root, 'child')).toBe(child);
+    expect(stringNodeApi.getChildById(root, 'missing')).toBeUndefined();
   });
 
   it('modifyAtPath replaces the generated node', () => {
@@ -96,7 +94,7 @@ describe('tree node API', () => {
         forestAndPathAndExpectedArb,
         ({ entries, path, expected }) => {
           const replacement: StringNode = {
-            name: expected.name,
+            id: expected.id,
           };
 
           const updatedForest = stringNodeApi.modifyAtPath(
@@ -123,7 +121,7 @@ describe('tree node API', () => {
     );
   });
 
-  it('modifyAtPath replaces branches at a branch path', () => {
+  it('modifyAtPath replaces children at a branch path', () => {
     fc.assert(
       fc.property(
         nodesArrayAndBranchPathArb,
@@ -137,7 +135,7 @@ describe('tree node API', () => {
             (node) =>
               ({
                 ...node,
-                branches: newBranches,
+                children: newBranches,
               }) as StringNode,
           );
 
@@ -179,7 +177,7 @@ describe('tree node API', () => {
   });
 
   it('modifyAtPath returns undefined when the modifier aborts', () => {
-    const entries: StringNode[] = [{ name: 'root' }];
+    const entries: StringNode[] = [{ id: 'root' }];
 
     expect(
       stringNodeApi.modifyAtPath(entries, ['root'], () => undefined),
@@ -187,7 +185,7 @@ describe('tree node API', () => {
   });
 
   it('modifyAtPath returns undefined for an empty path', () => {
-    const entries: StringNode[] = [{ name: 'root' }];
+    const entries: StringNode[] = [{ id: 'root' }];
 
     expect(
       stringNodeApi.modifyAtPath(entries, [], (node) => node),
@@ -197,8 +195,8 @@ describe('tree node API', () => {
   it('modifyAtPath returns undefined for an invalid path', () => {
     const entries: StringNode[] = [
       {
-        name: 'root',
-        branches: [],
+        id: 'root',
+        children: [],
       },
     ];
 
@@ -214,8 +212,8 @@ describe('tree node API', () => {
   it('modifyAtPath cannot traverse a closed branch', () => {
     const entries: StringNode[] = [
       {
-        name: 'root',
-        branches: null,
+        id: 'root',
+        children: null,
       },
     ];
 

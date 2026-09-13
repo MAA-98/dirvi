@@ -1,12 +1,5 @@
-import {
-  Cursor,
-  isNavBranch,
-  NameEquals,
-  nameSeqEqual,
-  NavEntry,
-  NavNode,
-  TreeNode,
-} from 'dirvi-lib';
+import { CursorApi, SerializableKey, TreeNode } from 'dirvi-lib';
+import { Cursor, isNavBranch, NavEntry, NavNode } from 'dirvi-lib';
 
 export type ViewRowType = 'leaf' | 'branch' | 'fold';
 
@@ -40,27 +33,27 @@ export type View = {
 
 export const View = {
   createRows<
-    Name extends PropertyKey,
-    BufferNode extends TreeNode<Name, BufferNode>,
+    Id extends SerializableKey,
+    BufferNode extends TreeNode<Id, BufferNode>,
   >(
-    navigation: NavNode<Name, BufferNode>,
-    cursor: Cursor<Name>,
-    nameEquals: NameEquals<Name>,
+    navigation: NavNode<Id, BufferNode>,
+    cursor: Cursor<Id>,
+    cursorApi: CursorApi<Id>
   ): ViewRow[] {
-    return viewRowsAtNode(navigation, [], cursor, nameEquals);
+    return viewRowsAtNode(navigation, [], cursor, cursorApi);
   },
 
   create<
-    Name extends PropertyKey,
-    BufferNode extends TreeNode<Name, BufferNode>,
+    Id extends SerializableKey,
+    BufferNode extends TreeNode<Id, BufferNode>,
   >(
-    navigation: NavNode<Name, BufferNode>,
-    cursor: Cursor<Name>,
+    navigation: NavNode<Id, BufferNode>,
+    cursor: Cursor<Id>,
+    cursorApi: CursorApi<Id>,
     viewportHeight: number,
     viewportStart: number,
-    nameEquals: NameEquals<Name>,
   ): View {
-    const rows = View.createRows(navigation, cursor, nameEquals);
+    const rows = View.createRows(navigation, cursor, cursorApi);
 
     return {
       rows: rows.slice(viewportStart, viewportStart + viewportHeight),
@@ -88,13 +81,13 @@ export const View = {
  * This ordering is what makes the flat row list visually represent a tree.
  */
 function viewRowsAtNode<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 >(
-  node: NavNode<Name, BufferNode>,
-  parentPath: Name[],
-  cursor: Cursor<Name>,
-  nameEquals: NameEquals<Name>,
+  node: NavNode<Id, BufferNode>,
+  parentPath: Id[],
+  cursor: Cursor<Id>,
+  cursorApi: CursorApi<Id>,
 ): ViewRow[] {
   const rows: ViewRow[] = [];
 
@@ -104,26 +97,29 @@ function viewRowsAtNode<
    * and are represented by one fold row added below.
    */
   for (const entry of node.entries) {
+    const entryCursor: Cursor<Id> = {
+      kind: 'entry',
+      parentPath,
+      entryId: entry.id,
+    };
+    
     // If cursor at entry, needs to be rendered differently
-    const isCursor =
-      cursor.kind === 'entry' &&
-      nameSeqEqual(cursor.parentPath, parentPath, nameEquals) &&
-      nameEquals(cursor.entryName, entry.name);
+    const isCursor = cursorApi.equal(cursor, entryCursor);
 
     // Add entry before visiting branches
     rows.push(viewRowForEntry(entry, parentPath, isCursor));
 
     // Case where there's no branches
-    if (!isNavBranch(entry) || entry.branches === null) {
+    if (!isNavBranch(entry) || entry.children === null) {
       continue;
     }
 
     rows.push(
       ...viewRowsAtNode(
-        entry.branches,
-        [...parentPath, entry.name],
+        entry.children,
+        [...parentPath, entry.id],
         cursor,
-        nameEquals,
+        cursorApi
       ),
     );
   }
@@ -134,9 +130,12 @@ function viewRowsAtNode<
    * of this directory.
    */
   if (node.foldedEntries.length > 0) {
-    const isCursor =
-      cursor.kind === 'fold' &&
-      nameSeqEqual(cursor.parentPath, parentPath, nameEquals);
+    const foldCursor: Cursor<Id> = {
+      kind: 'fold',
+      parentPath,
+    };
+
+    const isCursor = cursorApi.equal(cursor, foldCursor);
 
     rows.push({
       id: foldId(parentPath),
@@ -152,15 +151,15 @@ function viewRowsAtNode<
 }
 
 function viewRowForEntry<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 >(
-  entry: NavEntry<Name, BufferNode>,
-  parentPath: Name[],
+  entry: NavEntry<Id, BufferNode>,
+  parentPath: Id[],
   cursor: boolean,
 ): ViewRow {
   return {
-    id: entryId(parentPath, entry.name),
+    id: entryId(parentPath, entry.id),
     indent: parentPath.length,
     selected: cursor,
     cursor,
@@ -181,15 +180,15 @@ function foldId<Name extends PropertyKey>(parentPath: Name[]): string {
 }
 
 function content<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
->(entry: NavEntry<Name, BufferNode>): string {
-  return isNavBranch(entry) ? `${String(entry.name)}/` : String(entry.name);
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
+>(entry: NavEntry<Id, BufferNode>): string {
+  return isNavBranch(entry) ? `${String(entry.id)}/` : String(entry.id);
 }
 
 function type<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
->(entry: NavEntry<Name, BufferNode>): ViewRowType {
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
+>(entry: NavEntry<Id, BufferNode>): ViewRowType {
   return isNavBranch(entry) ? 'branch' : 'leaf';
 }

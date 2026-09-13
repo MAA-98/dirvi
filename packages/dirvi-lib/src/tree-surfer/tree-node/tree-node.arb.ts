@@ -1,6 +1,6 @@
 import * as fc from 'fast-check';
 
-import type { TreeNode } from './tree-node.js';
+import type { TreeNode } from './tree-node.types.js';
 
 // @ts-ignore
 export type StringNode = TreeNode<string, StringNode>;
@@ -15,21 +15,21 @@ export type GeneratedNode = {
   pathEntries: PathEntry[];
 };
 
-export const nameArb = fc.string({
+export const idArb = fc.string({
   minLength: 1,
   maxLength: 8,
 });
 
 export const generatedNodeArb: fc.Arbitrary<GeneratedNode> = fc.letrec((tie) => ({
   node: fc.oneof(
-    nameArb.map((name) => {
-      const node: StringNode = { name };
+    idArb.map((id) => {
+      const node: StringNode = { id: id };
 
       return {
         node,
         pathEntries: [
           {
-            path: [name],
+            path: [id],
             node,
           },
         ],
@@ -38,21 +38,21 @@ export const generatedNodeArb: fc.Arbitrary<GeneratedNode> = fc.letrec((tie) => 
 
     fc
       .tuple(
-        nameArb,
+        idArb,
         fc.oneof(
           fc.constant(null),
           fc.uniqueArray(tie('node'), {
             minLength: 0,
             size: 'medium',
             // @ts-ignore
-            selector: (generated) => generated.node.name,
+            selector: (generated) => generated.node.id,
           }),
         ),
       )
-      .map(([name, children]) => {
+      .map(([id, children]) => {
         const node: StringNode = {
-          name,
-          branches:
+          id,
+          children:
             // @ts-ignore
             children === null ? null : children.map((child) => child.node),
         };
@@ -63,7 +63,7 @@ export const generatedNodeArb: fc.Arbitrary<GeneratedNode> = fc.letrec((tie) => 
             : children.flatMap((child) =>
                 // @ts-ignore
                 child.pathEntries.map(({ path, node }) => ({
-                  path: [name, ...path],
+                  path: [id, ...path],
                   node,
                 })),
               );
@@ -72,7 +72,7 @@ export const generatedNodeArb: fc.Arbitrary<GeneratedNode> = fc.letrec((tie) => 
           node,
           pathEntries: [
             {
-              path: [name],
+              path: [id],
               node,
             },
             ...descendantPathEntries,
@@ -85,7 +85,7 @@ export const generatedNodeArb: fc.Arbitrary<GeneratedNode> = fc.letrec((tie) => 
 export const generatedNodesArrayArb = fc.uniqueArray(generatedNodeArb, {
   minLength: 0,
   size: 'small',
-  selector: (generated) => generated.node.name,
+  selector: (generated) => generated.node.id,
 });
 
 export const forestAndPathsArb = generatedNodesArrayArb.map(
@@ -108,7 +108,7 @@ export const forestAndPathAndExpectedArb = forestAndPathsArb
 export const nodesArrayAndBranchPathArb = forestAndPathsArb
   .map(({ entries, pathEntries }) => ({
     entries,
-    branchPathEntries: pathEntries.filter(({ node }) => 'branches' in node),
+    branchPathEntries: pathEntries.filter(({ node }) => 'children' in node),
   }))
   .filter(({ branchPathEntries }) => branchPathEntries.length > 0)
   .chain(({ entries, branchPathEntries }) =>

@@ -1,8 +1,7 @@
 import {
-  NameEquals,
+  CursorApi,
   NavNode,
-  PosixNavNode,
-  PosixState,
+  SerializableKey,
   State,
   TreeNode,
 } from 'dirvi-lib';
@@ -11,31 +10,30 @@ import { useRef } from 'react';
 import { STATUS_BAR_HEIGHT } from '../components/StatusBar.js';
 
 export type UseView = <
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 >(
-  navigation: NavNode<Name, BufferNode>,
-  state: State<Name, BufferNode>,
+  navigation: NavNode<Id, BufferNode>,
+  state: State<Id, BufferNode>,
   terminalRows: number,
-  nameEquals: NameEquals<Name>,
 ) => View;
 
 // Hooks that keeps Ref of the viewport's start, and returns View sliced to
 // only the rows that should be visible.
 export function useView<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 >(
-  navigation: NavNode<Name, BufferNode>,
-  state: State<Name, BufferNode>,
+  navigation: NavNode<Id, BufferNode>,
+  state: State<Id, BufferNode>,
+  cursorApi: CursorApi<Id>,
   terminalRows: number,
-  nameEquals: NameEquals<Name>,
 ): View {
   const viewportStartRef = useRef(0);
 
   const viewportHeight = Math.max(1, terminalRows - STATUS_BAR_HEIGHT);
 
-  const rows = View.createRows(navigation, state.cursor, nameEquals);
+  const rows = View.createRows(navigation, state.cursor, cursorApi);
 
   viewportStartRef.current = viewportStart(
     rows,
@@ -46,9 +44,9 @@ export function useView<
   return View.create(
     navigation,
     state.cursor,
+    cursorApi,
     viewportHeight,
     viewportStartRef.current,
-    nameEquals,
   );
 }
 

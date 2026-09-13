@@ -1,5 +1,3 @@
-import { NameEquals, nameSeqEqual } from './tree-node.js';
-
 export const CursorKind = {
   Entry: 'entry',
   Fold: 'fold',
@@ -7,93 +5,111 @@ export const CursorKind = {
 
 export type CursorKind = (typeof CursorKind)[keyof typeof CursorKind];
 
-export type CursorEntry<Name> = {
+export type CursorEntry<Id> = {
   kind: typeof CursorKind.Entry;
-  parentPath: readonly Name[];
-  entryName: Name;
+  parentPath: readonly Id[];
+  entryId: Id;
 };
 
-export type CursorFold<Name> = {
+export type CursorFold<Id> = {
   kind: typeof CursorKind.Fold;
-  parentPath: readonly Name[];
+  parentPath: readonly Id[];
 };
 
-export type Cursor<Name> = CursorEntry<Name> | CursorFold<Name>;
+export type Cursor<Id> = CursorEntry<Id> | CursorFold<Id>;
 
-export type CursorApi<Name> = {
-  isEntry(cursor: Cursor<Name>): cursor is CursorEntry<Name>;
+export type CursorApi<Id> = {
+  isEntry(cursor: Cursor<Id>): cursor is CursorEntry<Id>;
 
-  isFold(cursor: Cursor<Name>): cursor is CursorFold<Name>;
+  isFold(cursor: Cursor<Id>): cursor is CursorFold<Id>;
 
-  equal(first: Cursor<Name>, second: Cursor<Name>): boolean;
+  equal(left: Cursor<Id>, right: Cursor<Id>): boolean;
 
-  getPath(cursor: Cursor<Name>): Name[] | undefined;
+  getPath(cursor: Cursor<Id>): Id[] | undefined;
 
-  cursorBelongsToSubtree(cursor: Cursor<Name>, entryPath: Name[]): boolean;
+  cursorBelongsToSubtree(cursor: Cursor<Id>, entryPath: readonly Id[]): boolean;
 };
 
-export function createCursorApi<Name extends {}>(
-  nameEquals: NameEquals<Name>,
-): CursorApi<Name> {
-  const cursorApi: CursorApi<Name> = {
-    isEntry(cursor): cursor is CursorEntry<Name> {
+export function createCursorApi<Id>(): CursorApi<Id> {
+  const cursorApi: CursorApi<Id> = {
+    isEntry(cursor): cursor is CursorEntry<Id> {
       return cursor.kind === CursorKind.Entry;
     },
-
-    isFold(cursor): cursor is CursorFold<Name> {
+    
+    isFold(cursor): cursor is CursorFold<Id> {
       return cursor.kind === CursorKind.Fold;
     },
-
+    
     equal(left, right) {
-      if (!nameSeqEqual(left.parentPath, right.parentPath, nameEquals)) {
+      if (!idPathEqual(left.parentPath, right.parentPath)) {
         return false;
       }
-
+      
       if (cursorApi.isFold(left)) {
         return cursorApi.isFold(right);
       }
-
-      return (
-        cursorApi.isEntry(right) && nameEquals(left.entryName, right.entryName)
-      );
+      
+      return cursorApi.isEntry(right) && left.entryId === right.entryId;
     },
-
+    
     getPath(cursor) {
       if (cursorApi.isFold(cursor)) {
         return undefined;
       }
-
-      return [...cursor.parentPath, cursor.entryName];
+      
+      return [...cursor.parentPath, cursor.entryId];
     },
-
+    
     cursorBelongsToSubtree(cursor, entryPath) {
       if (cursorApi.isFold(cursor)) {
-        return isStrictPathPrefix(entryPath, cursor.parentPath, nameEquals);
+        return isStrictPathPrefix(entryPath, cursor.parentPath);
       }
 
-      const cursorPath = [...cursor.parentPath, cursor.entryName];
+      const cursorPath = [...cursor.parentPath, cursor.entryId];
 
-      return isStrictPathPrefix(entryPath, cursorPath, nameEquals);
+      return isStrictPathPrefix(entryPath, cursorPath);
     },
-  };
-
+  }
+  
   return cursorApi;
 }
 
 /**
- * Returns true when the cursor is strictly below `entryPath`.
- *
- * A cursor on `entryPath` itself is not included. In particular, a fold
- * cursor at an entry's path is not considered part of that entry's subtree.
+ * Returns true when both paths contain the same IDs in the same order.
  */
-function isStrictPathPrefix<Name extends {}>(
-  prefix: readonly Name[],
-  path: readonly Name[],
-  nameEquals: NameEquals<Name>,
+function idPathEqual<Id>(
+  left: readonly Id[],
+  right: readonly Id[],
+): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+  
+  for (let index = 0; index < left.length; index += 1) {
+    if (left[index] !== right[index]) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+/**
+ * Returns true when `prefix` is a strict prefix of `path`.
+ */
+function isStrictPathPrefix<Id>(
+  prefix: readonly Id[],
+  path: readonly Id[],
 ): boolean {
   if (prefix.length >= path.length) {
     return false;
   }
-
-  return nameSeqEqual(prefix, path.slice(0, prefix.length), nameEquals);
+  
+  for (let index = 0; index < prefix.length; index += 1) {
+    if (prefix[index] !== path[index]) {
+      return false;
+    }
+  }
+  
+  return true;
 }

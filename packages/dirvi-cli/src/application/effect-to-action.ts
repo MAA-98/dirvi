@@ -1,42 +1,31 @@
-import {
-  State,
-  EffectAction,
-  PosixNavNode,
-  PosixState,
-  PosixNavApi,
-  PosixNodeApi,
-  PosixNode,
-  PosixName,
-  type TreeNode,
-  NavNode,
-  TreeNodeApi,
-  NavNodeApi, CursorApi,
-} from 'dirvi-lib';
+
 
 import type { ReducerAction } from './reducer-action.js';
+import { SerializableKey, TreeNode, TreeNodeApi } from 'dirvi-lib/dist/tree-surfer/tree-node/tree-node.types.js';
+import { CursorApi, EffectAction, NavNode, NavNodeApi, State } from 'dirvi-lib';
 
 export type EffectToAction<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 > = (
-  effectAction: EffectAction<Name, BufferNode>,
-  navigation: NavNode<Name, BufferNode>,
-  state: State<Name, BufferNode>,
-) => ReducerAction<Name, BufferNode> | undefined;
+  effectAction: EffectAction<Id, BufferNode>,
+  navigation: NavNode<Id, BufferNode>,
+  state: State<Id, BufferNode>,
+) => ReducerAction<Id, BufferNode> | undefined;
 
 export function createEffectToAction<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 >(
-  treeNodeApi: TreeNodeApi<Name, BufferNode>,
-  cursorApi: CursorApi<Name>,
-  navNodeApi: NavNodeApi<Name, BufferNode>,
-): EffectToAction<Name, BufferNode> {
+  treeNodeApi: TreeNodeApi<Id, BufferNode>,
+  cursorApi: CursorApi<Id>,
+  navNodeApi: NavNodeApi<Id, BufferNode>,
+): EffectToAction<Id, BufferNode> {
   function effectToAction(
-    effectAction: EffectAction<Name, BufferNode>,
-    navigation: NavNode<Name, BufferNode>,
-    state: State<Name, BufferNode>,
-  ): ReducerAction<Name, BufferNode> | undefined {
+    effectAction: EffectAction<Id, BufferNode>,
+    navigation: NavNode<Id, BufferNode>,
+    state: State<Id, BufferNode>,
+  ): ReducerAction<Id, BufferNode> | undefined {
     switch (effectAction.effectActionType) {
       case 'nextEntry': {
         const cursor = navNodeApi.nextCursor(navigation, state.cursor);
@@ -83,7 +72,7 @@ export function createEffectToAction<
           return undefined;
         }
 
-        const path = [...state.cursor.parentPath, state.cursor.entryName];
+        const path = [...state.cursor.parentPath, state.cursor.entryId];
 
         const entry = treeNodeApi.getAtPath(state.buffer, path, (node) => node);
 
@@ -126,7 +115,7 @@ export function createEffectToAction<
           cursor: {
             kind: 'entry',
             parentPath: state.cursor.parentPath,
-            entryName: firstFoldedEntry.name,
+            entryId: firstFoldedEntry.id,
           },
         };
       }

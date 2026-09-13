@@ -8,16 +8,15 @@ import {
   CursorApi,
   FoldNodeApi,
   FoldNodeService,
-  NameEquals,
-  NavNodeApi,
+  NavNodeApi, SerializableKey,
   StateApi,
   TreeNode,
   TreeNodeApi,
 } from 'dirvi-lib';
 
 export type AppApi<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 > = {
   /**
    * Name displayed to distinguish apps.
@@ -35,7 +34,7 @@ export type AppApi<
    *
    * The empty path represents the root branch.
    */
-  loadBranches: (path: Name[]) => Promise<BufferNode[]>;
+  loadBranches: (path: Id[]) => Promise<BufferNode[]>;
 
   /**
    * Subscribes to external data changes that require the tree state
@@ -45,59 +44,56 @@ export type AppApi<
    */
   subscribeToResync: (listener: () => void) => () => void;
 
-  treeNodeApi: TreeNodeApi<Name, BufferNode>;
+  treeNodeApi: TreeNodeApi<Id, BufferNode>;
 
   /**
    * Structural fold-tree traversal and immutable path updates.
    */
-  foldNodeApi: FoldNodeApi<Name>;
+  foldNodeApi: FoldNodeApi<Id>;
 
   /**
    * Semantic fold operations, including creating an empty fold root and
    * adding, removing, or clearing folded entry names.
    */
-  foldNodeService: FoldNodeService<Name>;
+  foldNodeService: FoldNodeService<Id>;
 
-  cursorApi: CursorApi<Name>;
+  cursorApi: CursorApi<Id>;
 
-  stateApi: StateApi<Name, BufferNode>;
+  stateApi: StateApi<Id, BufferNode>;
 
-  navNodeApi: NavNodeApi<Name, BufferNode>;
+  navNodeApi: NavNodeApi<Id, BufferNode>;
 };
 
 export function createAppApis<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
->(
-  nameEquals: NameEquals<Name>,
-): {
-  treeNodeApi: TreeNodeApi<Name, BufferNode>;
-  foldNodeApi: FoldNodeApi<Name>;
-  foldNodeService: FoldNodeService<Name>;
-  cursorApi: CursorApi<Name>;
-  stateApi: StateApi<Name, BufferNode>;
-  navNodeApi: NavNodeApi<Name, BufferNode>;
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
+>(): {
+  treeNodeApi: TreeNodeApi<Id, BufferNode>;
+  foldNodeApi: FoldNodeApi<Id>;
+  foldNodeService: FoldNodeService<Id>;
+  cursorApi: CursorApi<Id>;
+  stateApi: StateApi<Id, BufferNode>;
+  navNodeApi: NavNodeApi<Id, BufferNode>;
 } {
-  const treeNodeApi = createTreeNodeApi<Name, BufferNode>(nameEquals);
+  const treeNodeApi = createTreeNodeApi<Id, BufferNode>();
 
-  const foldNodeApi = createFoldNodeApi<Name>(nameEquals);
+  const foldNodeApi = createFoldNodeApi<Id>();
 
-  const foldNodeService = createFoldNodeService(foldNodeApi, (name) => ({
-    name,
-    branches: [],
-    folds: new Set<Name>(),
+  const foldNodeService = createFoldNodeService(foldNodeApi, (id) => ({
+    id,
+    children: [],
+    folds: new Set<Id>(),
   }));
 
-  const cursorApi = createCursorApi<Name>(nameEquals);
+  const cursorApi = createCursorApi<Id>();
 
-  const navNodeApi = createNavNodeApi<Name, BufferNode>(
+  const navNodeApi = createNavNodeApi<Id, BufferNode>(
     treeNodeApi,
     foldNodeApi,
     cursorApi,
-    nameEquals,
   );
 
-  const stateApi = createStateApi<Name, BufferNode>(
+  const stateApi = createStateApi<Id, BufferNode>(
     treeNodeApi,
     foldNodeApi,
     cursorApi,

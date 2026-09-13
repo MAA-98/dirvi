@@ -1,42 +1,42 @@
-import { nameSeqEqual, TreeNode, TreeNodeApi } from './tree-node.js';
-import { FoldNode, FoldNodeApi, FoldNodeRoot } from './fold-node.js';
 import { Cursor, CursorApi, CursorKind } from './cursor.js';
-import { NavNodeApi } from './nav-node.js';
+import { SerializableKey, TreeNode, TreeNodeApi } from './tree-node/tree-node.types.js';
+import { FoldNode, FoldNodeApi, FoldNodeRoot } from './fold-node/fold-node.types.js';
+import { NavNodeApi } from './nav-node/nav-node.types.js';
 
 export type State<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 > = {
   buffer: BufferNode[];
-  foldNode: FoldNodeRoot<Name>;
-  cursor: Cursor<Name>;
+  foldNode: FoldNodeRoot<Id>;
+  cursor: Cursor<Id>;
 };
 
 export type StateApi<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 > = {
-  getNodeAtCursor(state: State<Name, BufferNode>): BufferNode | undefined;
+  getNodeAtCursor(state: State<Id, BufferNode>): BufferNode | undefined;
 
   /**
    * Reloads the root and all descendant branches that were loaded in the
    * previous state.
    */
   resync(
-    oldState: State<Name, BufferNode>,
-    loadBranches: (path: Name[]) => Promise<BufferNode[]>,
-  ): Promise<State<Name, BufferNode>>;
+    oldState: State<Id, BufferNode>,
+    loadBranches: (path: Id[]) => Promise<BufferNode[]>,
+  ): Promise<State<Id, BufferNode>>;
 };
 
 export function createStateApi<
-  Name extends PropertyKey,
-  BufferNode extends TreeNode<Name, BufferNode>,
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
 >(
-  treeNodeApi: TreeNodeApi<Name, BufferNode>,
-  foldNodeApi: FoldNodeApi<Name>,
-  cursorApi: CursorApi<Name>,
-  navNodeApi: NavNodeApi<Name, BufferNode>
-): StateApi<Name, BufferNode> {
+  treeNodeApi: TreeNodeApi<Id, BufferNode>,
+  foldNodeApi: FoldNodeApi<Id>,
+  cursorApi: CursorApi<Id>,
+  navNodeApi: NavNodeApi<Id, BufferNode>
+): StateApi<Id, BufferNode> {
   // Helpers
   
   /**
@@ -44,11 +44,11 @@ export function createStateApi<
    *
    * Works on fold root and child level through the generic.
    */
-  async function reload<FoldType extends FoldNodeRoot<Name> | FoldNode<Name>>(
+  async function reload<FoldType extends FoldNodeRoot<Id> | FoldNode<Id>>(
     oldBuffer: BufferNode[],
     oldFoldNode: FoldType | undefined, // Can be FoldNode too
-    parentPath: Name[],
-    loadBranches: (path: Name[]) => Promise<BufferNode[]>,
+    parentPath: Id[],
+    loadBranches: (path: Id[]) => Promise<BufferNode[]>,
   ): Promise<{
     buffer: BufferNode[];
     foldNode: FoldType | undefined;
@@ -59,7 +59,7 @@ export function createStateApi<
     /**
      * Reload descendants that were already loaded in the old buffer.
      *
-     * Fold membership is represented by names in `folds`, so it remains
+     * Fold membership is represented by IDs in `folds`, so it remains
      * valid across a reload without rebuilding an entry array.
      */
     for (const oldEntry of oldBuffer) {
@@ -75,7 +75,7 @@ export function createStateApi<
       // Get the entry being updated, in the new buffer
       const newEntry = treeNodeApi.getAtPath(
         newBufferAtRoot,
-        [oldEntry.name],
+        [oldEntry.id],
         (entry) => entry,
       );
 
@@ -94,9 +94,9 @@ export function createStateApi<
       const oldChildFoldNode =
         oldFoldNode === undefined
           ? undefined
-          : foldNodeApi.getChildByName(oldFoldNode, oldEntry.name);
+          : foldNodeApi.getChildById(oldFoldNode, oldEntry.id);
 
-      const entryPath = [...parentPath, oldEntry.name];
+      const entryPath = [...parentPath, oldEntry.id];
 
       const reloadedChild = await reload(
         [...treeNodeApi.getChildren(oldEntry)],
@@ -107,7 +107,7 @@ export function createStateApi<
 
       const updatedBuffer = treeNodeApi.modifyAtPath(
         newBufferAtRoot,
-        [oldEntry.name],
+        [oldEntry.id],
         (entry) => {
           // The entry may be closed: loadBranches normally returns branches
           // with `branches: null`. We are turning it back into an open branch.
@@ -134,7 +134,10 @@ export function createStateApi<
   }
   
   /**
-   * Cursor policy:
+   * Currently the cursor just goes to the first entry at root if
+   * not all root entries are folded, otherwise the fold.
+   *
+   * TODO: Cursor policy:
    * 1. Keep the exact cursor if it survives,
    * 2. Otherwise, choose the deepest surviving ancestor entry,
    * 3. Otherwise, choose the nearest preceding old cursor that still survives,
@@ -142,77 +145,13 @@ export function createStateApi<
    * 5. If no cursor exists, use the root fold cursor.
    */
   function resyncCursor(
-    oldState: State<Name, BufferNode>,
+    oldState: State<Id, BufferNode>,
     newBuffer: BufferNode[],
-    newFoldNode: FoldNodeRoot<Name>,
-  ): Cursor<Name> | undefined {
-    const oldNavigation = navNodeApi.from(oldState.buffer, oldState.foldNode);
-    const newNavigation = navNodeApi.from(newBuffer, newFoldNode);
+    newFoldNode: FoldNodeRoot<Id>,
+  ): Cursor<Id> | undefined {
+    const navigation = navNodeApi.from(newBuffer, newFoldNode);
 
-    const oldCursors = navNodeApi.cursors(oldNavigation);
-    const newCursors = navNodeApi.cursors(newNavigation);
-
-    if (newCursors.length === 0) {
-      return undefined;
-    }
-
-    // 1. Retain the exact cursor when possible.
-    const retainedCursor = newCursors.find((candidate) =>
-      cursorApi.equal(candidate, oldState.cursor),
-    );
-
-    if (retainedCursor !== undefined) {
-      return retainedCursor;
-    }
-
-    const oldPath =
-      cursorApi.getPath(oldState.cursor) ?? oldState.cursor.parentPath;
-
-    // 2. Prefer the deepest surviving ancestor entry.
-    for (let length = oldPath.length - 1; length > 0; length -= 1) {
-      const ancestorPath = oldPath.slice(0, length);
-
-      const ancestorCursor = newCursors.find((candidate) =>
-        cursorMatchesEntryPath(candidate, ancestorPath),
-      );
-
-      if (ancestorCursor !== undefined) {
-        return ancestorCursor;
-      }
-    }
-
-    // 3. If no ancestor remains, preserve visual position by finding the
-    // nearest preceding old cursor that is still visible in the new navigation.
-    const oldCursorIndex = oldCursors.findIndex((candidate) =>
-      cursorApi.equal(candidate, oldState.cursor),
-    );
-
-    for (let index = oldCursorIndex - 1; index >= 0; index -= 1) {
-      const oldCandidate = oldCursors[index]!;
-
-      const survivingCandidate = newCursors.find((candidate) =>
-        cursorApi.equal(candidate, oldCandidate),
-      );
-
-      if (survivingCandidate !== undefined) {
-        return survivingCandidate;
-      }
-    }
-
-    // 4. There is no meaningful predecessor.
-    return newCursors[0];
-  }
-  
-  function cursorMatchesEntryPath(
-    cursor: Cursor<Name>,
-    path: readonly Name[],
-  ): boolean {
-    const cursorPath = cursorApi.getPath(cursor);
-
-    return (
-      cursorPath !== undefined &&
-      nameSeqEqual(cursorPath, path, treeNodeApi.nameEquals)
-    );
+    return navNodeApi.cursors(navigation)[0];
   }
 
   return {
