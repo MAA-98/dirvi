@@ -1,6 +1,14 @@
 import { Cursor, CursorApi, CursorKind } from './cursor.js';
-import { SerializableKey, TreeNode, TreeNodeApi } from './tree-node/tree-node.types.js';
-import { FoldNode, FoldNodeApi, FoldNodeRoot } from './fold-node/fold-node.types.js';
+import {
+  SerializableKey,
+  TreeNode,
+  TreeNodeApi,
+} from './tree-node/tree-node.types.js';
+import {
+  FoldNode,
+  FoldNodeApi,
+  FoldNodeRoot,
+} from './fold-node/fold-node.types.js';
 import { NavNodeApi } from './nav-node/nav-node.types.js';
 
 export type State<
@@ -35,10 +43,10 @@ export function createStateApi<
   treeNodeApi: TreeNodeApi<Id, BufferNode>,
   foldNodeApi: FoldNodeApi<Id>,
   cursorApi: CursorApi<Id>,
-  navNodeApi: NavNodeApi<Id, BufferNode>
+  navNodeApi: NavNodeApi<Id, BufferNode>,
 ): StateApi<Id, BufferNode> {
   // Helpers
-  
+
   /**
    * Create a new buffer and fold node at this level.
    *
@@ -132,7 +140,7 @@ export function createStateApi<
       foldNode: newFoldNode,
     };
   }
-  
+
   /**
    * Currently the cursor just goes to the first entry at root if
    * not all root entries are folded, otherwise the fold.
@@ -157,15 +165,15 @@ export function createStateApi<
   return {
     getNodeAtCursor(state) {
       const path = cursorApi.getPath(state.cursor);
-      
+
       if (path === undefined) {
         // The cursor is positioned on a fold rather than an entry.
         return undefined;
       }
-      
+
       return treeNodeApi.getAtPath(state.buffer, path, (node) => node);
     },
-    
+
     async resync(oldState, loadBranches) {
       const reloaded = await reload(
         oldState.buffer,
@@ -173,7 +181,7 @@ export function createStateApi<
         [],
         loadBranches,
       );
-      
+
       /*
        * `oldState.foldNode` is always present. At the root reload starts with
        * that node, so `reloaded.foldNode` should also always be present.
@@ -182,16 +190,12 @@ export function createStateApi<
        * optional return type needed by recursive child reloads.
        */
       const foldNode = reloaded.foldNode ?? oldState.foldNode;
-      
-      const cursor = resyncCursor(
-        oldState,
-        reloaded.buffer,
-        foldNode,
-      ) ?? {
+
+      const cursor = resyncCursor(oldState, reloaded.buffer, foldNode) ?? {
         kind: CursorKind.Fold,
         parentPath: [],
       };
-      
+
       return {
         ...oldState,
         buffer: reloaded.buffer,

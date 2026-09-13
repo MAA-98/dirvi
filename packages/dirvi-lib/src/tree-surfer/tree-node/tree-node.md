@@ -13,7 +13,7 @@ hierarchical data such as:
 
 ## Node Identity
 
-Every node has a stable `id` that identifies the node amongst siblings even if other properties change. 
+Every node has a stable `id` that identifies the node amongst siblings even if other properties change.
 Sibling IDs should be unique, but doesn't have to be unique across the tree.
 
 The library uses the following ID type for serializability and fast lookup:
@@ -31,11 +31,9 @@ The runtime schema is:
 ```ts
 import { z } from 'zod';
 
-export const serializableKeySchema = z.union([
-  z.string(),
-  z.number().finite(),
-]);
+export const serializableKeySchema = z.union([z.string(), z.number().finite()]);
 ```
+
 but applications should define more specific ID types, such as branded types.
 The branded type can then be used throughout the tree-related APIs:
 
@@ -50,15 +48,19 @@ being mixed accidentally, even when both are represented as strings at runtime.
 
 ## Branch Nodes
 
-The branch nodes (nodes with children) are made to be lazily loaded as needed by the 
+The branch nodes (nodes with children) are made to be lazily loaded as needed by the
 app UI. Therefore, unloaded is represented by `children: null`.
 
 ### Note:
+
 Because leaves are detected by property presence:
+
 ```
 'children' in node
 ```
+
 enable:
+
 ```json
 {
   "compilerOptions": {

@@ -20,53 +20,11 @@ export const idArb = fc.string({
   maxLength: 8,
 });
 
-export const generatedNodeArb: fc.Arbitrary<GeneratedNode> = fc.letrec((tie) => ({
-  node: fc.oneof(
-    idArb.map((id) => {
-      const node: StringNode = { id: id };
-
-      return {
-        node,
-        pathEntries: [
-          {
-            path: [id],
-            node,
-          },
-        ],
-      };
-    }),
-
-    fc
-      .tuple(
-        idArb,
-        fc.oneof(
-          fc.constant(null),
-          fc.uniqueArray(tie('node'), {
-            minLength: 0,
-            size: 'medium',
-            // @ts-ignore
-            selector: (generated) => generated.node.id,
-          }),
-        ),
-      )
-      .map(([id, children]) => {
-        const node: StringNode = {
-          id,
-          children:
-            // @ts-ignore
-            children === null ? null : children.map((child) => child.node),
-        };
-
-        const descendantPathEntries =
-          children === null
-            ? []
-            : children.flatMap((child) =>
-                // @ts-ignore
-                child.pathEntries.map(({ path, node }) => ({
-                  path: [id, ...path],
-                  node,
-                })),
-              );
+export const generatedNodeArb: fc.Arbitrary<GeneratedNode> = fc.letrec(
+  (tie) => ({
+    node: fc.oneof(
+      idArb.map((id) => {
+        const node: StringNode = { id: id };
 
         return {
           node,
@@ -75,12 +33,56 @@ export const generatedNodeArb: fc.Arbitrary<GeneratedNode> = fc.letrec((tie) => 
               path: [id],
               node,
             },
-            ...descendantPathEntries,
           ],
         };
       }),
-  ),
-})).node;
+
+      fc
+        .tuple(
+          idArb,
+          fc.oneof(
+            fc.constant(null),
+            fc.uniqueArray(tie('node'), {
+              minLength: 0,
+              size: 'medium',
+              // @ts-ignore
+              selector: (generated) => generated.node.id,
+            }),
+          ),
+        )
+        .map(([id, children]) => {
+          const node: StringNode = {
+            id,
+            children:
+              // @ts-ignore
+              children === null ? null : children.map((child) => child.node),
+          };
+
+          const descendantPathEntries =
+            children === null
+              ? []
+              : children.flatMap((child) =>
+                  // @ts-ignore
+                  child.pathEntries.map(({ path, node }) => ({
+                    path: [id, ...path],
+                    node,
+                  })),
+                );
+
+          return {
+            node,
+            pathEntries: [
+              {
+                path: [id],
+                node,
+              },
+              ...descendantPathEntries,
+            ],
+          };
+        }),
+    ),
+  }),
+).node;
 
 export const generatedNodesArrayArb = fc.uniqueArray(generatedNodeArb, {
   minLength: 0,

@@ -52,9 +52,7 @@ export type LeafTreeNode<Id extends SerializableKey> = {
 /**
  * A branch whose children have not been loaded.
  */
-export type ClosedBranchTreeNode<
-  Id extends SerializableKey
-> = {
+export type ClosedBranchTreeNode<Id extends SerializableKey> = {
   id: Id;
   children: null;
 };
@@ -79,9 +77,7 @@ export type OpenBranchTreeNode<
 export type BranchTreeNode<
   Id extends SerializableKey,
   ChildNode extends TreeNode<Id, ChildNode>,
-> =
-  | OpenBranchTreeNode<Id, ChildNode>
-  | ClosedBranchTreeNode<Id>;
+> = OpenBranchTreeNode<Id, ChildNode> | ClosedBranchTreeNode<Id>;
 
 /**
  * A node in a tree.
@@ -94,7 +90,6 @@ export type TreeNode<
   Id extends SerializableKey,
   ChildNode extends TreeNode<Id, ChildNode>,
 > = LeafTreeNode<Id> | BranchTreeNode<Id, ChildNode>;
-
 
 // ---*--- API ---*---
 
@@ -141,20 +136,20 @@ export type TreeNodeApi<
   Id extends SerializableKey,
   ChildNode extends TreeNode<Id, ChildNode>,
 > = {
+  // Type Narrowers:
+
   isLeaf(node: ChildNode): node is ChildNode & LeafTreeNode<Id>;
-  
-  isBranch(
-    node: ChildNode,
-  ): node is ChildNode & BranchTreeNode<Id, ChildNode>;
-  
+
+  isBranch(node: ChildNode): node is ChildNode & BranchTreeNode<Id, ChildNode>;
+
   isClosedBranch(
     node: BranchTreeNode<Id, ChildNode>,
   ): node is ClosedBranchTreeNode<Id>;
-  
+
   isOpenBranch(
     node: BranchTreeNode<Id, ChildNode>,
   ): node is OpenBranchTreeNode<Id, ChildNode>;
-  
+
   /**
    * Returns the loaded children of an open branch.
    *
@@ -164,7 +159,7 @@ export type TreeNodeApi<
    * The returned children are the existing child nodes; they are not cloned.
    */
   getChildren(node: OpenBranchTreeNode<Id, ChildNode>): Iterable<ChildNode>;
-  
+
   /**
    * Returns the child with the supplied ID.
    *
@@ -175,7 +170,7 @@ export type TreeNodeApi<
     node: OpenBranchTreeNode<Id, ChildNode>,
     id: Id,
   ): ChildNode | undefined;
-  
+
   /**
    * Applies `selector` to the node at `path`.
    *
@@ -200,7 +195,7 @@ export type TreeNodeApi<
     path: Id[],
     selector: TreeNodeSelector<ChildNode, Result>,
   ): Result | undefined;
-  
+
   /**
    * Immutably modifies the node at `path`.
    *

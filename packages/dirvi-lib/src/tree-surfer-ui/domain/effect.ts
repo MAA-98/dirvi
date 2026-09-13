@@ -1,5 +1,8 @@
 import type { InputState } from './input-state.js';
-import { SerializableKey, TreeNode } from '../../tree-surfer/tree-node/tree-node.types.js';
+import {
+  SerializableKey,
+  TreeNode,
+} from '../../tree-surfer/tree-node/tree-node.types.js';
 
 // Still pure actions, but more semantic than ReducerActions.
 export type Effect<

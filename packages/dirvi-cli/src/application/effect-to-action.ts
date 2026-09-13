@@ -1,7 +1,9 @@
-
-
 import type { ReducerAction } from './reducer-action.js';
-import { SerializableKey, TreeNode, TreeNodeApi } from 'dirvi-lib/dist/tree-surfer/tree-node/tree-node.types.js';
+import {
+  SerializableKey,
+  TreeNode,
+  TreeNodeApi,
+} from 'dirvi-lib/dist/tree-surfer/tree-node/tree-node.types.js';
 import { CursorApi, EffectAction, NavNode, NavNodeApi, State } from 'dirvi-lib';
 
 export type EffectToAction<
@@ -98,10 +100,9 @@ export function createEffectToAction<
           return undefined;
         }
 
-        const node = navNodeApi.getNodeAtPath(
-          navigation,
-          [...state.cursor.parentPath],
-        );
+        const node = navNodeApi.getNodeAtPath(navigation, [
+          ...state.cursor.parentPath,
+        ]);
 
         if (node === undefined || node.foldedEntries.length === 0) {
           return undefined;

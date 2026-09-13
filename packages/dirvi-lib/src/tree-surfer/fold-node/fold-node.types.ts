@@ -1,4 +1,7 @@
-import { TreeNodeModifier, TreeNodeSelector } from '../tree-node/tree-node.types.js';
+import {
+  TreeNodeModifier,
+  TreeNodeSelector,
+} from '../tree-node/tree-node.types.js';
 
 /**
  * The whole fold state for a tree-node tree.
@@ -44,7 +47,7 @@ export type FoldNodeApi<Id extends PropertyKey> = {
    * Returns the children of either the fold root or a fold node.
    */
   getChildren(node: FoldNodeRoot<Id> | FoldNode<Id>): Iterable<FoldNode<Id>>;
-  
+
   /**
    * Returns a direct child by ID.
    */
@@ -52,7 +55,7 @@ export type FoldNodeApi<Id extends PropertyKey> = {
     node: FoldNodeRoot<Id> | FoldNode<Id>,
     id: Id,
   ): FoldNode<Id> | undefined;
-  
+
   /**
    * Selects a fold node at a path below the root.
    */
@@ -61,7 +64,7 @@ export type FoldNodeApi<Id extends PropertyKey> = {
     path: Id[],
     selector: TreeNodeSelector<FoldNode<Id>, Result>,
   ): Result | undefined;
-  
+
   /**
    * Immutably modifies a fold node at a path below the root.
    */
@@ -78,29 +81,27 @@ export type FoldNodeApi<Id extends PropertyKey> = {
  * Unlike `FoldNodeApi`, the service may create missing fold paths when
  * adding a fold. This allows an empty root to be populated lazily.
  */
-export type FoldNodeService<
-  Id extends PropertyKey
-> = {
+export type FoldNodeService<Id extends PropertyKey> = {
   createEmptyRoot(): FoldNodeRoot<Id>;
-  
+
   getIfEntryFoldedAtPath(
     rootNode: FoldNodeRoot<Id>,
     path: Id[],
     entryId: Id,
   ): boolean;
-  
+
   addFoldedEntryAtPath(
     rootNode: FoldNodeRoot<Id>,
     path: Id[],
     entryId: Id,
   ): FoldNodeRoot<Id> | undefined;
-  
+
   removeFoldedEntryAtPath(
     rootNode: FoldNodeRoot<Id>,
     path: Id[],
     entryId: Id,
   ): FoldNodeRoot<Id> | undefined;
-  
+
   clearFoldedEntriesAtPath(
     rootNode: FoldNodeRoot<Id>,
     path: Id[],

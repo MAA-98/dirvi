@@ -1,28 +1,31 @@
-import type { Cursor } from 'dirvi-lib';
+import type { Cursor, SerializableKey, State, TreeNode } from 'dirvi-lib';
 
-export type ReducerAction<Name, BufferNode> =
+export type ReducerAction<
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
+> =
   | {
       kind: 'changeCursor';
-      cursor: Cursor<Name>;
+      cursor: Cursor<Id>;
     }
   | {
       kind: 'updateBranch';
-      path: Name[];
+      path: Id[];
       entries: BufferNode[] | null; // null for unloaded
     }
   | {
-      kind: 'updateBuffer';
-      oldEntries: BufferNode[];
-      entries: BufferNode[];
+      kind: 'setState';
+      oldState: State<Id, BufferNode>; // For checking new entry is new
+      newState: State<Id, BufferNode>;
     }
   | {
       kind: 'fold';
-      parentPath: Name[];
+      parentPath: Id[];
       entry: BufferNode;
-      cursor: Cursor<Name>;
+      cursor: Cursor<Id>;
     }
   | {
       kind: 'unfold';
-      parentPath: Name[];
-      cursor: Cursor<Name>;
+      parentPath: Id[];
+      cursor: Cursor<Id>;
     };

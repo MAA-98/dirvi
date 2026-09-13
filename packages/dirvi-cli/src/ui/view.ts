@@ -38,7 +38,7 @@ export const View = {
   >(
     navigation: NavNode<Id, BufferNode>,
     cursor: Cursor<Id>,
-    cursorApi: CursorApi<Id>
+    cursorApi: CursorApi<Id>,
   ): ViewRow[] {
     return viewRowsAtNode(navigation, [], cursor, cursorApi);
   },
@@ -102,7 +102,7 @@ function viewRowsAtNode<
       parentPath,
       entryId: entry.id,
     };
-    
+
     // If cursor at entry, needs to be rendered differently
     const isCursor = cursorApi.equal(cursor, entryCursor);
 
@@ -119,7 +119,7 @@ function viewRowsAtNode<
         entry.children,
         [...parentPath, entry.id],
         cursor,
-        cursorApi
+        cursorApi,
       ),
     );
   }
@@ -153,11 +153,7 @@ function viewRowsAtNode<
 function viewRowForEntry<
   Id extends SerializableKey,
   BufferNode extends TreeNode<Id, BufferNode>,
->(
-  entry: NavEntry<Id, BufferNode>,
-  parentPath: Id[],
-  cursor: boolean,
-): ViewRow {
+>(entry: NavEntry<Id, BufferNode>, parentPath: Id[], cursor: boolean): ViewRow {
   return {
     id: entryId(parentPath, entry.id),
     indent: parentPath.length,

@@ -1,4 +1,8 @@
-import { LeafTreeNode, SerializableKey, TreeNode } from '../tree-node/tree-node.types.js';
+import {
+  LeafTreeNode,
+  SerializableKey,
+  TreeNode,
+} from '../tree-node/tree-node.types.js';
 import { FoldNodeRoot } from '../fold-node/fold-node.types.js';
 import { Cursor } from '../cursor.js';
 

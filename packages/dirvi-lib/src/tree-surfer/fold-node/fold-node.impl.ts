@@ -7,7 +7,9 @@ import {
 } from './fold-node.types.js';
 import { SerializableKey } from '../tree-node/tree-node.types.js';
 
-export function createFoldNodeApi<Id extends SerializableKey>(): FoldNodeApi<Id> {
+export function createFoldNodeApi<
+  Id extends SerializableKey,
+>(): FoldNodeApi<Id> {
   const treeNodeApi = createTreeNodeApi<Id, FoldNode<Id>>();
 
   return {

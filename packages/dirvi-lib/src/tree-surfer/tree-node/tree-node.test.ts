@@ -8,9 +8,7 @@ import {
   newBranchesOrNullArb,
   nodesArrayAndBranchPathArb,
 } from './tree-node.arb.js';
-import type {
-  StringNode
-} from './tree-node.arb.js'
+import type { StringNode } from './tree-node.arb.js';
 
 const stringNodeApi = createTreeNodeApi<string, StringNode>();
 

@@ -1,7 +1,18 @@
-import { LeafTreeNode, SerializableKey, TreeNode, TreeNodeApi } from '../tree-node/tree-node.types.js';
+import {
+  LeafTreeNode,
+  SerializableKey,
+  TreeNode,
+  TreeNodeApi,
+} from '../tree-node/tree-node.types.js';
 import { FoldNodeApi, FoldNodeRoot } from '../fold-node/fold-node.types.js';
 import { Cursor, CursorApi, CursorKind } from '../cursor.js';
-import { isNavBranch, NavBranch, NavEntry, NavNode, NavNodeApi } from './nav-node.types.js';
+import {
+  isNavBranch,
+  NavBranch,
+  NavEntry,
+  NavNode,
+  NavNodeApi,
+} from './nav-node.types.js';
 
 export function createNavNodeApi<
   Id extends SerializableKey,
@@ -41,7 +52,7 @@ export function createNavNodeApi<
           // This should be unreachable if BufferNode correctly extends TreeNode.
           throw new Error('Unsupported tree node');
         }
-        
+
         if (foldNode.folds.has(entry.id)) {
           foldedEntriesSoFar.push(navigationEntry);
         } else {

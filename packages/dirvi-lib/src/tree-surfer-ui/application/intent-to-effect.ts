@@ -1,4 +1,8 @@
-import { SerializableKey, TreeNode, TreeNodeApi } from '../../tree-surfer/tree-node/tree-node.types.js';
+import {
+  SerializableKey,
+  TreeNode,
+  TreeNodeApi,
+} from '../../tree-surfer/tree-node/tree-node.types.js';
 import { Effect, EffectAction, Intent } from '../domain/index.js';
 import { CursorApi, State, StateApi } from '../../tree-surfer/index.js';
 
@@ -23,9 +27,7 @@ export function createIntentToEffect<
   return (intent, state) => {
     switch (intent.intentType) {
       case 'setNormalBuffer':
-        return normalBufferToEffectResult<Id, BufferNode>(
-          intent.normalBuffer,
-        );
+        return normalBufferToEffectResult<Id, BufferNode>(intent.normalBuffer);
 
       case 'normalRight':
         return normalInteractRightToEffect(

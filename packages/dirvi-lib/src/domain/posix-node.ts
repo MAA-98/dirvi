@@ -2,7 +2,12 @@ import { z } from 'zod';
 import { TreeNode } from '../tree-surfer/tree-node/tree-node.types.js';
 import { UnixPath } from './unix-path.js';
 import { createTreeNodeApi } from '../tree-surfer/tree-node/tree-node.impl.js';
-import { createCursorApi, createStateApi, Cursor, State } from '../tree-surfer/index.js';
+import {
+  createCursorApi,
+  createStateApi,
+  Cursor,
+  State,
+} from '../tree-surfer/index.js';
 import { FoldNode } from '../tree-surfer/fold-node/fold-node.types.js';
 import { createFoldNodeApi } from '../tree-surfer/fold-node/fold-node.impl.js';
 import { NavNode } from '../tree-surfer/nav-node/nav-node.types.js';

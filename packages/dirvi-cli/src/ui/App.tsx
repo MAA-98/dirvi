@@ -4,7 +4,8 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import {
   Effect,
   InputState,
-  IntentToEffect, SerializableKey,
+  IntentToEffect,
+  SerializableKey,
   State,
   TreeNode,
   userInputToIntent,
@@ -60,12 +61,7 @@ export function App<
   });
 
   const { rows: terminalRows } = useWindowSize();
-  const view = useView(
-    navigation,
-    state,
-    appApi.cursorApi,
-    terminalRows,
-  );
+  const view = useView(navigation, state, appApi.cursorApi, terminalRows);
   const [exitStatus, setExitStatus] = useState<string | undefined>();
 
   // Print on changes: view, paths of visible leaves
@@ -90,15 +86,15 @@ export function App<
 
       void appApi.stateApi
         .resync(oldState, appApi.loadBranches)
-        .then((nextState) => {
+        .then((newState) => {
           if (!active) {
             return;
           }
 
           dispatch({
-            kind: 'updateBuffer',
-            oldEntries: oldState.buffer,
-            entries: nextState.buffer,
+            kind: 'setState',
+            oldState: oldState,
+            newState: newState,
           });
         })
         .catch((error: unknown) => {

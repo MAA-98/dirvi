@@ -1,4 +1,11 @@
-import { FoldNodeApi, FoldNodeService, SerializableKey, State, TreeNode, TreeNodeApi } from 'dirvi-lib';
+import {
+  FoldNodeApi,
+  FoldNodeService,
+  SerializableKey,
+  State,
+  TreeNode,
+  TreeNodeApi,
+} from 'dirvi-lib';
 import { ReducerAction } from './reducer-action.js';
 
 export type Reducer<
@@ -36,7 +43,7 @@ export function createReducer<
 
             return {
               ...node,
-              branches: action.entries,
+              children: action.entries,
             } as BufferNode;
           },
         );
@@ -50,16 +57,16 @@ export function createReducer<
           buffer,
         };
 
-      case 'updateBuffer':
+      case 'setState': {
         // A newer update has already been applied.
-        if (state.buffer !== action.oldEntries) {
+        if (state !== action.oldState) {
           return state;
         }
 
         return {
-          ...state,
-          buffer: action.entries,
+          ...action.newState,
         };
+      }
 
       case 'fold': {
         const foldNode = foldNodeService.addFoldedEntryAtPath(

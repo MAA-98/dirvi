@@ -1,7 +1,12 @@
 import { Text } from 'ink';
 import { useEffect, useMemo, useState } from 'react';
 
-import { createIntentToEffect, SerializableKey, State, TreeNode } from 'dirvi-lib';
+import {
+  createIntentToEffect,
+  SerializableKey,
+  State,
+  TreeNode,
+} from 'dirvi-lib';
 
 import type { EventMessage } from '../domain/event-message.js';
 import { App } from './App.js';
@@ -104,7 +109,7 @@ export function LoadingApp<
       ),
     [appApi.stateApi, appApi.cursorApi, appApi.treeNodeApi],
   );
-  
+
   const effectToAction = useMemo(
     () =>
       createEffectToAction(

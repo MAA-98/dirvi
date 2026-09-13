@@ -2,13 +2,15 @@ import type {
   BranchTreeNode,
   ClosedBranchTreeNode,
   LeafTreeNode,
-  OpenBranchTreeNode, SerializableKey,
+  OpenBranchTreeNode,
+  SerializableKey,
   TreeNode,
   TreeNodeApi,
 } from './tree-node.types.js';
 
 /**
- * Creates an API for inspecting and immutably updating tree nodes.
+ * Creates an API for inspecting and immutably updating tree nodes (of the
+ * given types).
  *
  * Tree updates do not mutate the supplied forest or its nodes. Updated
  * arrays and ancestor nodes are created as needed, while unrelated nodes
@@ -22,6 +24,8 @@ export function createTreeNodeApi<
   ChildNode extends TreeNode<Id, ChildNode>,
 >(): TreeNodeApi<Id, ChildNode> {
   const treeNodeApi: TreeNodeApi<Id, ChildNode> = {
+    // Type Narrowers:
+
     isLeaf(node): node is ChildNode & LeafTreeNode<Id> {
       return !('children' in node);
     },
