@@ -84,6 +84,12 @@ export function createIntentToEffect<
             exitMessage: '',
           };
         }
+        
+        if (intent.commandLine === ':evlp') {
+          return {
+            effectType: 'emitVisibleLeavesPaths',
+          };
+        }
 
         return {
           effectType: 'setInputState',
@@ -187,10 +193,7 @@ function normalInteractRightToEffect<
     });
   }
 
-  return {
-    effectType: 'emitPath',
-    path,
-  };
+  return;
 }
 
 function normalInteractLeftToEffect<

@@ -7,11 +7,13 @@ usage() {
   cat <<'EOF'
 Usage: formatted-context-files [CONTEXT_FILE]
 
-Read absolute file paths from context.json and write each file as a
-Markdown fenced code block.
+Read the last JSON event from CONTEXT_FILE, extract its
+"displayed-leaves-paths" paths, convert them to absolute paths relative
+to the current working directory, and output each file as a Markdown
+fenced code block.
 
 Arguments:
-  CONTEXT_FILE  JSON file containing an array of absolute file paths.
+  CONTEXT_FILE  JSON-lines file containing displayed-leaves-paths events.
                 Defaults to ./context.json.
 EOF
 }
@@ -26,31 +28,67 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
   exit 0
 fi
 
-# Directory containing this script, not the current working directory.
 SCRIPT_DIR="${0:A:h}"
 FORMATTER="$SCRIPT_DIR/formatted-file.zsh"
+CONTEXT_FILE="${1:-$PWD/context.json}"
+CWD="${PWD:A}"
+PATHS_FILE="${TMPDIR:-/tmp}/formatted-context-files.$$"
+
+cleanup() {
+  rm -f -- "$PATHS_FILE"
+}
+
+trap cleanup EXIT INT TERM
 
 if [[ ! -f "$FORMATTER" ]]; then
   echo "Error: formatter script not found: $FORMATTER" >&2
   exit 1
 fi
 
-CONTEXT_FILE="${1:-$PWD/context.json}"
-
 if [[ ! -f "$CONTEXT_FILE" ]]; then
   echo "Error: context file not found: $CONTEXT_FILE" >&2
   exit 1
 fi
 
-if ! jq -e '
-  type == "array" and
-  all(.[]; type == "string" and startswith("/"))
-' "$CONTEXT_FILE" >/dev/null; then
-  echo "Error: expected $CONTEXT_FILE to contain an array of absolute paths" >&2
-  exit 1
-fi
+# Select the last non-empty line from the JSON-lines context file.
+LAST_EVENT="$(
+  awk '
+    /^[[:space:]]*$/ { next }
+    { last = $0 }
+    END {
+      if (last == "") {
+        exit 1
+      }
 
-jq -r '.[]' "$CONTEXT_FILE" |
+      print last
+    }
+  ' "$CONTEXT_FILE"
+)" || {
+  echo "Error: context file is empty: $CONTEXT_FILE" >&2
+  exit 1
+}
+
+# Validate the event and write one absolute path per line.
+printf '%s\n' "$LAST_EVENT" |
+  jq -e -r --arg cwd "$CWD" '
+    if type != "object" then
+      error("last line is not a JSON object")
+    elif .type != "displayed-leaves-paths" then
+      error("last event is not a displayed-leaves-paths event")
+    elif (.paths | type) != "array" then
+      error(".paths is not an array")
+    elif any(
+      .paths[];
+      (type != "array") or any(.[]; type != "string")
+    ) then
+      error(".paths must be an array of arrays of strings")
+    else
+      .paths[]
+      | ($cwd + "/" + join("/"))
+    end
+  ' > "$PATHS_FILE"
+
+# Format each absolute path.
 while IFS= read -r ABSOLUTE_PATH; do
   if [[ ! -f "$ABSOLUTE_PATH" ]]; then
     echo "Error: not a regular file: $ABSOLUTE_PATH" >&2
@@ -59,4 +97,4 @@ while IFS= read -r ABSOLUTE_PATH; do
 
   zsh "$FORMATTER" -- "$ABSOLUTE_PATH"
   printf '\n'
-done
+done < "$PATHS_FILE"

@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+import { spawn } from 'node:child_process';
+import { join } from 'node:path';
+
 import { Command } from 'commander';
 import { render } from 'ink';
 
@@ -36,7 +39,7 @@ process.on('exit', restoreTerminal);
 program
   .name('direx')
   .description('View and manage directories.')
-  .version('0.5.0')
+  .version('0.6.0')
   .helpOption('--help')
   .option('-d, --directory <path>', 'Directory to browse')
   .action(async () => {
@@ -53,6 +56,29 @@ program
       uiOutput.write(enterAlternateScreen);
       alternateScreenActive = true;
     }
+    
+    const stdout = (message: string): void => {
+      // The newline makes each message a separate JSON Lines message.
+      // Note: if you pipe output you'll need to use FORCE_COLOR=3
+      // to keep interactive screen colored.
+      process.stdout.write(`${message}\n`);
+    };
+
+    const clipboard = (value: string): void => {
+      if (process.platform !== 'darwin') {
+        return;
+      }
+
+      const child = spawn('pbcopy');
+
+      child.once('error', (error) => {
+        process.stderr.write(
+          `direx: unable to copy to clipboard: ${error.message}\n`,
+        );
+      });
+
+      child.stdin.end(value);
+    };
 
     try {
       const app = render(
@@ -63,14 +89,9 @@ program
           
           {...(stdoutIsInteractive
             ? {}
-            : {
-                print: (message: string) => {
-                  // The newline makes each message a separate JSON Lines message.
-                  // Note: if you pipe output you'll need to use FORCE_COLOR=3
-                  // to keep interactive screen colored.
-                  process.stdout.write(message);
-                },
-              })}
+            : { stdout }
+          )}
+          clipboard={clipboard}
           onError={(error) => {
             appError = error;
           }}

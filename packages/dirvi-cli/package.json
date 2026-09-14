@@ -1,6 +1,6 @@
 {
   "name": "@mak-98/dirvi-cli",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "A Vim-inspired TUI for browsing directories.",
   "type": "module",
   "license": "GPL-3.0-or-later",

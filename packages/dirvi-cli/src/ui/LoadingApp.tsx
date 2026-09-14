@@ -8,7 +8,6 @@ import {
   TreeNode,
 } from 'dirvi-lib';
 
-import type { EventMessage } from '../domain/event-message.js';
 import { App } from './App.js';
 import { AppApi } from '../domain/app-api.js';
 import { createReducer } from '../application/reducer.js';
@@ -19,7 +18,8 @@ type LoadingAppProps<
   BufferNode extends TreeNode<Id, BufferNode>,
 > = {
   appApi: AppApi<Id, BufferNode>;
-  print?: (message: EventMessage<Id, BufferNode>) => void;
+  stdout?: (message: string) => void;
+  clipboard?: (value: string) => void;
   onError?: (error: Error) => void;
 };
 
@@ -50,7 +50,7 @@ function createInitialState<
 export function LoadingApp<
   Id extends SerializableKey,
   BufferNode extends TreeNode<Id, BufferNode>,
->({ appApi, print, onError }: LoadingAppProps<Id, BufferNode>) {
+>({ appApi, stdout, clipboard, onError }: LoadingAppProps<Id, BufferNode>) {
   const [initialState, setInitialState] = useState<State<Id, BufferNode>>();
   const [empty, setEmpty] = useState(false);
   const [error, setError] = useState<Error>();
@@ -141,7 +141,8 @@ export function LoadingApp<
       reducer={reducer}
       intentToEffect={intentToEffect}
       effectToAction={effectToAction}
-      {...(print === undefined ? {} : { print })}
+      {...(stdout === undefined ? {} : { stdout })}
+      {...(clipboard === undefined ? {} : { clipboard })}
       {...(onError === undefined ? {} : { onError })}
     />
   );

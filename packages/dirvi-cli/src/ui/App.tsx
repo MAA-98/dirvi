@@ -11,7 +11,6 @@ import {
   userInputToIntent,
 } from 'dirvi-lib';
 
-import type { EventMessage } from '../domain/event-message.js';
 import { ViewRowComponent } from './components/ViewRowComponent.js';
 import { EffectToAction } from '../application/effect-to-action.js';
 import { StatusBar } from './components/StatusBar.js';
@@ -29,7 +28,8 @@ type AppProps<
   reducer: Reducer<Id, BufferNode>;
   intentToEffect: IntentToEffect<Id, BufferNode>;
   effectToAction: EffectToAction<Id, BufferNode>;
-  print?: (message: EventMessage<Id, BufferNode>) => void;
+  stdout?: (message: string) => void;
+  clipboard?: (value: string) => void;
   onError?: (error: Error) => void;
 };
 
@@ -42,7 +42,8 @@ export function App<
   reducer,
   intentToEffect,
   effectToAction,
-  print,
+  stdout,
+  clipboard,
   onError,
 }: AppProps<Id, BufferNode>) {
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -63,18 +64,6 @@ export function App<
   const { rows: terminalRows } = useWindowSize();
   const view = useView(navigation, state, appApi.cursorApi, terminalRows);
   const [exitStatus, setExitStatus] = useState<string | undefined>();
-
-  // Print on changes: view, paths of visible leaves
-  useEffect(() => {
-    print?.({ type: 'view', view: state });
-
-    const visibleLeavesPaths = appApi.navNodeApi.visibleLeavesPaths(navigation);
-
-    print?.({
-      type: 'displayed-leaves-paths',
-      paths: visibleLeavesPaths,
-    });
-  }, [appApi.navNodeApi, state, print, navigation]);
 
   // Subscribe to directory watcher, do not
   // resubscribe on every state change.
@@ -154,13 +143,20 @@ export function App<
         return;
       }
 
-      case 'emitPath':
-        print?.({
-          type: 'file',
-          path: effect.path,
+      case 'emitVisibleLeavesPaths':
+        const visibleLeavesPaths =
+          appApi.navNodeApi.visibleLeavesPaths(navigation);
+        stdout?.(
+          JSON.stringify({
+            type: 'displayed-leaves-paths',
+            paths: visibleLeavesPaths,
+          }),
+        );
+        setInputState({
+          inputMode: 'normal',
+          normalBuffer: '',
         });
         return;
-
       case 'quit':
         setExitStatus(effect.exitMessage);
         return;

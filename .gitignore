@@ -27,4 +27,4 @@ coverage/
 *.swo
 
 # CI piped dirvi output
-context.json
+packages/dirvi-cli/context.json

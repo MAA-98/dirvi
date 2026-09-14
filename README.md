@@ -18,45 +18,15 @@ Launch `dirvi` from the directory you want to browse:
 dirvi
 ```
 
-### Piping Event Stream
+### Piping Stdout
 
-`dirvi` can be connected to another process through stdout,
-after which it will send an event stream for consumers.
-
-The events:
-
-- When the view (directory buffer, folds, cursor) changes, the current view is sent.
-- When the view changes, the relative paths of all the displayed files in the tree is sent.
-- When the cursor is on a file and `l`/`→` is pressed, that file's [`EntryPath`](packages/dirvi-lib/src/domain/display-row.ts).
-
-The output messages are type [EventMessage](packages/dirvi-cli/src/domain/event-message.ts):
-
-```ts
-import { EntryPath, View } from 'dirvi-lib';
-
-export type EventMessage =
-  | {
-      type: 'view';
-      view: View;
-    }
-  | {
-      type: 'displayed-files-paths';
-      paths: string[];
-    }
-  | {
-      type: 'file';
-      path: EntryPath;
-    };
-```
-
-The consumer can use it as they please by piping, filtering and processing the events.
+`dirvi` can be connected to another process through stdout.
 For example:
 
 ```sh
 dirvi | jq --unbuffered -c '.' > dirvi-output.json
 ```
 
-`--unbuffered` makes `jq` flush each message immediately, so the `dirvi-output.json` contains a history of the messages sent by `dirvi`.
 
 > Warning: When stdout is connected to a pipe, some terminals and color libraries disable color automatically.
 
@@ -113,11 +83,8 @@ Normal mode is the default mode when `dirvi` starts.
 
 ### Command-line mode
 
-Press `:` in Normal mode to enter command-line mode. The status bar displays the command line:
-
-```text
-:q
-```
+Press `:` in Normal mode to enter command-line mode. 
+The status bar displays the command line at the bottom left.
 
 | Key         | Action                                       |
 | ----------- | -------------------------------------------- |
@@ -128,9 +95,10 @@ Press `:` in Normal mode to enter command-line mode. The status bar displays the
 
 Currently supported commands:
 
-| Command | Action       |
-| ------- | ------------ |
-| `:q`    | Quit `dirvi` |
+| Command | Action                                                            |
+|---------|-------------------------------------------------------------------|
+| `:q`    | Quit `dirvi`                                                      |
+| `:evlp` | Experimental: Send to stdout array of paths of the visible leaves |
 
 An unknown command returns to Normal mode without changing the directory tree.
 
