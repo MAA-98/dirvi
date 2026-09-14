@@ -1,6 +1,6 @@
 {
   "name": "dirvi",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "A Vim-inspired terminal UI for browsing directories.",
   "private": true,
   "type": "module",
@@ -15,7 +15,7 @@
     "start": "pnpm --filter @mak-98/dirvi-cli start",
     "format": "prettier . --write",
     "git:add": "pnpm format && git add -A",
-    "publish": "pnpm --filter dirvi-lib publish --access public && pnpm --filter @mak-98/dirvi-cli publish --access public"
+    "publish": "pnpm build && pnpm --filter dirvi-lib publish --access public && pnpm --filter @mak-98/dirvi-cli publish --access public"
   },
   "repository": {
     "type": "git",

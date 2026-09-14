@@ -39,7 +39,7 @@ process.on('exit', restoreTerminal);
 program
   .name('direx')
   .description('View and manage directories.')
-  .version('0.6.0')
+  .version('0.6.1')
   .helpOption('--help')
   .option('-d, --directory <path>', 'Directory to browse')
   .action(async () => {
