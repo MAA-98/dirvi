@@ -22,8 +22,10 @@
   "dependencies": {
     "commander": "^13.0.0",
     "dirvi-lib": "workspace:*",
+    "env-paths": "^4.0.0",
     "ink": "^7.1.1",
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

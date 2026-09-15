@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export const CursorKind = {
   Entry: 'entry',
   Fold: 'fold',
@@ -17,6 +19,25 @@ export type CursorFold<Id> = {
 };
 
 export type Cursor<Id> = CursorEntry<Id> | CursorFold<Id>;
+
+export function createCursorSchema<IdSchema extends z.ZodTypeAny>(
+  idSchema: IdSchema,
+) {
+  const parentPathSchema = z.array(idSchema);
+
+  return z.discriminatedUnion('kind', [
+    z.object({
+      kind: z.literal(CursorKind.Entry),
+      parentPath: parentPathSchema,
+      entryId: idSchema,
+    }),
+
+    z.object({
+      kind: z.literal(CursorKind.Fold),
+      parentPath: parentPathSchema,
+    }),
+  ]);
+}
 
 export type CursorApi<Id> = {
   isEntry(cursor: Cursor<Id>): cursor is CursorEntry<Id>;

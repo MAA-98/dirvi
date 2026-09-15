@@ -1,7 +1,5 @@
 import { resolve } from 'node:path';
-
-import type { UnixAbsolutePath } from 'dirvi-lib';
-import { UnixAbsolutePathSchema } from 'dirvi-lib';
+import { UnixAbsolutePath, UnixAbsolutePathSchema } from '../domain/unix-path.js';
 
 export function getUnixAbsPath(directory: string): UnixAbsolutePath {
   const absolutePath = resolve(directory);

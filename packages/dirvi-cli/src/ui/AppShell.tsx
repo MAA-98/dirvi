@@ -12,10 +12,10 @@ export type ShellAppProps = {
 // App Shell is for choosing the active app, then loading the api,
 // and showing the app.
 export function AppShell({
-   directory,
-   stdout,
-   clipboard,
-   onError
+  directory,
+  stdout,
+  clipboard,
+  onError,
 }: ShellAppProps) {
   // Api owns directory watcher and subscriptions
   const posixAppApi = useMemo(() => loadPosixAppApi(directory), [directory]);

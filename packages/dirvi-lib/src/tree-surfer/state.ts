@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import { Cursor, CursorApi, CursorKind } from './cursor.js';
 import {
   SerializableKey,
@@ -11,6 +13,23 @@ import {
 } from './fold-node/fold-node.types.js';
 import { NavNodeApi } from './nav-node/nav-node.types.js';
 
+// Schema
+export function createStateSchema<
+  Id extends SerializableKey,
+  BufferNode extends TreeNode<Id, BufferNode>,
+>(
+  bufferNodeSchema: z.ZodType<BufferNode>,
+  foldNodeRootSchema: z.ZodType<State<Id, BufferNode>['foldNode']>,
+  cursorSchema: z.ZodType<State<Id, BufferNode>['cursor']>,
+) {
+  return z.object({
+    buffer: z.array(bufferNodeSchema),
+    foldNode: foldNodeRootSchema,
+    cursor: cursorSchema,
+  });
+}
+
+// Type
 export type State<
   Id extends SerializableKey,
   BufferNode extends TreeNode<Id, BufferNode>,

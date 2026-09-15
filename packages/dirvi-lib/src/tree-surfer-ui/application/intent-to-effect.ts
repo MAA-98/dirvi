@@ -2,9 +2,10 @@ import {
   SerializableKey,
   TreeNode,
   TreeNodeApi,
-} from '../../tree-surfer/tree-node/tree-node.types.js';
+} from '../../tree-surfer/index.js';
 import { Effect, EffectAction, Intent } from '../domain/index.js';
 import { CursorApi, State, StateApi } from '../../tree-surfer/index.js';
+import { parseCommand } from './parse-command.js';
 
 // Effect derived from intent and the state.
 export type IntentToEffect<
@@ -78,20 +79,7 @@ export function createIntentToEffect<
         };
 
       case 'executeCommandLine':
-        if (intent.commandLine === ':q') {
-          return {
-            effectType: 'quit',
-            exitMessage: '',
-          };
-        }
-        
-        if (intent.commandLine === ':evlp') {
-          return {
-            effectType: 'emitVisibleLeavesPaths',
-          };
-        }
-
-        return {
+        return parseCommand(intent.commandLine) ?? {
           effectType: 'setInputState',
           inputState: {
             inputMode: 'normal',

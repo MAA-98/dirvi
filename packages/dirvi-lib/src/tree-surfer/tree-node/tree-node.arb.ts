@@ -2,23 +2,25 @@ import * as fc from 'fast-check';
 
 import type { TreeNode } from './tree-node.types.js';
 
-// @ts-ignore
-export type StringNode = TreeNode<string, StringNode>;
-
-export type PathEntry = {
-  path: string[];
-  node: StringNode;
-};
-
-export type GeneratedNode = {
-  node: StringNode;
-  pathEntries: PathEntry[];
-};
+type Id = string;
 
 export const idArb = fc.string({
   minLength: 1,
   maxLength: 8,
 });
+
+// @ts-ignore
+export type StringNode = TreeNode<Id, StringNode>;
+
+type PathEntry = {
+  path: string[];
+  node: StringNode;
+};
+
+type GeneratedNode = {
+  node: StringNode;
+  pathEntries: PathEntry[];
+};
 
 export const generatedNodeArb: fc.Arbitrary<GeneratedNode> = fc.letrec(
   (tie) => ({

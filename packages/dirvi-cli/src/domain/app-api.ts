@@ -9,18 +9,25 @@ import {
   FoldNodeApi,
   FoldNodeService,
   NavNodeApi,
-  SerializableKey,
+  SerializableKey, State,
   StateApi,
   TreeNode,
   TreeNodeApi,
 } from 'dirvi-lib';
+import { ViewApi } from './view-api.js';
 
 export type AppApi<
   Id extends SerializableKey,
   BufferNode extends TreeNode<Id, BufferNode>,
+  ViewKey = string,
 > = {
+  /*
+   * Name used to distinguish the type of app.
+   */
+  appId: string;
+
   /**
-   * Name displayed to distinguish apps.
+   * Name displayed to distinguish app instance.
    */
   name: string;
 
@@ -63,6 +70,9 @@ export type AppApi<
   stateApi: StateApi<Id, BufferNode>;
 
   navNodeApi: NavNodeApi<Id, BufferNode>;
+
+  viewKey: ViewKey;
+  viewApi: ViewApi<State<Id, BufferNode>, ViewKey>;
 };
 
 export function createAppApis<

@@ -1,10 +1,6 @@
 import type { InputState } from './input-state.js';
-import {
-  SerializableKey,
-  TreeNode,
-} from '../../tree-surfer/index.js';
+import { SerializableKey, TreeNode } from '../../tree-surfer/index.js';
 
-// Still pure actions, but more semantic than ReducerActions.
 export type Effect<
   Id extends SerializableKey,
   BufferNode extends TreeNode<Id, BufferNode>,
@@ -16,6 +12,15 @@ export type Effect<
   | {
       effectType: 'loadBranchEntries';
       path: Id[];
+    }
+  | {
+      effectType: 'saveView';
+      name: string;
+      overwrite: boolean;
+    }
+  | {
+      effectType: 'loadView';
+      name: string;
     }
   | {
       effectType: 'emitVisibleLeavesPaths';

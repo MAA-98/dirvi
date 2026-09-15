@@ -19,11 +19,16 @@ import { AppApi } from '../domain/app-api.js';
 import { Reducer } from '../application/reducer.js';
 import { useView } from './hooks/useView.js';
 
+function toError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
+}
+
 type AppProps<
   Id extends SerializableKey,
   BufferNode extends TreeNode<Id, BufferNode>,
+  ViewKey = string,
 > = {
-  appApi: AppApi<Id, BufferNode>;
+  appApi: AppApi<Id, BufferNode, ViewKey>;
   initialState: State<Id, BufferNode>;
   reducer: Reducer<Id, BufferNode>;
   intentToEffect: IntentToEffect<Id, BufferNode>;
@@ -36,6 +41,7 @@ type AppProps<
 export function App<
   Id extends SerializableKey,
   BufferNode extends TreeNode<Id, BufferNode>,
+  ViewKey = string,
 >({
   appApi,
   initialState,
@@ -45,7 +51,7 @@ export function App<
   stdout,
   clipboard,
   onError,
-}: AppProps<Id, BufferNode>) {
+}: AppProps<Id, BufferNode, ViewKey>) {
   const [state, dispatch] = useReducer(reducer, initialState);
   // Give `subscribeToResync` callback a way to see current state:
   const stateRef = useRef(state);
@@ -157,6 +163,57 @@ export function App<
           normalBuffer: '',
         });
         return;
+
+      case 'saveView': {
+        void appApi.viewApi
+          .save(appApi.viewKey, effect.name, stateRef.current)
+          .then(() => {
+            setInputState({
+              inputMode: 'normal',
+              normalBuffer: '',
+            });
+          })
+          .catch((error: unknown) => {
+            onError?.(toError(error));
+            setExitStatus(`Unable to save view: ${toError(error).message}`);
+          });
+
+        return;
+      }
+
+      case 'loadView': {
+        void appApi.viewApi
+          .load(appApi.viewKey, effect.name)
+          .then((loadedState) => {
+            if (loadedState === undefined) {
+              throw new Error(`View not found: ${effect.name}`);
+            }
+
+            // The saved buffer may be stale because the filesystem could have
+            // changed since the view was saved.
+            return appApi.stateApi.resync(loadedState, appApi.loadBranches);
+          })
+          .then((newState) => {
+            const oldState = stateRef.current;
+
+            dispatch({
+              kind: 'setState',
+              oldState,
+              newState,
+            });
+
+            setInputState({
+              inputMode: 'normal',
+              normalBuffer: '',
+            });
+          })
+          .catch((error: unknown) => {
+            onError?.(toError(error));
+          });
+
+        return;
+      }
+
       case 'quit':
         setExitStatus(effect.exitMessage);
         return;

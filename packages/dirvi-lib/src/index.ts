@@ -7,6 +7,3 @@ export * from './tree-surfer-ui/domain/intent.js';
 export * from './tree-surfer-ui/domain/user-input.js';
 
 export * from './tree-surfer/index.js';
-
-export * from './domain/posix-node.js';
-export * from './domain/unix-path.js';

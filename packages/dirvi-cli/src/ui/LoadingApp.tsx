@@ -16,8 +16,9 @@ import { createEffectToAction } from '../application/effect-to-action.js';
 type LoadingAppProps<
   Id extends SerializableKey,
   BufferNode extends TreeNode<Id, BufferNode>,
+  ViewKey = string,
 > = {
-  appApi: AppApi<Id, BufferNode>;
+  appApi: AppApi<Id, BufferNode, ViewKey>;
   stdout?: (message: string) => void;
   clipboard?: (value: string) => void;
   onError?: (error: Error) => void;
@@ -50,7 +51,8 @@ function createInitialState<
 export function LoadingApp<
   Id extends SerializableKey,
   BufferNode extends TreeNode<Id, BufferNode>,
->({ appApi, stdout, clipboard, onError }: LoadingAppProps<Id, BufferNode>) {
+  ViewKey = string,
+>({ appApi, stdout, clipboard, onError }: LoadingAppProps<Id, BufferNode, ViewKey>) {
   const [initialState, setInitialState] = useState<State<Id, BufferNode>>();
   const [empty, setEmpty] = useState(false);
   const [error, setError] = useState<Error>();

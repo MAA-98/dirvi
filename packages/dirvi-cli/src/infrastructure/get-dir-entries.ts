@@ -1,18 +1,18 @@
 import { readdir, readlink } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import type { UnixAbsolutePath, PosixNode } from 'dirvi-lib';
-import { UnixPathSchema, PosixNameSchema } from 'dirvi-lib';
+import { UnixAbsolutePath, UnixPathSchema } from '../domain/unix-path.js';
+import { PosixNameSchema, PosixTreeNode } from '../domain/posix-tree-node.js';
 
 export async function getDirEntries(
   address: UnixAbsolutePath,
-): Promise<PosixNode[]> {
+): Promise<PosixTreeNode[]> {
   const directoryEntries = await readdir(address, {
     withFileTypes: true,
   });
 
   return Promise.all(
-    directoryEntries.map(async (directoryEntry): Promise<PosixNode> => {
+    directoryEntries.map(async (directoryEntry): Promise<PosixTreeNode> => {
       const id = PosixNameSchema.parse(directoryEntry.name);
 
       if (directoryEntry.isSymbolicLink()) {

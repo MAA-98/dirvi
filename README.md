@@ -27,7 +27,6 @@ For example:
 dirvi | jq --unbuffered -c '.' > dirvi-output.json
 ```
 
-
 > Warning: When stdout is connected to a pipe, some terminals and color libraries disable color automatically.
 
 Set `FORCE_COLOR=3` to preserve the colored tree output:
@@ -83,7 +82,7 @@ Normal mode is the default mode when `dirvi` starts.
 
 ### Command-line mode
 
-Press `:` in Normal mode to enter command-line mode. 
+Press `:` in Normal mode to enter command-line mode.
 The status bar displays the command line at the bottom left.
 
 | Key         | Action                                       |
@@ -96,7 +95,7 @@ The status bar displays the command line at the bottom left.
 Currently supported commands:
 
 | Command | Action                                                            |
-|---------|-------------------------------------------------------------------|
+| ------- | ----------------------------------------------------------------- |
 | `:q`    | Quit `dirvi`                                                      |
 | `:evlp` | Experimental: Send to stdout array of paths of the visible leaves |
 

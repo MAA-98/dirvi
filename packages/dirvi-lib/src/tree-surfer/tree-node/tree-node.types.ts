@@ -1,17 +1,3 @@
-import { z } from 'zod';
-
-/**
- * Runtime schema for IDs that can be safely represented as serializable
- * primitive values.
- *
- * Strings are accepted as-is. Numbers must be finite, so `NaN`, `Infinity`,
- * and `-Infinity` are rejected.
- *
- * Applications should derive a more specific schema when those constraints
- * are needed.
- */
-export const serializableKeySchema = z.union([z.string(), z.number().finite()]);
-
 /**
  * A serializable primitive suitable for use as a stable tree ID.
  *

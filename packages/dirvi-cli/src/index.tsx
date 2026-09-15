@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
-import { join } from 'node:path';
-
 import { Command } from 'commander';
 import { render } from 'ink';
 
@@ -56,7 +54,7 @@ program
       uiOutput.write(enterAlternateScreen);
       alternateScreenActive = true;
     }
-    
+
     const stdout = (message: string): void => {
       // The newline makes each message a separate JSON Lines message.
       // Note: if you pipe output you'll need to use FORCE_COLOR=3
@@ -86,11 +84,7 @@ program
           {...(options.directory === undefined
             ? {}
             : { directory: options.directory })}
-          
-          {...(stdoutIsInteractive
-            ? {}
-            : { stdout }
-          )}
+          {...(stdoutIsInteractive ? {} : { stdout })}
           clipboard={clipboard}
           onError={(error) => {
             appError = error;
