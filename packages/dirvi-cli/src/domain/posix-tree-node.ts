@@ -4,10 +4,18 @@ import {
   createCursorApi,
   createCursorSchema,
   createFoldNodeApi,
-  createFoldNodeSchemas, createNavNodeApi, createStateApi, createStateSchema,
+  createFoldNodeSchemas,
+  createNavNodeApi,
+  createStateApi,
+  createStateSchema,
   createTreeNodeApi,
-  createTreeNodeSchemas, Cursor, FoldNode, FoldNodeRoot, NavNode,
-  serializableKeySchema, State,
+  createTreeNodeSchemas,
+  Cursor,
+  FoldNode,
+  FoldNodeRoot,
+  NavNode,
+  serializableKeySchema,
+  State,
   TreeNode,
 } from 'dirvi-lib';
 
@@ -92,13 +100,12 @@ export const PosixTreeNodeApi = createTreeNodeApi<PosixName, PosixTreeNode>();
 // --- PosixFoldNode ---
 
 // Schema
-const {
-  foldNodeSchema,
-  foldNodeRootSchema,
-} = createFoldNodeSchemas<PosixName>(PosixNameSchema);
+const { foldNodeSchema, foldNodeRootSchema } =
+  createFoldNodeSchemas<PosixName>(PosixNameSchema);
 
 export const PosixFoldNodeSchema: z.ZodType<PosixFoldNode> = foldNodeSchema;
-export const PosixFoldNodeRootSchema: z.ZodType<PosixFoldNodeRoot> = foldNodeRootSchema;
+export const PosixFoldNodeRootSchema: z.ZodType<PosixFoldNodeRoot> =
+  foldNodeRootSchema;
 
 // Type
 export type PosixFoldNode = FoldNode<PosixName>;
@@ -130,8 +137,11 @@ export const PosixNavApi = createNavNodeApi<PosixName, PosixTreeNode>(
 // --- PosixState ---
 
 // Schema
-export const PosixStateSchema: z.ZodType<PosixState> =
-  createStateSchema(PosixTreeNodeSchema, PosixFoldNodeRootSchema, PosixCursorSchema)
+export const PosixStateSchema: z.ZodType<PosixState> = createStateSchema(
+  PosixTreeNodeSchema,
+  PosixFoldNodeRootSchema,
+  PosixCursorSchema,
+);
 
 // Type
 export type PosixState = State<PosixName, PosixTreeNode>;

@@ -1,5 +1,8 @@
 import { resolve } from 'node:path';
-import { UnixAbsolutePath, UnixAbsolutePathSchema } from '../domain/unix-path.js';
+import {
+  UnixAbsolutePath,
+  UnixAbsolutePathSchema,
+} from '../domain/unix-path.js';
 
 export function getUnixAbsPath(directory: string): UnixAbsolutePath {
   const absolutePath = resolve(directory);

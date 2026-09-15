@@ -52,7 +52,12 @@ export function LoadingApp<
   Id extends SerializableKey,
   BufferNode extends TreeNode<Id, BufferNode>,
   ViewKey = string,
->({ appApi, stdout, clipboard, onError }: LoadingAppProps<Id, BufferNode, ViewKey>) {
+>({
+  appApi,
+  stdout,
+  clipboard,
+  onError,
+}: LoadingAppProps<Id, BufferNode, ViewKey>) {
   const [initialState, setInitialState] = useState<State<Id, BufferNode>>();
   const [empty, setEmpty] = useState(false);
   const [error, setError] = useState<Error>();

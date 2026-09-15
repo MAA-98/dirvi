@@ -111,7 +111,7 @@ export function createFileViewApi<
 
     return join(keyDirectory(key), `${validName}.json`);
   }
-  
+
   async function save(
     key: Key,
     name: string,
@@ -143,7 +143,7 @@ export function createFileViewApi<
 
     await rename(temporary, file);
   }
-  
+
   async function load(
     key: Key,
     name: string,

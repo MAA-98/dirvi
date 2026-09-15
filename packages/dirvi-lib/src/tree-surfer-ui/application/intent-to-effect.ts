@@ -79,13 +79,15 @@ export function createIntentToEffect<
         };
 
       case 'executeCommandLine':
-        return parseCommand(intent.commandLine) ?? {
-          effectType: 'setInputState',
-          inputState: {
-            inputMode: 'normal',
-            normalBuffer: '',
-          },
-        };
+        return (
+          parseCommand(intent.commandLine) ?? {
+            effectType: 'setInputState',
+            inputState: {
+              inputMode: 'normal',
+              normalBuffer: '',
+            },
+          }
+        );
     }
   };
 }

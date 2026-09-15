@@ -11,10 +11,7 @@ import { SerializableKey, TreeNode } from './tree-node.types.js';
  * Applications should derive a more specific schema when those constraints
  * are needed.
  */
-export const serializableKeySchema = z.union([
-  z.string(),
-  z.number().finite()
-]);
+export const serializableKeySchema = z.union([z.string(), z.number().finite()]);
 
 /**
  * Helper for creating the schemas for the structural variants of a tree node.

@@ -7,7 +7,9 @@ import envPaths from 'env-paths';
 import { createFileViewApi, StateCodec } from './create-file-view-api.js';
 import { createHash } from 'node:crypto';
 import {
-  PosixCursorSchema, PosixFoldNode, PosixFoldNodeRoot,
+  PosixCursorSchema,
+  PosixFoldNode,
+  PosixFoldNodeRoot,
   PosixName,
   PosixNameSchema,
   PosixState,
@@ -21,22 +23,13 @@ import { z } from 'zod';
 
 // Paths for app data:
 const paths = envPaths('dirvi');
-const posixAppDataDirectory = join(
-  paths.data,
-  'apps',
-  'posix',
-);
-const posixAppViewsDirectory = join(
-  posixAppDataDirectory,
-  'views',
-);
+const posixAppDataDirectory = join(paths.data, 'apps', 'posix');
+const posixAppViewsDirectory = join(posixAppDataDirectory, 'views');
 
 // Helpers for saving app data:
 // The key for the Posix app instance is just the directory working in.
 function encodeKey(key: UnixAbsolutePath): string {
-  return createHash('sha256')
-    .update(key)
-    .digest('hex');
+  return createHash('sha256').update(key).digest('hex');
 }
 
 // ---*--- Stored State Types and Schemas ---*---
