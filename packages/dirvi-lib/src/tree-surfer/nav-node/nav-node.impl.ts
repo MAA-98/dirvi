@@ -268,7 +268,7 @@ export function createNavNodeApi<
   return navNodeApi;
 }
 
-function createEmptyFoldNode<Id extends PropertyKey>(): FoldNodeRoot<Id> {
+function createEmptyFoldNode<Id extends SerializableKey>(): FoldNodeRoot<Id> {
   return {
     children: [],
     folds: new Set<Id>(),

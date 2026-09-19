@@ -1,8 +1,9 @@
 import { z } from 'zod';
 
 import type { FoldNode, FoldNodeRoot } from './fold-node.types.js';
+import { SerializableKey } from '../tree-node/tree-node.types.js';
 
-export function createFoldNodeSchemas<Id extends PropertyKey>(
+export function createFoldNodeSchemas<Id extends SerializableKey>(
   idSchema: z.ZodType<Id>,
 ) {
   const foldNodeSchema: z.ZodType<FoldNode<Id>> = z.lazy(() =>

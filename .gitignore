@@ -11,6 +11,7 @@ pnpm-debug.log*
 # Build output
 dist/
 coverage/
+typedoc/
 
 # TypeScript
 *.tsbuildinfo

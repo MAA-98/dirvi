@@ -1,13 +1,14 @@
 /**
  * A serializable primitive suitable for use as a stable tree ID.
  *
- * The runtime schema guarantees that numeric values are finite. TypeScript
- * cannot represent the exclusion of `NaN` and infinities from `number`, so
- * values from untrusted sources should be validated with
- * `serializableKeySchema` before being used as IDs.
+ * @remarks
+ *
+ * Numeric IDs must be finite. TypeScript cannot represent the exclusion of
+ * `NaN` and infinities from `number`, so values from untrusted sources should
+ * be validated with `serializableKeySchema`.
  *
  * For application-specific IDs, define a narrower branded schema and derive
- * its type with `z.output`.
+ * its type with `z.output`:
  *
  * @example
  *
@@ -28,81 +29,80 @@
 export type SerializableKey = string | number;
 
 /**
- * A node with no children.
+ * A node in a tree.
+ *
+ * @remarks
+ *
+ * A node's `id` identifies it among its siblings and is used when resolving
+ * paths through the tree.
+ *
+ * Nodes are discriminated by the shape of their `children` property:
+ *
+ *  - a leaf has no children and does not have a child collection;
+ *  - an open branch has a loaded array of child nodes;
+ *  - a closed branch has children that have not been loaded yet and uses
+ *   `children: null`.
+ *
+ * `Node` is the concrete application-specific node type. It may contain
+ * additional properties, provided that it preserves the leaf-or-branch shape
+ * described by this type.
+ *
+ * The recursive `Node` parameter allows application-specific properties
+ * to be available on every descendant.
+ *
+ * @typeParam Id - The type of node IDs.
+ * @typeParam Node - The application-specific recursive node type.
+ *
+ * @example
+ *
+ * ```ts
+ * type DirectoryEntry = TreeNode<string, DirectoryEntry> & {
+ *   kind: 'file' | 'directory';
+ * };
+ * ```
  */
+export type TreeNode<
+  Id extends SerializableKey,
+  Node extends TreeNode<Id, Node>,
+> = LeafTreeNode<Id> | BranchTreeNode<Id, Node>;
+
+/** A node with no children. */
 export type LeafTreeNode<Id extends SerializableKey> = {
   id: Id;
   children?: never;
 };
 
-/**
- * A branch whose children have not been loaded.
- */
+/** A tree node that has children, either loaded or unloaded. */
+export type BranchTreeNode<
+  Id extends SerializableKey,
+  Node extends TreeNode<Id, Node>,
+> = OpenBranchTreeNode<Id, Node> | ClosedBranchTreeNode<Id>;
+
+// TODO Later: Add a dictionary by ID for faster lookup.
+//  Then children will just be an array for keeping order.
+
+/** A branch whose direct children have been loaded. */
+export type OpenBranchTreeNode<
+  Id extends SerializableKey,
+  Node extends TreeNode<Id, Node>,
+> = {
+  id: Id;
+  children: Node[];
+};
+
+/** A branch whose direct children have not been loaded. */
 export type ClosedBranchTreeNode<Id extends SerializableKey> = {
   id: Id;
   children: null;
 };
 
 /**
- * A branch whose children have been loaded.
+ * Operations for inspecting and immutably updating a tree node array.
  *
- * TODO Later: Add a dictionary by ID for faster lookup.
- * Then children will just be an array for keeping order.
- */
-export type OpenBranchTreeNode<
-  Id extends SerializableKey,
-  ChildNode extends TreeNode<Id, ChildNode>,
-> = {
-  id: Id;
-  children: ChildNode[];
-};
-
-/**
- * A tree node that has children, either loaded or unloaded.
- */
-export type BranchTreeNode<
-  Id extends SerializableKey,
-  ChildNode extends TreeNode<Id, ChildNode>,
-> = OpenBranchTreeNode<Id, ChildNode> | ClosedBranchTreeNode<Id>;
-
-/**
- * A node in a tree.
+ * @remarks
  *
- * `ChildNode` is the concrete application-specific node type. It may contain
- * additional properties, provided that it has the shape of either a leaf or a
- * branch.
- */
-export type TreeNode<
-  Id extends SerializableKey,
-  ChildNode extends TreeNode<Id, ChildNode>,
-> = LeafTreeNode<Id> | BranchTreeNode<Id, ChildNode>;
-
-// ---*--- API ---*---
-
-/**
- * Selects a value from a node reached by a path.
- *
- * The selector is called only when the complete path exists and identifies
- * a node. Returning `undefined` from the selector is allowed, but is
- * indistinguishable from an unsuccessful lookup in the return value.
- */
-export type TreeNodeSelector<ChildNode, Result> = (node: ChildNode) => Result;
-
-/**
- * Produces a replacement for a node reached by a path.
- *
- * Returning `undefined` aborts the modification and causes `modifyAtPath`
- * to return `undefined`.
- */
-export type TreeNodeModifier<ChildNode> = (
-  node: ChildNode,
-) => ChildNode | undefined;
-
-/**
- * Fundamental operations for inspecting and immutably updating a tree forest.
- *
- * A forest is represented by an array of root-level nodes. A path is an array
- * of IDs beginning at a root node and continuing through its descendants.
+ * A path is an array of IDs beginning at a root node and continuing through
+ * its descendants.
  *
  * For example, given tree with IDs:
  *
@@ -111,109 +111,83 @@ export type TreeNodeModifier<ChildNode> = (
  *
  * the path to `child` is `['root', 'child']`.
  *
- * Path traversal and child lookup are performed by this API so that callers
- * do not depend on the internal child-storage representation or need to
- * iterate over children themselves.
+ * Paths cannot pass through leaves or closed branches. A closed branch may be
+ * the final node in a path. An empty path does not identify a node and is
+ * invalid for both lookup and modification operations.
  *
- * An empty path does not identify a node and is invalid for both lookup and
- * modification operations.
+ * @typeParam Id - The type of node IDs.
+ * @typeParam Node - The application-specific recursive node type.
  */
 export type TreeNodeApi<
   Id extends SerializableKey,
-  ChildNode extends TreeNode<Id, ChildNode>,
+  Node extends TreeNode<Id, Node>,
 > = {
-  // Type Narrowers:
-
-  isLeaf(node: ChildNode): node is ChildNode & LeafTreeNode<Id>;
-
-  isBranch(node: ChildNode): node is ChildNode & BranchTreeNode<Id, ChildNode>;
-
+  isLeaf(node: Node): node is Node & LeafTreeNode<Id>;
+  isBranch(node: Node): node is Node & BranchTreeNode<Id, Node>;
   isClosedBranch(
-    node: BranchTreeNode<Id, ChildNode>,
+    node: BranchTreeNode<Id, Node>,
   ): node is ClosedBranchTreeNode<Id>;
-
   isOpenBranch(
-    node: BranchTreeNode<Id, ChildNode>,
-  ): node is OpenBranchTreeNode<Id, ChildNode>;
+    node: BranchTreeNode<Id, Node>,
+  ): node is OpenBranchTreeNode<Id, Node>;
 
   /**
-   * Returns the loaded children of an open branch.
+   * Returns the loaded direct children of an open branch.
    *
-   * The returned iterable preserves the branch's sibling order. The method
-   * can only be called after narrowing the branch with `isOpenBranch`.
+   * The children are returned in sibling order. The returned nodes are the
+   * existing nodes and are not cloned.
    *
-   * The returned children are the existing child nodes; they are not cloned.
+   * @param node - An open branch.
+   * @returns The branch's loaded children.
    */
-  getChildren(node: OpenBranchTreeNode<Id, ChildNode>): Iterable<ChildNode>;
+  getChildren(node: OpenBranchTreeNode<Id, Node>): Iterable<Node>;
 
   /**
-   * Returns the child with the supplied ID.
+   * Finds a direct child by ID.
    *
-   * Returns `undefined` when the branch has no child with that ID.
-   * The returned child is the existing node; it is not cloned.
+   * @param node - An open branch.
+   * @param id - The ID of the child to find.
+   * @returns The existing child, or `undefined` when no matching child exists.
    */
-  getChildById(
-    node: OpenBranchTreeNode<Id, ChildNode>,
-    id: Id,
-  ): ChildNode | undefined;
+  getChildById(node: OpenBranchTreeNode<Id, Node>, id: Id): Node | undefined;
 
   /**
-   * Applies `selector` to the node at `path`.
-   *
-   * The path must:
-   *
-   * - be non-empty;
-   * - begin at one of the supplied forest entries;
-   * - contain only IDs that identify existing entries;
-   * - not traverse through a leaf; and
-   * - not traverse through a closed branch.
-   *
-   * A branch at the end of the path is valid even when it is closed.
+   * Applies a selector to the node at a path.
    *
    * The selector is called only after the complete path has been resolved.
-   * This method does not clone the tree or the selected node.
+   * The selected node is not cloned.
    *
-   * Returns `undefined` when the path cannot be resolved, or when the
-   * selector returns `undefined`.
+   * @param entries - The root-level nodes of the forest.
+   * @param path - A non-empty path beginning at a root node.
+   * @param selector - The function to apply to the resolved node.
+   * @returns The selector result, or `undefined` when the path cannot be
+   * resolved or the selector returns `undefined`.
    */
   getAtPath<Result>(
-    entries: ChildNode[],
+    entries: Node[],
     path: Id[],
-    selector: TreeNodeSelector<ChildNode, Result>,
+    selector: (node: Node) => Result,
   ): Result | undefined;
 
   /**
-   * Immutably modifies the node at `path`.
+   * Immutably replaces the node at a path.
    *
    * The modifier is called only after the complete path has been resolved.
-   * Its return value replaces the target node. Returning `undefined` aborts
-   * the modification.
+   * Returning `undefined` aborts the modification.
    *
-   * The operation creates new arrays and ancestor nodes along the path.
-   * Nodes and arrays unrelated to the path retain their original object
-   * identity. The input forest and its nodes (as objects) are never modified.
+   * New arrays and ancestor nodes are created along the modified path.
+   * Unrelated nodes and arrays retain their original object identity. The
+   * input array is never modified.
    *
-   * The path must:
-   *
-   * - be non-empty;
-   * - begin at one of the supplied forest entries;
-   * - contain only IDs that identify existing entries;
-   * - not traverse through a leaf; and
-   * - not traverse through a closed branch.
-   *
-   * A leaf or branch, including a closed branch, may be the final target.
-   *
-   * Returns `undefined` when:
-   *
-   * - `path` is empty;
-   * - the path does not exist;
-   * - an intermediate node is a leaf;
-   * - an intermediate branch is closed; or
-   * - the modifier returns `undefined`.
+   * @param entries - The root-level nodes of the forest.
+   * @param path - A non-empty path beginning at a root node.
+   * @param modifier - Produces the replacement node.
+   * @returns A new forest, or `undefined` when the path cannot be resolved or
+   * the modifier returns `undefined`.
    */
   modifyAtPath(
-    entries: ChildNode[],
+    entries: Node[],
     path: Id[],
-    modifier: TreeNodeModifier<ChildNode>,
-  ): ChildNode[] | undefined;
+    modifier: (node: Node) => Node | undefined,
+  ): Node[] | undefined;
 };

@@ -149,6 +149,9 @@ export function App<
         return;
       }
 
+      case 'peekFold':
+        // TODO: Need a peek state to know what to display
+        
       case 'emitVisibleLeavesPaths':
         const visibleLeavesPaths =
           appApi.navNodeApi.visibleLeavesPaths(navigation);

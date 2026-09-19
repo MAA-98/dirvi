@@ -159,6 +159,12 @@ function normalInteractRightToEffect<
   const currentEntry = stateApi.getNodeAtCursor(state);
 
   if (currentEntry === undefined) {
+    if (state.cursor.kind === 'fold') {
+      return {
+        effectType: 'peekFold',
+        parentPath: state.cursor.parentPath
+      }
+    }
     return undefined;
   }
 

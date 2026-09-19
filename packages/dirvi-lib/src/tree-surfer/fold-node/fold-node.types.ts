@@ -1,7 +1,4 @@
-import {
-  TreeNodeModifier,
-  TreeNodeSelector,
-} from '../tree-node/tree-node.types.js';
+import { SerializableKey } from '../tree-node/tree-node.types.js';
 
 /**
  * The whole fold state for a tree-node tree.
@@ -12,7 +9,7 @@ import {
  * `folds` contains the IDs folded at this root. Fold order is not
  * represented here; the buffer tree determines entry order.
  */
-export type FoldNodeRoot<Id extends PropertyKey> = {
+export type FoldNodeRoot<Id extends SerializableKey> = {
   children: FoldNode<Id>[];
   folds: ReadonlySet<Id>;
 };
@@ -30,7 +27,7 @@ export type FoldNodeRoot<Id extends PropertyKey> = {
  * The type is structurally compatible with `TreeNode`, allowing the shared
  * `TreeNodeApi` to be used for path traversal and immutable updates.
  */
-export type FoldNode<Id extends PropertyKey> = FoldNodeRoot<Id> & {
+export type FoldNode<Id extends SerializableKey> = FoldNodeRoot<Id> & {
   id: Id;
 };
 
@@ -42,7 +39,7 @@ export type FoldNode<Id extends PropertyKey> = FoldNodeRoot<Id> & {
  * paths that already exist. Creation of missing fold paths belongs to
  * `FoldNodeService`.
  */
-export type FoldNodeApi<Id extends PropertyKey> = {
+export type FoldNodeApi<Id extends SerializableKey> = {
   /**
    * Returns the children of either the fold root or a fold node.
    */
@@ -62,7 +59,7 @@ export type FoldNodeApi<Id extends PropertyKey> = {
   getAtPath<Result>(
     rootNode: FoldNodeRoot<Id>,
     path: Id[],
-    selector: TreeNodeSelector<FoldNode<Id>, Result>,
+    selector: (node: FoldNode<Id>) => Result,
   ): Result | undefined;
 
   /**
@@ -71,7 +68,7 @@ export type FoldNodeApi<Id extends PropertyKey> = {
   modifyAtPath(
     rootNode: FoldNodeRoot<Id>,
     path: Id[],
-    modifier: TreeNodeModifier<FoldNode<Id>>,
+    modifier: (node: FoldNode<Id>) => FoldNode<Id> | undefined,
   ): FoldNodeRoot<Id> | undefined;
 };
 
@@ -81,7 +78,7 @@ export type FoldNodeApi<Id extends PropertyKey> = {
  * Unlike `FoldNodeApi`, the service may create missing fold paths when
  * adding a fold. This allows an empty root to be populated lazily.
  */
-export type FoldNodeService<Id extends PropertyKey> = {
+export type FoldNodeService<Id extends SerializableKey> = {
   createEmptyRoot(): FoldNodeRoot<Id>;
 
   getIfEntryFoldedAtPath(

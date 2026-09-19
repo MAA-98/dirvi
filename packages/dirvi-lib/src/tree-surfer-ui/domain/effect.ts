@@ -14,6 +14,10 @@ export type Effect<
       path: Id[];
     }
   | {
+      effectType: 'peekFold';
+      parentPath: readonly Id[];
+    }
+  | {
       effectType: 'saveView';
       name: string;
       overwrite: boolean;

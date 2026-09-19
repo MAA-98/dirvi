@@ -26,30 +26,14 @@ Numeric IDs must be finite. `NaN`, `Infinity`, and `-Infinity` are not valid
 IDs. TypeScript cannot express the exclusion of these values from `number`, so
 values received at the app boundary should be validated at runtime.
 
-The runtime schema is:
-
-```ts
-import { z } from 'zod';
-
-export const serializableKeySchema = z.union([z.string(), z.number().finite()]);
-```
-
-but applications should define more specific ID types, such as branded types.
-The branded type can then be used throughout the tree-related APIs:
-
-```ts
-type MenuNode = TreeNode<MenuId, MenuNode>;
-
-const menuTreeApi = createTreeNodeApi<MenuId, MenuNode>();
-```
-
+Applications should define more specific ID types, such as branded types.
 Using different branded ID types prevents IDs from unrelated domains from
-being mixed accidentally, even when both are represented as strings at runtime.
+being mixed accidentally, even when both have the same underlying type.
 
 ## Branch Nodes
 
-The branch nodes (nodes with children) are made to be lazily loaded as needed by the
-app UI. Therefore, unloaded is represented by `children: null`.
+The branch nodes (nodes with children) are made to be lazily loaded for the app UI. 
+Therefore, unloaded is represented by `children: null`.
 
 ### Note:
 
