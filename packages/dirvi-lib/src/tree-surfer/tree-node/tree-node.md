@@ -52,7 +52,3 @@ enable:
   }
 }
 ```
-
-# Tests
-
-TODO Later

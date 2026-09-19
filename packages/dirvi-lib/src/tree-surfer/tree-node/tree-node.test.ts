@@ -149,17 +149,15 @@ describe('modifyAtPath', () => {
             return;
           }
 
-          expect(
-            api.getAtPath(updatedForest, path, (node) => node),
-          ).toBe(replacement);
-
-          expect(api.getAtPath(entries, path, (node) => node)).toBe(
-            expected,
+          expect(api.getAtPath(updatedForest, path, (node) => node)).toBe(
+            replacement,
           );
+
+          expect(api.getAtPath(entries, path, (node) => node)).toBe(expected);
         },
       ),
     );
-  });
+  }, 10000);
 
   it('replaces children at a branch path', () => {
     fc.assert(

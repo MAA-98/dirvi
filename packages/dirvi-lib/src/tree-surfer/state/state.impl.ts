@@ -1,97 +1,36 @@
-import { z } from 'zod';
-
-import { Cursor, CursorApi, CursorKind } from './cursor.js';
-import {
-  SerializableKey,
-  TreeNode,
-  TreeNodeApi,
-} from './tree-node/tree-node.types.js';
-import {
-  FoldNode,
-  FoldNodeApi,
-  FoldNodeRoot,
-} from './fold-node/fold-node.types.js';
-import { NavNodeApi } from './nav-node/nav-node.types.js';
-
-// Schema
-export function createStateSchema<
-  Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
->(
-  bufferNodeSchema: z.ZodType<BufferNode>,
-  foldNodeRootSchema: z.ZodType<State<Id, BufferNode>['foldNode']>,
-  cursorSchema: z.ZodType<State<Id, BufferNode>['cursor']>,
-) {
-  return z.object({
-    buffer: z.array(bufferNodeSchema),
-    foldNode: foldNodeRootSchema,
-    cursor: cursorSchema,
-  });
-}
-
-// Type
-export type State<
-  Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
-> = {
-  buffer: BufferNode[];
-  foldNode: FoldNodeRoot<Id>;
-  cursor: Cursor<Id>;
-};
-
-export type StateApi<
-  Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
-> = {
-  getNodeAtCursor(state: State<Id, BufferNode>): BufferNode | undefined;
-
-  /**
-   * Reloads the root and all descendant branches that were loaded in the
-   * previous state.
-   */
-  resync(
-    oldState: State<Id, BufferNode>,
-    loadBranches: (path: Id[]) => Promise<BufferNode[]>,
-  ): Promise<State<Id, BufferNode>>;
-};
+import { SerializableKey, TreeNode, TreeNodeApi } from '../tree-node/tree-node.types.js';
+import { FoldNode, FoldNodeApi, FoldNodeRoot } from '../fold-node/fold-node.types.js';
+import { Cursor, CursorApi, CursorKind } from '../cursor.js';
+import { NavNodeApi } from '../nav-node/nav-node.types.js';
+import { StateApi, State } from './state.types.js';
 
 export function createStateApi<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
+  Node extends TreeNode<Id, Node>,
 >(
-  treeNodeApi: TreeNodeApi<Id, BufferNode>,
+  treeNodeApi: TreeNodeApi<Id, Node>,
   foldNodeApi: FoldNodeApi<Id>,
   cursorApi: CursorApi<Id>,
-  navNodeApi: NavNodeApi<Id, BufferNode>,
-): StateApi<Id, BufferNode> {
-  // Helpers
-
+  navNodeApi: NavNodeApi<Id, Node>,
+): StateApi<Id, Node> {
   /**
-   * Create a new buffer and fold node at this level.
+   * Create a new buffer and fold node at a level.
    *
-   * Works on fold root and child level through the generic.
+   * Works on fold root and descendant fold nodes using the generic.
    */
   async function reload<FoldType extends FoldNodeRoot<Id> | FoldNode<Id>>(
-    oldBuffer: BufferNode[],
-    oldFoldNode: FoldType | undefined, // Can be FoldNode too
+    oldBuffer: Node[],
+    oldFoldNode: FoldType | undefined,
     parentPath: Id[],
-    loadBranches: (path: Id[]) => Promise<BufferNode[]>,
+    loadBranches: (path: Id[]) => Promise<Node[]>,
   ): Promise<{
-    buffer: BufferNode[];
+    buffer: Node[];
     foldNode: FoldType | undefined;
   }> {
-    let newBufferAtRoot = await loadBranches(parentPath);
+    let newBuffer = await loadBranches(parentPath);
     let newFoldNode = oldFoldNode; // Start with assumption of no changes
 
-    /**
-     * Reload descendants that were already loaded in the old buffer.
-     *
-     * Fold membership is represented by IDs in `folds`, so it remains
-     * valid across a reload without rebuilding an entry array.
-     */
     for (const oldEntry of oldBuffer) {
-      // If it wasn't an open branch, then there's no need to reload descendants.
-      // Either the new entry is a leaf or an unopen branch.
       if (
         !treeNodeApi.isBranch(oldEntry) ||
         !treeNodeApi.isOpenBranch(oldEntry)
@@ -99,22 +38,13 @@ export function createStateApi<
         continue;
       }
 
-      // Get the entry being updated, in the new buffer
       const newEntry = treeNodeApi.getAtPath(
-        newBufferAtRoot,
+        newBuffer,
         [oldEntry.id],
         (entry) => entry,
       );
 
-      // If it doesn't exist (an open branch was deleted) then move on
-      if (newEntry === undefined) {
-        continue;
-      }
-
-      // The old entry may have changed into a leaf.
-      // A newly loaded branch is normally closed here because loadBranches
-      // returns flat entries, and the descendants are to be attached below.
-      if (!treeNodeApi.isBranch(newEntry)) {
+      if (newEntry === undefined || !treeNodeApi.isBranch(newEntry)) {
         continue;
       }
 
@@ -133,7 +63,7 @@ export function createStateApi<
       );
 
       const updatedBuffer = treeNodeApi.modifyAtPath(
-        newBufferAtRoot,
+        newBuffer,
         [oldEntry.id],
         (entry) => {
           // The entry may be closed: loadBranches normally returns branches
@@ -144,18 +74,18 @@ export function createStateApi<
 
           return {
             ...entry,
-            branches: reloadedChild.buffer,
-          } as BufferNode;
+            children: reloadedChild.buffer,
+          } as Node;
         },
       );
 
       if (updatedBuffer !== undefined) {
-        newBufferAtRoot = updatedBuffer;
+        newBuffer = updatedBuffer;
       }
     }
 
     return {
-      buffer: newBufferAtRoot,
+      buffer: newBuffer,
       foldNode: newFoldNode,
     };
   }
@@ -172,8 +102,8 @@ export function createStateApi<
    * 5. If no cursor exists, use the root fold cursor.
    */
   function resyncCursor(
-    oldState: State<Id, BufferNode>,
-    newBuffer: BufferNode[],
+    oldState: State<Id, Node>,
+    newBuffer: Node[],
     newFoldNode: FoldNodeRoot<Id>,
   ): Cursor<Id> | undefined {
     const navigation = navNodeApi.from(newBuffer, newFoldNode);
@@ -193,12 +123,12 @@ export function createStateApi<
       return treeNodeApi.getAtPath(state.buffer, path, (node) => node);
     },
 
-    async resync(oldState, loadBranches) {
+    async resync(oldState, loadChildren) {
       const reloaded = await reload(
         oldState.buffer,
         oldState.foldNode,
         [],
-        loadBranches,
+        loadChildren,
       );
 
       /*
