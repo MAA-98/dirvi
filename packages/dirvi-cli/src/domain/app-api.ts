@@ -79,7 +79,9 @@ export type AppApi<
 export function createAppApis<
   Id extends SerializableKey,
   BufferNode extends TreeNode<Id, BufferNode>,
->(): {
+>(
+  rootId: Id
+): {
   treeNodeApi: TreeNodeApi<Id, BufferNode>;
   foldNodeApi: FoldNodeApi<Id>;
   foldNodeService: FoldNodeService<Id>;
@@ -91,7 +93,7 @@ export function createAppApis<
 
   const foldNodeApi = createFoldNodeApi<Id>();
 
-  const foldNodeService = createFoldNodeService(foldNodeApi, (id) => ({
+  const foldNodeService = createFoldNodeService(rootId, foldNodeApi, (id) => ({
     id,
     children: [],
     folds: new Set<Id>(),

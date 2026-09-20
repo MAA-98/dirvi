@@ -3,8 +3,8 @@ import {
   SerializableKey,
   TreeNode,
 } from '../tree-node/tree-node.types.js';
-import { FoldNodeRoot } from '../fold-node/fold-node.types.js';
 import { Cursor } from '../cursor.js';
+import { FoldNode } from '../fold-node/fold-node.types.js';
 
 /**
  * A navigation entry preserves the original buffer-node properties, but
@@ -66,7 +66,7 @@ export type NavNodeApi<
 > = {
   from(
     entries: BufferNode[],
-    foldNode: FoldNodeRoot<Id>,
+    foldNode: FoldNode<Id>,
   ): NavNode<Id, BufferNode>;
 
   getNodeAtPath(

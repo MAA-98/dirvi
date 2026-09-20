@@ -1,8 +1,8 @@
+import { z } from 'zod';
 import { createTreeNodeApi } from '../tree-node/tree-node.impl.js';
 import {
   FoldNode,
   FoldNodeApi,
-  FoldNodeRoot,
   FoldNodeService,
 } from './fold-node.types.js';
 import { SerializableKey } from '../tree-node/tree-node.types.js';
@@ -45,12 +45,14 @@ export function createFoldNodeApi<
 }
 
 export function createFoldNodeService<Id extends SerializableKey>(
+  rootId: Id,
   foldNodeApi: FoldNodeApi<Id>,
   createChild: (id: Id) => FoldNode<Id>,
 ): FoldNodeService<Id> {
   return {
     createEmptyRoot() {
       return {
+        id: rootId,
         children: [],
         folds: new Set<Id>(),
       };
@@ -108,7 +110,7 @@ export function createFoldNodeService<Id extends SerializableKey>(
   // "Flat" functions
   //
   // Adds entry name to the given node.
-  function addFoldedEntry<Node extends FoldNodeRoot<Id> | FoldNode<Id>>(
+  function addFoldedEntry<Node extends FoldNode<Id>>(
     node: Node,
     entryId: Id,
   ): Node {
@@ -125,7 +127,7 @@ export function createFoldNodeService<Id extends SerializableKey>(
     } as Node;
   }
 
-  function removeFoldedEntry<Node extends FoldNodeRoot<Id> | FoldNode<Id>>(
+  function removeFoldedEntry<Node extends FoldNode<Id>>(
     node: Node,
     entryId: Id,
   ): Node {
@@ -142,7 +144,7 @@ export function createFoldNodeService<Id extends SerializableKey>(
     } as Node;
   }
 
-  function clearFoldedEntries<Node extends FoldNodeRoot<Id> | FoldNode<Id>>(
+  function clearFoldedEntries<Node extends FoldNode<Id>>(
     node: Node,
   ): Node {
     if (node.folds.size === 0) {
@@ -161,9 +163,9 @@ export function createFoldNodeService<Id extends SerializableKey>(
    * This creates fold nodes only; it does not modify the buffer tree.
    */
   function ensurePath(
-    rootNode: FoldNodeRoot<Id>,
+    rootNode: FoldNode<Id>,
     path: Id[],
-  ): FoldNodeRoot<Id> {
+  ): FoldNode<Id> {
     if (path.length === 0) {
       return rootNode;
     }

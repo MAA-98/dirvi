@@ -1,10 +1,9 @@
 import {
-  LeafTreeNode,
   SerializableKey,
   TreeNode,
   TreeNodeApi,
 } from '../tree-node/tree-node.types.js';
-import { FoldNodeApi, FoldNodeRoot } from '../fold-node/fold-node.types.js';
+import { FoldNode, FoldNodeApi } from '../fold-node/fold-node.types.js';
 import { Cursor, CursorApi, CursorKind } from '../cursor.js';
 import {
   isNavBranch,
@@ -37,7 +36,7 @@ export function createNavNodeApi<
           // then just use empty.
           const childFoldNode =
             foldNodeApi.getChildById(foldNode, entry.id) ??
-            createEmptyFoldNode<Id>();
+            createEmptyFoldNode<Id>(entry.id);
 
           navigationEntry = {
             ...entry,
@@ -268,8 +267,9 @@ export function createNavNodeApi<
   return navNodeApi;
 }
 
-function createEmptyFoldNode<Id extends SerializableKey>(): FoldNodeRoot<Id> {
+function createEmptyFoldNode<Id extends SerializableKey>(id: Id): FoldNode<Id> {
   return {
+    id: id,
     children: [],
     folds: new Set<Id>(),
   };

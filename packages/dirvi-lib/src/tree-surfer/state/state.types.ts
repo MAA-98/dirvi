@@ -1,18 +1,16 @@
-import { Cursor } from '../cursor.js';
-import {
+import type { Cursor } from '../cursor.js';
+import type {
   SerializableKey,
   TreeNode,
 } from '../tree-node/tree-node.types.js';
-import {
-  FoldNodeRoot,
-} from '../fold-node/fold-node.types.js';
+import type { FoldNode } from '../fold-node/fold-node.types.js';
 
 export type State<
   Id extends SerializableKey,
   Node extends TreeNode<Id, Node>,
 > = {
   buffer: Node[];
-  foldNode: FoldNodeRoot<Id>;
+  foldNode: FoldNode<Id>;
   cursor: Cursor<Id>;
 };
 

@@ -21,24 +21,24 @@ import type {
  */
 export function createTreeNodeApi<
   Id extends SerializableKey,
-  ChildNode extends TreeNode<Id, ChildNode>,
->(): TreeNodeApi<Id, ChildNode> {
-  const treeNodeApi: TreeNodeApi<Id, ChildNode> = {
+  Node extends TreeNode<Id, Node>,
+>(): TreeNodeApi<Id, Node> {
+  const treeNodeApi: TreeNodeApi<Id, Node> = {
     // Type Narrowers:
 
-    isLeaf(node): node is ChildNode & LeafTreeNode<Id> {
+    isLeaf(node): node is Node & LeafTreeNode<Id> {
       return !('children' in node);
     },
 
-    isBranch(node): node is ChildNode & BranchTreeNode<Id, ChildNode> {
+    isBranch(node): node is Node & BranchTreeNode<Id, Node> {
       return 'children' in node;
     },
 
-    isClosedBranch(node): node is ChildNode & ClosedBranchTreeNode<Id> {
+    isClosedBranch(node): node is Node & ClosedBranchTreeNode<Id> {
       return node.children === null;
     },
 
-    isOpenBranch(node): node is ChildNode & OpenBranchTreeNode<Id, ChildNode> {
+    isOpenBranch(node): node is Node & OpenBranchTreeNode<Id, Node> {
       return node.children !== null;
     },
 
@@ -117,7 +117,7 @@ export function createTreeNodeApi<
         currentEntries[childIndex] = {
           ...child,
           children: updatedChildren,
-        } as ChildNode;
+        } as Node;
 
         // Continue traversal through the cloned children.
         currentEntries = updatedChildren;

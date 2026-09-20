@@ -1,33 +1,20 @@
 import { SerializableKey } from '../tree-node/tree-node.types.js';
 
 /**
- * The whole fold state for a tree-node tree.
- *
- * The root has no ID because it represents the fold at the root.
- * Its `children` contain the fold nodes for the forest's root entries.
- *
- * `folds` contains the IDs folded at this root. Fold order is not
- * represented here; the buffer tree determines entry order.
- */
-export type FoldNodeRoot<Id extends SerializableKey> = {
-  children: FoldNode<Id>[];
-  folds: ReadonlySet<Id>;
-};
-
-/**
- * Fold state associated with a node in the buffer tree.
- *
- * A fold node has the shape of an open tree node: its children are always
- * represented by an array, and an empty `children` array means that no child
- * fold nodes are currently represented.
+ * Fold state associated with a branch in the tree.
  *
  * The `folds` set contains the IDs of entries folded at this node. Fold
  * order is not represented here; the buffer tree determines entry order.
  *
  * The type is structurally compatible with `TreeNode`, allowing the shared
  * `TreeNodeApi` to be used for path traversal and immutable updates.
+ *
+ * The root directory uses this same shape. It is not rendered by the UI, but
+ * its children and fold state are rendered as the top-level tree.
  */
-export type FoldNode<Id extends SerializableKey> = FoldNodeRoot<Id> & {
+export type FoldNode<Id extends SerializableKey> = {
+  children: FoldNode<Id>[];
+  folds: ReadonlySet<Id>;
   id: Id;
 };
 
@@ -41,23 +28,25 @@ export type FoldNode<Id extends SerializableKey> = FoldNodeRoot<Id> & {
  */
 export type FoldNodeApi<Id extends SerializableKey> = {
   /**
-   * Returns the children of either the fold root or a fold node.
+   * Returns the children of the fold node.
    */
-  getChildren(node: FoldNodeRoot<Id> | FoldNode<Id>): Iterable<FoldNode<Id>>;
+  getChildren(node: FoldNode<Id>): Iterable<FoldNode<Id>>;
 
   /**
    * Returns a direct child by ID.
    */
   getChildById(
-    node: FoldNodeRoot<Id> | FoldNode<Id>,
+    node: FoldNode<Id>,
     id: Id,
   ): FoldNode<Id> | undefined;
 
   /**
    * Selects a fold node at a path below the root.
+   *
+   * `[]` means the root, `[firstChild]` refers to the child at depth 1.
    */
   getAtPath<Result>(
-    rootNode: FoldNodeRoot<Id>,
+    root: FoldNode<Id>,
     path: Id[],
     selector: (node: FoldNode<Id>) => Result,
   ): Result | undefined;
@@ -66,10 +55,10 @@ export type FoldNodeApi<Id extends SerializableKey> = {
    * Immutably modifies a fold node at a path below the root.
    */
   modifyAtPath(
-    rootNode: FoldNodeRoot<Id>,
+    root: FoldNode<Id>,
     path: Id[],
     modifier: (node: FoldNode<Id>) => FoldNode<Id> | undefined,
-  ): FoldNodeRoot<Id> | undefined;
+  ): FoldNode<Id> | undefined;
 };
 
 /**
@@ -79,28 +68,28 @@ export type FoldNodeApi<Id extends SerializableKey> = {
  * adding a fold. This allows an empty root to be populated lazily.
  */
 export type FoldNodeService<Id extends SerializableKey> = {
-  createEmptyRoot(): FoldNodeRoot<Id>;
+  createEmptyRoot(): FoldNode<Id>;
 
   getIfEntryFoldedAtPath(
-    rootNode: FoldNodeRoot<Id>,
+    rootNode: FoldNode<Id>,
     path: Id[],
     entryId: Id,
   ): boolean;
 
   addFoldedEntryAtPath(
-    rootNode: FoldNodeRoot<Id>,
+    rootNode: FoldNode<Id>,
     path: Id[],
     entryId: Id,
-  ): FoldNodeRoot<Id> | undefined;
+  ): FoldNode<Id> | undefined;
 
   removeFoldedEntryAtPath(
-    rootNode: FoldNodeRoot<Id>,
+    rootNode: FoldNode<Id>,
     path: Id[],
     entryId: Id,
-  ): FoldNodeRoot<Id> | undefined;
+  ): FoldNode<Id> | undefined;
 
   clearFoldedEntriesAtPath(
-    rootNode: FoldNodeRoot<Id>,
+    rootNode: FoldNode<Id>,
     path: Id[],
-  ): FoldNodeRoot<Id> | undefined;
+  ): FoldNode<Id> | undefined;
 };

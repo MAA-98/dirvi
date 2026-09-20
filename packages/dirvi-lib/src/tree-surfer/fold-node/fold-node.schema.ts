@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
-import type { FoldNode, FoldNodeRoot } from './fold-node.types.js';
+import type { FoldNode } from './fold-node.types.js';
 import { SerializableKey } from '../tree-node/tree-node.types.js';
 
 export function createFoldNodeSchemas<Id extends SerializableKey>(
   idSchema: z.ZodType<Id>,
-) {
+): z.ZodType<FoldNode<Id>> {
   const foldNodeSchema: z.ZodType<FoldNode<Id>> = z.lazy(() =>
     z.object({
       id: idSchema,
@@ -15,15 +15,6 @@ export function createFoldNodeSchemas<Id extends SerializableKey>(
       folds: z.array(idSchema).transform((ids) => new Set(ids)),
     }),
   );
-
-  const foldNodeRootSchema: z.ZodType<FoldNodeRoot<Id>> = z.object({
-    children: z.array(foldNodeSchema),
-
-    folds: z.array(idSchema).transform((ids) => new Set(ids)),
-  });
-
-  return {
-    foldNodeSchema,
-    foldNodeRootSchema,
-  };
+  
+  return foldNodeSchema;
 }

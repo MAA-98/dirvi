@@ -1,5 +1,5 @@
 import { SerializableKey, TreeNode, TreeNodeApi } from '../tree-node/tree-node.types.js';
-import { FoldNode, FoldNodeApi, FoldNodeRoot } from '../fold-node/fold-node.types.js';
+import { FoldNode, FoldNodeApi } from '../fold-node/fold-node.types.js';
 import { Cursor, CursorApi, CursorKind } from '../cursor.js';
 import { NavNodeApi } from '../nav-node/nav-node.types.js';
 import { StateApi, State } from './state.types.js';
@@ -18,14 +18,14 @@ export function createStateApi<
    *
    * Works on fold root and descendant fold nodes using the generic.
    */
-  async function reload<FoldType extends FoldNodeRoot<Id> | FoldNode<Id>>(
+  async function reload(
     oldBuffer: Node[],
-    oldFoldNode: FoldType | undefined,
+    oldFoldNode: FoldNode<Id> | undefined,
     parentPath: Id[],
     loadBranches: (path: Id[]) => Promise<Node[]>,
   ): Promise<{
     buffer: Node[];
-    foldNode: FoldType | undefined;
+    foldNode: FoldNode<Id> | undefined;
   }> {
     let newBuffer = await loadBranches(parentPath);
     let newFoldNode = oldFoldNode; // Start with assumption of no changes
@@ -104,7 +104,7 @@ export function createStateApi<
   function resyncCursor(
     oldState: State<Id, Node>,
     newBuffer: Node[],
-    newFoldNode: FoldNodeRoot<Id>,
+    newFoldNode: FoldNode<Id>,
   ): Cursor<Id> | undefined {
     const navigation = navNodeApi.from(newBuffer, newFoldNode);
 

@@ -20,8 +20,8 @@ export const serializableKeySchema = z.union([z.string(), z.number().finite()]);
  */
 export function createTreeNodeSchemas<
   Id extends SerializableKey,
-  ChildNode extends TreeNode<Id, ChildNode>,
->(idSchema: z.ZodType<Id>, childSchema: z.ZodType<ChildNode>) {
+  Node extends TreeNode<Id, Node>,
+>(idSchema: z.ZodType<Id>, nodeSchema: z.ZodType<Node>) {
   const leafSchema = z.object({
     id: idSchema,
   });
@@ -33,7 +33,7 @@ export function createTreeNodeSchemas<
 
   const openBranchSchema = z.object({
     id: idSchema,
-    children: z.array(childSchema),
+    children: z.array(nodeSchema),
   });
 
   return {

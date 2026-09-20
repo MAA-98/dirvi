@@ -9,7 +9,6 @@ import { createHash } from 'node:crypto';
 import {
   PosixCursorSchema,
   PosixFoldNode,
-  PosixFoldNodeRoot,
   PosixName,
   PosixNameSchema,
   PosixState,
@@ -40,11 +39,6 @@ export type StoredPosixFoldNode = {
   folds: PosixName[];
 };
 
-export type StoredPosixFoldNodeRoot = {
-  children: StoredPosixFoldNode[];
-  folds: PosixName[];
-};
-
 const StoredPosixFoldNodeSchema: z.ZodType<StoredPosixFoldNode> = z.lazy(() =>
   z.object({
     id: PosixNameSchema,
@@ -53,20 +47,14 @@ const StoredPosixFoldNodeSchema: z.ZodType<StoredPosixFoldNode> = z.lazy(() =>
   }),
 );
 
-const StoredPosixFoldNodeRootSchema: z.ZodType<StoredPosixFoldNodeRoot> =
-  z.object({
-    children: z.array(StoredPosixFoldNodeSchema),
-    folds: z.array(PosixNameSchema),
-  });
-
 const StoredPosixStateSchema: z.ZodType<StoredPosixState> = z.object({
   buffer: z.array(PosixTreeNodeSchema),
-  foldNode: StoredPosixFoldNodeRootSchema,
+  foldNode: StoredPosixFoldNodeSchema,
   cursor: PosixCursorSchema,
 });
 
 export type StoredPosixState = Omit<PosixState, 'foldNode'> & {
-  foldNode: StoredPosixFoldNodeRoot;
+  foldNode: StoredPosixFoldNode;
 };
 
 // ---*--- Codec ---*---
@@ -87,31 +75,13 @@ function decodePosixFoldNode(node: StoredPosixFoldNode): PosixFoldNode {
   };
 }
 
-function encodePosixFoldNodeRoot(
-  root: PosixFoldNodeRoot,
-): StoredPosixFoldNodeRoot {
-  return {
-    children: root.children.map(encodePosixFoldNode),
-    folds: [...root.folds],
-  };
-}
-
-function decodePosixFoldNodeRoot(
-  root: StoredPosixFoldNodeRoot,
-): PosixFoldNodeRoot {
-  return {
-    children: root.children.map(decodePosixFoldNode),
-    folds: new Set(root.folds),
-  };
-}
-
 const posixStateCodec: StateCodec<PosixState, StoredPosixState> = {
   schema: StoredPosixStateSchema,
 
   encode(state): StoredPosixState {
     return {
       buffer: state.buffer,
-      foldNode: encodePosixFoldNodeRoot(state.foldNode),
+      foldNode: encodePosixFoldNode(state.foldNode),
       cursor: state.cursor,
     };
   },
@@ -119,7 +89,7 @@ const posixStateCodec: StateCodec<PosixState, StoredPosixState> = {
   decode(state): PosixState {
     return {
       buffer: state.buffer,
-      foldNode: decodePosixFoldNodeRoot(state.foldNode),
+      foldNode: decodePosixFoldNode(state.foldNode),
       cursor: state.cursor,
     };
   },
@@ -130,7 +100,7 @@ export function loadPosixAppApi(
   directory?: string,
 ): AppApi<PosixName, PosixTreeNode, UnixAbsolutePath> {
   const unixAbsPath = getUnixAbsPath(directory ?? process.cwd());
-  const apis = createAppApis<PosixName, PosixTreeNode>();
+  const apis = createAppApis<PosixName, PosixTreeNode>(unixAbsPath[-1]);
 
   return {
     appId: 'posix',

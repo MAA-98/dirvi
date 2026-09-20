@@ -12,7 +12,6 @@ import {
   createTreeNodeSchemas,
   Cursor,
   FoldNode,
-  FoldNodeRoot,
   NavNode,
   serializableKeySchema,
   State,
@@ -100,16 +99,12 @@ export const PosixTreeNodeApi = createTreeNodeApi<PosixName, PosixTreeNode>();
 // --- PosixFoldNode ---
 
 // Schema
-const { foldNodeSchema, foldNodeRootSchema } =
-  createFoldNodeSchemas<PosixName>(PosixNameSchema);
+const foldNodeSchema = createFoldNodeSchemas<PosixName>(PosixNameSchema);
 
 export const PosixFoldNodeSchema: z.ZodType<PosixFoldNode> = foldNodeSchema;
-export const PosixFoldNodeRootSchema: z.ZodType<PosixFoldNodeRoot> =
-  foldNodeRootSchema;
 
 // Type
 export type PosixFoldNode = FoldNode<PosixName>;
-export type PosixFoldNodeRoot = FoldNodeRoot<PosixName>;
 
 // API
 export const PosixFoldNodeApi = createFoldNodeApi<PosixName>();
@@ -139,7 +134,7 @@ export const PosixNavApi = createNavNodeApi<PosixName, PosixTreeNode>(
 // Schema
 export const PosixStateSchema: z.ZodType<PosixState> = createStateSchema(
   PosixTreeNodeSchema,
-  PosixFoldNodeRootSchema,
+  PosixFoldNodeSchema,
   PosixCursorSchema,
 );
 
