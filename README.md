@@ -7,7 +7,7 @@ A terminal UI for browsing directories as an expandable tree.
 Install `dirvi` globally with npm:
 
 ```sh
-npm install --global @mak-98/dirvi-cli
+npm install -g @mak-98/dirvi-cli
 ```
 
 ## Usage
