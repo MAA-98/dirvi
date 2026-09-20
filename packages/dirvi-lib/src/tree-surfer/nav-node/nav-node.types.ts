@@ -45,17 +45,17 @@ export function isNavBranch<
  */
 export type NavNode<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
+  Node extends TreeNode<Id, Node>,
 > = {
   /**
    * Currently visible entries.
    */
-  entries: NavEntry<Id, BufferNode>[];
+  entries: NavEntry<Id, Node>[];
 
   /**
    * Currently loaded entries hidden by this directory's fold.
    */
-  foldedEntries: NavEntry<Id, BufferNode>[];
+  foldedEntries: NavEntry<Id, Node>[];
 };
 
 // ---*--- Nav Node API Types ---*---

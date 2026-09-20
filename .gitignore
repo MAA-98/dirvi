@@ -27,5 +27,5 @@ typedoc/
 *.swp
 *.swo
 
-# CI piped dirvi output
-packages/dirvi-cli/context.json
+# Context file
+context.json
