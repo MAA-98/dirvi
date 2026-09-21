@@ -1,54 +1,16 @@
-import { z } from 'zod';
 import { createTreeNodeApi } from '../tree-node/tree-node.impl.js';
 import {
   FoldNode,
-  FoldNodeApi,
   FoldNodeService,
 } from './fold-node.types.js';
 import { SerializableKey } from '../tree-node/tree-node.types.js';
 
-export function createFoldNodeApi<
-  Id extends SerializableKey,
->(): FoldNodeApi<Id> {
-  const treeNodeApi = createTreeNodeApi<Id, FoldNode<Id>>();
-
-  return {
-    getChildren(node) {
-      return node.children;
-    },
-
-    getChildById(node, id) {
-      return node.children.find((child) => child.id === id);
-    },
-
-    getAtPath(rootNode, path, selector) {
-      return treeNodeApi.getAtPath(rootNode.children, path, selector);
-    },
-
-    modifyAtPath(rootNode, path, modifier) {
-      const children = treeNodeApi.modifyAtPath(
-        rootNode.children,
-        path,
-        modifier,
-      );
-
-      if (children === undefined) {
-        return undefined;
-      }
-
-      return {
-        ...rootNode,
-        children,
-      };
-    },
-  };
-}
-
 export function createFoldNodeService<Id extends SerializableKey>(
   rootId: Id,
-  foldNodeApi: FoldNodeApi<Id>,
   createChild: (id: Id) => FoldNode<Id>,
 ): FoldNodeService<Id> {
+  const foldNodeApi = createTreeNodeApi<Id, FoldNode<Id>>()
+  
   return {
     createEmptyRoot() {
       return {
@@ -64,7 +26,7 @@ export function createFoldNodeService<Id extends SerializableKey>(
       }
 
       const node = foldNodeApi.getAtPath(
-        rootNode,
+        rootNode.children,
         path,
         (candidate) => candidate,
       );
@@ -79,9 +41,18 @@ export function createFoldNodeService<Id extends SerializableKey>(
         return addFoldedEntry(ensuredRoot, entryId);
       }
 
-      return foldNodeApi.modifyAtPath(ensuredRoot, path, (node) =>
+      const children = foldNodeApi.modifyAtPath(ensuredRoot.children, path, (node) =>
         addFoldedEntry(node, entryId),
       );
+      
+      if (children === undefined) {
+        return undefined
+      }
+      
+      return {
+        ...rootNode,
+        children,
+      }
     },
 
     removeFoldedEntryAtPath(rootNode, path, entryId) {
@@ -89,9 +60,18 @@ export function createFoldNodeService<Id extends SerializableKey>(
         return removeFoldedEntry(rootNode, entryId);
       }
 
-      return foldNodeApi.modifyAtPath(rootNode, path, (node) =>
+      const children = foldNodeApi.modifyAtPath(rootNode.children, path, (node) =>
         removeFoldedEntry(node, entryId),
       );
+      
+      if (children === undefined) {
+        return undefined;
+      }
+
+      return {
+        ...rootNode,
+        children,
+      };
     },
 
     clearFoldedEntriesAtPath(rootNode, path) {
@@ -99,7 +79,16 @@ export function createFoldNodeService<Id extends SerializableKey>(
         return clearFoldedEntries(rootNode);
       }
 
-      return foldNodeApi.modifyAtPath(rootNode, path, clearFoldedEntries);
+      const children = foldNodeApi.modifyAtPath(rootNode.children, path, clearFoldedEntries);
+      
+      if (children === undefined) {
+        return undefined;
+      }
+
+      return {
+        ...rootNode,
+        children,
+      };
     },
   };
 

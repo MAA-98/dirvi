@@ -32,7 +32,7 @@ export function createReducer<
 
       case 'updateBranch':
         const buffer = treeNodeApi.modifyAtPath(
-          state.buffer,
+          state.root.children,
           action.path,
           (node) => {
             // A branch update cannot turn a leaf into a branch.

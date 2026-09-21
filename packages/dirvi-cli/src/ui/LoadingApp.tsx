@@ -26,23 +26,23 @@ type LoadingAppProps<
 
 function createInitialState<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
+  Node extends TreeNode<Id, Node>,
 >(
-  rootBranches: State<Id, BufferNode>['buffer'],
-  createEmptyFoldRoot: () => State<Id, BufferNode>['foldNode'],
-): State<Id, BufferNode> {
-  if (rootBranches.length === 0) {
+  root: State<Id, Node>['root'],
+  createEmptyFoldRoot: () => State<Id, Node>['foldNode'],
+): State<Id, Node> {
+  if (root.children.length === 0) {
     throw new Error(
-      'createInitialState cannot create a state for an empty forest',
+      'createInitialState cannot create a state for an empty root',
     );
   }
 
   return {
-    buffer: rootBranches,
+    root,
     foldNode: createEmptyFoldRoot(),
     cursor: {
       parentPath: [],
-      entryId: rootBranches[0]!.id,
+      entryId: root.children[0]!.id,
     },
   };
 }
@@ -66,18 +66,18 @@ export function LoadingApp<
 
     appApi
       .loadBranches([])
-      .then((rootBranches) => {
+      .then((rootChildren) => {
         if (!mounted) {
           return;
         }
 
-        if (rootBranches.length === 0) {
+        if (rootChildren.length === 0) {
           setEmpty(true);
           return;
         }
 
         setInitialState(
-          createInitialState(rootBranches, () =>
+          createInitialState(root, () =>
             appApi.foldNodeService.createEmptyRoot(),
           ),
         );

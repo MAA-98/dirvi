@@ -50,82 +50,79 @@ export function createTreeNodeApi<
       return node.children.find((child) => child.id === id);
     },
 
-    getAtPath(entries, path, selector) {
-      if (path.length === 0) {
-        return undefined;
-      }
+    getAtPath(root, path, selector) {
+      let node = root;
 
-      // Accumulator
-      let node = entries.find((candidate) => candidate.id === path[0]);
-
-      for (
-        let index = 1;
-        node !== undefined && index < path.length;
-        index += 1
-      ) {
-        if (treeNodeApi.isOpenBranch(node)) {
-          node = treeNodeApi.getChildById(node, path[index]);
-        } else {
-          node = undefined;
+      for (const id of path) {
+        if (!treeNodeApi.isBranch(node) || !treeNodeApi.isOpenBranch(node)) {
+          return undefined;
         }
+
+        const child = treeNodeApi.getChildById(node, id);
+
+        if (child === undefined) {
+          return undefined;
+        }
+
+        node = child;
       }
-      return node === undefined ? undefined : selector(node);
+
+      return selector(node);
     },
 
-    modifyAtPath(entries, path, modifier) {
+    modifyAtPath(root, path, modifier) {
       if (path.length === 0) {
-        return undefined;
+        return modifier(root);
       }
 
-      // Only cloned arrays/nodes are modified below.
-      const updatedEntries = [...entries];
-      let currentEntries = updatedEntries;
-
-      for (let index = 0; index < path.length; index += 1) {
-        const id = path[index]!;
-
-        const childIndex = currentEntries.findIndex(
-          (candidate) => candidate.id === id,
-        );
-
-        if (childIndex === -1) {
-          return undefined;
-        }
-
-        const child = currentEntries[childIndex]!;
-
-        if (index === path.length - 1) {
-          const replacement = modifier(child);
-
-          if (replacement === undefined) {
-            return undefined;
-          }
-
-          currentEntries[childIndex] = replacement;
-          return updatedEntries;
-        }
-
-        if (!treeNodeApi.isBranch(child) || !treeNodeApi.isOpenBranch(child)) {
-          // The path cannot continue through a leaf or closed branch.
-          return undefined;
-        }
-
-        // Clone the child array before modifying it.
-        const updatedChildren = [...treeNodeApi.getChildren(child)];
-
-        // Clone the ancestor node and attach the cloned child array.
-        currentEntries[childIndex] = {
-          ...child,
-          children: updatedChildren,
-        } as Node;
-
-        // Continue traversal through the cloned children.
-        currentEntries = updatedChildren;
-      }
-
-      return undefined;
+      return modifyChildAtPath(root, path, modifier);
     },
   };
+  
+  function modifyChildAtPath(
+    node: Node,
+    path: Id[],
+    modifier: (node: Node) => Node | undefined,
+  ): Node | undefined {
+    const childId = path[0];
+
+    if (
+      childId === undefined ||
+      !treeNodeApi.isBranch(node) ||
+      !treeNodeApi.isOpenBranch(node)
+    ) {
+      return undefined;
+    }
+
+    const childIndex = node.children.findIndex((child) => child.id === childId);
+
+    if (childIndex === -1) {
+      return undefined;
+    }
+
+    const child = node.children[childIndex];
+
+    if (child === undefined) {
+      return undefined;
+    }
+
+    const updatedChild =
+      path.length === 1
+        ? modifier(child)
+        : modifyChildAtPath(child, path.slice(1), modifier);
+
+    if (updatedChild === undefined) {
+      return undefined;
+    }
+
+    const children = [...node.children];
+    children[childIndex] = updatedChild;
+
+    return {
+      ...node,
+      children,
+    } as Node;
+  }
 
   return treeNodeApi;
 }

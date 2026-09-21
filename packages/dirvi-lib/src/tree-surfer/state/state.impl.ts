@@ -120,12 +120,12 @@ export function createStateApi<
         return undefined;
       }
 
-      return treeNodeApi.getAtPath(state.buffer, path, (node) => node);
+      return treeNodeApi.getAtPath(state.root.children, path, (node) => node);
     },
 
     async resync(oldState, loadChildren) {
       const reloaded = await reload(
-        oldState.buffer,
+        oldState.root.children,
         oldState.foldNode,
         [],
         loadChildren,
@@ -144,10 +144,15 @@ export function createStateApi<
         entryId: reloaded.buffer[0].id,
         parentPath: [],
       };
-
+      
+      const root = {
+        ...oldState.root,
+        children: reloaded.buffer,
+      };
+      
       return {
         ...oldState,
-        buffer: reloaded.buffer,
+        root,
         foldNode,
         cursor,
       };

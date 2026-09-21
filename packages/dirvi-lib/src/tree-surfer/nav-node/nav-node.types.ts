@@ -7,18 +7,18 @@ import { Cursor } from '../cursor.js';
 import { FoldNode } from '../fold-node/fold-node.types.js';
 
 /**
- * A navigation entry preserves the original buffer-node properties, but
- * replaces a branch's buffer children with a NavNode.
+ * A navigation entry preserves the original node properties, but
+ * replaces a branch's children with a NavNode.
  */
 export type NavEntry<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
-> = NavLeaf<Id, BufferNode> | NavBranch<Id, BufferNode>;
+  Node extends TreeNode<Id, Node>,
+> = NavLeaf<Id, Node> | NavBranch<Id, Node>;
 
 export type NavLeaf<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
-> = BufferNode & LeafTreeNode<Id>;
+  Node extends TreeNode<Id, Node>,
+> = Node & LeafTreeNode<Id>;
 
 type ReplaceChildren<Node, Children> = Node extends {
   children: unknown;
@@ -30,13 +30,13 @@ type ReplaceChildren<Node, Children> = Node extends {
 
 export type NavBranch<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
-> = ReplaceChildren<BufferNode, NavNode<Id, BufferNode> | null>;
+  Node extends TreeNode<Id, Node>,
+> = ReplaceChildren<Node, NavNode<Id, Node> | null>;
 
 export function isNavBranch<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
->(entry: NavEntry<Id, BufferNode>): entry is NavBranch<Id, BufferNode> {
+  Node extends TreeNode<Id, Node>,
+>(entry: NavEntry<Id, Node>): entry is NavBranch<Id, Node> {
   return 'children' in entry;
 }
 
@@ -62,47 +62,47 @@ export type NavNode<
 
 export type NavNodeApi<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
+  Node extends TreeNode<Id, Node>,
 > = {
   from(
-    entries: BufferNode[],
+    entries: Node[],
     foldNode: FoldNode<Id>,
-  ): NavNode<Id, BufferNode>;
+  ): NavNode<Id, Node>;
 
   getNodeAtPath(
-    navigation: NavNode<Id, BufferNode>,
+    navigation: NavNode<Id, Node>,
     path: Id[],
-  ): NavNode<Id, BufferNode> | undefined;
+  ): NavNode<Id, Node> | undefined;
 
   getEntryAtPath(
-    navigation: NavNode<Id, BufferNode>,
+    navigation: NavNode<Id, Node>,
     path: Id[],
-  ): NavEntry<Id, BufferNode> | undefined;
+  ): NavEntry<Id, Node> | undefined;
 
   nextCursor(
-    rootNode: NavNode<Id, BufferNode>,
+    rootNode: NavNode<Id, Node>,
     cursor: Cursor<Id>,
   ): Cursor<Id> | undefined;
 
   previousCursor(
-    rootNode: NavNode<Id, BufferNode>,
+    rootNode: NavNode<Id, Node>,
     cursor: Cursor<Id>,
   ): Cursor<Id> | undefined;
 
   cursorAfterFold(
-    rootNode: NavNode<Id, BufferNode>,
+    rootNode: NavNode<Id, Node>,
     cursor: Cursor<Id>,
   ): Cursor<Id> | undefined;
 
   parentCursor(
-    navigation: NavNode<Id, BufferNode>,
+    navigation: NavNode<Id, Node>,
     cursor: Cursor<Id>,
   ): Cursor<Id> | undefined;
 
-  cursors(navigation: NavNode<Id, BufferNode>, parentPath?: Id[]): Cursor<Id>[];
+  cursors(navigation: NavNode<Id, Node>, parentPath?: Id[]): Cursor<Id>[];
 
   visibleLeavesPaths(
-    navigation: NavNode<Id, BufferNode>,
+    navigation: NavNode<Id, Node>,
     parentPath?: Id[],
   ): Id[][];
 };

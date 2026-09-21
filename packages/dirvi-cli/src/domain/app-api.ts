@@ -5,7 +5,7 @@ import {
   createNavNodeApi,
   createStateApi,
   createTreeNodeApi,
-  CursorApi,
+  CursorApi, FoldNode,
   FoldNodeApi,
   FoldNodeService,
   NavNodeApi,
@@ -22,13 +22,13 @@ export type AppApi<
   BufferNode extends TreeNode<Id, BufferNode>,
   ViewKey = string,
 > = {
-  /*
-   * Name used to distinguish the app.
+  /**
+   * Name used to distinguish the app, e.g. 'posix' for POSIX directory app.
    */
   appId: string;
 
   /**
-   * Name displayed to distinguish app instance.
+   * Name to distinguish app instance.
    */
   name: string;
 
@@ -90,8 +90,7 @@ export function createAppApis<
   navNodeApi: NavNodeApi<Id, BufferNode>;
 } {
   const treeNodeApi = createTreeNodeApi<Id, BufferNode>();
-
-  const foldNodeApi = createFoldNodeApi<Id>();
+  const foldNodeApi = createTreeNodeApi<Id, FoldNode<Id>>();
 
   const foldNodeService = createFoldNodeService(rootId, foldNodeApi, (id) => ({
     id,

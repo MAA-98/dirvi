@@ -26,7 +26,6 @@ const posixAppDataDirectory = join(environmentPaths.data, 'apps', 'posix');
 const posixAppViewsDirectory = join(posixAppDataDirectory, 'views');
 
 // Helpers for saving app data:
-// The key for the Posix app instance is just the directory working in.
 function encodeKey(key: UnixAbsolutePath): string {
   return createHash('sha256').update(key).digest('hex');
 }
@@ -48,7 +47,7 @@ const StoredPosixFoldNodeSchema: z.ZodType<StoredPosixFoldNode> = z.lazy(() =>
 );
 
 const StoredPosixStateSchema: z.ZodType<StoredPosixState> = z.object({
-  buffer: z.array(PosixTreeNodeSchema),
+  root: PosixTreeNodeSchema,
   foldNode: StoredPosixFoldNodeSchema,
   cursor: PosixCursorSchema,
 });
@@ -80,7 +79,7 @@ const posixStateCodec: StateCodec<PosixState, StoredPosixState> = {
 
   encode(state): StoredPosixState {
     return {
-      buffer: state.buffer,
+      root: state.root,
       foldNode: encodePosixFoldNode(state.foldNode),
       cursor: state.cursor,
     };
@@ -88,7 +87,7 @@ const posixStateCodec: StateCodec<PosixState, StoredPosixState> = {
 
   decode(state): PosixState {
     return {
-      buffer: state.buffer,
+      buffer: state.root,
       foldNode: decodePosixFoldNode(state.foldNode),
       cursor: state.cursor,
     };
@@ -96,6 +95,12 @@ const posixStateCodec: StateCodec<PosixState, StoredPosixState> = {
 };
 
 // --- Creating Posix App API ---
+
+/**
+ * Creates the AppApi for the POSIX app.
+ *
+ * @param directory - optional directory path for loading the app not at the cwd.
+ */
 export function loadPosixAppApi(
   directory?: string,
 ): AppApi<PosixName, PosixTreeNode, UnixAbsolutePath> {
@@ -104,7 +109,7 @@ export function loadPosixAppApi(
 
   return {
     appId: 'posix',
-    name: `Posix(${unixAbsPath})`,
+    name: unixAbsPath,
     emptyForestMessage: 'The directory is empty.',
 
     loadBranches: (path) => {
@@ -114,6 +119,7 @@ export function loadPosixAppApi(
 
     subscribeToResync: createFsResyncSubscription(join(unixAbsPath)),
 
+    // The key for the Posix app instance is just the directory working in:
     viewKey: unixAbsPath,
     viewApi: createFileViewApi({
       directory: posixAppViewsDirectory,

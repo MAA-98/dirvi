@@ -97,23 +97,21 @@ export type ClosedBranchTreeNode<Id extends SerializableKey> = {
 };
 
 /**
- * Operations for inspecting and immutably updating a tree node array.
+ * Operations for inspecting and immutably updating a tree rooted at a node.
  *
  * @remarks
  *
- * A path is an array of IDs beginning at a root node and continuing through
- * its descendants.
+ * A path is an array of IDs relative to the supplied root node.
  *
  * For example, given tree with IDs:
  *
  *   root
  *   └── child
  *
- * the path to `child` is `['root', 'child']`.
+ * the path to `root` is `[]`, and the path to `child` is `['child']`.
  *
  * Paths cannot pass through leaves or closed branches. A closed branch may be
- * the final node in a path. An empty path does not identify a node and is
- * invalid for both lookup and modification operations.
+ * the final node in a path. An empty path identifies the root node.
  *
  * @typeParam Id - The type of node IDs.
  * @typeParam Node - The application-specific recursive node type.
@@ -152,25 +150,25 @@ export type TreeNodeApi<
   getChildById(node: OpenBranchTreeNode<Id, Node>, id: Id): Node | undefined;
 
   /**
-   * Applies a selector to the node at a path.
+   * Applies a selector to the node at a path relative to `root`.
    *
    * The selector is called only after the complete path has been resolved.
    * The selected node is not cloned.
    *
-   * @param entries - The root-level nodes of the forest.
-   * @param path - A non-empty path beginning at a root node.
+   * @param root - The node searching through.
+   * @param path - Path relative to root, with empty selecting the root.
    * @param selector - The function to apply to the resolved node.
    * @returns The selector result, or `undefined` when the path cannot be
    * resolved or the selector returns `undefined`.
    */
   getAtPath<Result>(
-    entries: Node[],
+    root: Node,
     path: Id[],
     selector: (node: Node) => Result,
   ): Result | undefined;
 
   /**
-   * Immutably replaces the node at a path.
+   * Immutably replaces the node at a path relative to `root`.
    *
    * The modifier is called only after the complete path has been resolved.
    * Returning `undefined` aborts the modification.
@@ -179,15 +177,15 @@ export type TreeNodeApi<
    * Unrelated nodes and arrays retain their original object identity. The
    * input array is never modified.
    *
-   * @param entries - The root-level nodes of the forest.
-   * @param path - A non-empty path beginning at a root node.
+   * @param root - The root node to modify.
+   * @param path - Path relative to root, with empty selecting the root.
    * @param modifier - Produces the replacement node.
    * @returns A new forest, or `undefined` when the path cannot be resolved or
    * the modifier returns `undefined`.
    */
   modifyAtPath(
-    entries: Node[],
+    root: Node,
     path: Id[],
     modifier: (node: Node) => Node | undefined,
-  ): Node[] | undefined;
+  ): Node | undefined;
 };

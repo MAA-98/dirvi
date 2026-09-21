@@ -15,21 +15,21 @@ import {
 
 export function createNavNodeApi<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
+  Node extends TreeNode<Id, Node>,
 >(
-  treeNodeApi: TreeNodeApi<Id, BufferNode>,
+  treeNodeApi: TreeNodeApi<Id, Node>,
   foldNodeApi: FoldNodeApi<Id>,
   cursorApi: CursorApi<Id>,
-): NavNodeApi<Id, BufferNode> {
-  const navNodeApi: NavNodeApi<Id, BufferNode> = {
+): NavNodeApi<Id, Node> {
+  const navNodeApi: NavNodeApi<Id, Node> = {
     // Return a nav node from the BufferNode tree and FoldNode tree.
     from(entries, foldNode) {
-      const visibleEntriesSoFar: NavEntry<Id, BufferNode>[] = [];
-      const foldedEntriesSoFar: NavEntry<Id, BufferNode>[] = [];
+      const visibleEntriesSoFar: NavEntry<Id, Node>[] = [];
+      const foldedEntriesSoFar: NavEntry<Id, Node>[] = [];
 
       for (const entry of entries) {
         // Find the node
-        let navigationEntry: NavEntry<Id, BufferNode>;
+        let navigationEntry: NavEntry<Id, Node>;
 
         if (treeNodeApi.isBranch(entry)) {
           // If fold node does not have children (recursively no folds),
@@ -44,7 +44,7 @@ export function createNavNodeApi<
               entry.children === null
                 ? null
                 : navNodeApi.from(entry.children, childFoldNode),
-          } as NavBranch<Id, BufferNode>;
+          } as NavBranch<Id, Node>;
         } else if (treeNodeApi.isLeaf(entry)) {
           navigationEntry = entry;
         } else {
@@ -66,9 +66,9 @@ export function createNavNodeApi<
     },
 
     getNodeAtPath(
-      navigation: NavNode<Id, BufferNode>,
+      navigation: NavNode<Id, Node>,
       path: Id[],
-    ): NavNode<Id, BufferNode> | undefined {
+    ): NavNode<Id, Node> | undefined {
       const [currentId, ...remainingPath] = path;
 
       // An empty path identifies the current node.
@@ -97,9 +97,9 @@ export function createNavNodeApi<
     },
 
     getEntryAtPath(
-      navigation: NavNode<Id, BufferNode>,
+      navigation: NavNode<Id, Node>,
       path: Id[],
-    ): NavEntry<Id, BufferNode> | undefined {
+    ): NavEntry<Id, Node> | undefined {
       const [currentId, ...remainingPath] = path;
 
       if (currentId === undefined) {
@@ -126,7 +126,7 @@ export function createNavNodeApi<
     },
 
     nextCursor(
-      rootNode: NavNode<Id, BufferNode>,
+      rootNode: NavNode<Id, Node>,
       cursor: Cursor<Id>,
     ): Cursor<Id> | undefined {
       const cursors = cursorsInNode(rootNode, []);
@@ -143,7 +143,7 @@ export function createNavNodeApi<
     },
 
     previousCursor(
-      rootNode: NavNode<Id, BufferNode>,
+      rootNode: NavNode<Id, Node>,
       cursor: Cursor<Id>,
     ): Cursor<Id> | undefined {
       const cursors = cursorsInNode(rootNode, []);
@@ -160,7 +160,7 @@ export function createNavNodeApi<
     },
 
     cursorAfterFold(
-      rootNode: NavNode<Id, BufferNode>,
+      rootNode: NavNode<Id, Node>,
       cursor: Cursor<Id>,
     ): Cursor<Id> | undefined {
       const cursors = cursorsInNode(rootNode, []);
@@ -197,7 +197,7 @@ export function createNavNodeApi<
     },
 
     parentCursor(
-      navigation: NavNode<Id, BufferNode>,
+      navigation: NavNode<Id, Node>,
       cursor: Cursor<Id>,
     ): Cursor<Id> | undefined {
       const parentPath = cursor.parentPath;
@@ -232,7 +232,7 @@ export function createNavNodeApi<
     },
 
     visibleLeavesPaths(
-      navigation: NavNode<Id, BufferNode>,
+      navigation: NavNode<Id, Node>,
       parentPath: Id[] = [],
     ): Id[][] {
       const paths: Id[][] = [];
@@ -272,8 +272,8 @@ function createEmptyFoldNode<Id extends SerializableKey>(id: Id): FoldNode<Id> {
 
 function cursorsInNode<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
->(node: NavNode<Id, BufferNode>, parentPath: Id[]): Cursor<Id>[] {
+  Node extends TreeNode<Id, Node>,
+>(node: NavNode<Id, Node>, parentPath: Id[]): Cursor<Id>[] {
   const cursors: Cursor<Id>[] = [];
 
   for (const entry of node.entries) {

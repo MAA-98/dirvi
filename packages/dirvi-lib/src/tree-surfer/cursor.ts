@@ -17,7 +17,6 @@ export function createCursorSchema<IdSchema extends z.ZodTypeAny>(
 }
 
 export type CursorApi<Id> = {
-
   equal(left: Cursor<Id>, right: Cursor<Id>): boolean;
 
   getPath(cursor: Cursor<Id>): Id[];

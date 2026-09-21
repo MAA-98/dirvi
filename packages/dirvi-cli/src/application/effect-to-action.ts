@@ -72,7 +72,7 @@ export function createEffectToAction<
       case 'fold': {
         const path = [...state.cursor.parentPath, state.cursor.entryId];
 
-        const entry = treeNodeApi.getAtPath(state.buffer, path, (node) => node);
+        const entry = treeNodeApi.getAtPath(state.root.children, path, (node) => node);
 
         if (entry === undefined) {
           return undefined;
