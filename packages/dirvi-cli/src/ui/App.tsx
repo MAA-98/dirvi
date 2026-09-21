@@ -151,6 +151,7 @@ export function App<
 
       case 'peekFold':
         // TODO: Need a peek state to know what to display
+        return
         
       case 'emitVisibleLeavesPaths':
         const visibleLeavesPaths =

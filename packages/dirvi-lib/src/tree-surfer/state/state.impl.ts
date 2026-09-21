@@ -1,6 +1,6 @@
 import { SerializableKey, TreeNode, TreeNodeApi } from '../tree-node/tree-node.types.js';
 import { FoldNode, FoldNodeApi } from '../fold-node/fold-node.types.js';
-import { Cursor, CursorApi, CursorKind } from '../cursor.js';
+import { Cursor, CursorApi } from '../cursor.js';
 import { NavNodeApi } from '../nav-node/nav-node.types.js';
 import { StateApi, State } from './state.types.js';
 
@@ -141,7 +141,7 @@ export function createStateApi<
       const foldNode = reloaded.foldNode ?? oldState.foldNode;
 
       const cursor = resyncCursor(oldState, reloaded.buffer, foldNode) ?? {
-        kind: CursorKind.Fold,
+        entryId: reloaded.buffer[0].id,
         parentPath: [],
       };
 

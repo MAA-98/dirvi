@@ -23,7 +23,7 @@ export type AppApi<
   ViewKey = string,
 > = {
   /*
-   * Name used to distinguish the type of app.
+   * Name used to distinguish the app.
    */
   appId: string;
 

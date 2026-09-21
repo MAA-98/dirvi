@@ -21,8 +21,8 @@ import { z } from 'zod';
 // ---*--- App Data ---*---
 
 // Paths for app data:
-const paths = envPaths('dirvi');
-const posixAppDataDirectory = join(paths.data, 'apps', 'posix');
+const environmentPaths = envPaths('dirvi');
+const posixAppDataDirectory = join(environmentPaths.data, 'apps', 'posix');
 const posixAppViewsDirectory = join(posixAppDataDirectory, 'views');
 
 // Helpers for saving app data:

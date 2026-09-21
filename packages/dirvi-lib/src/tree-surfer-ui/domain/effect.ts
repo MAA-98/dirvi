@@ -62,7 +62,4 @@ export type EffectAction<
     }
   | {
       effectActionType: 'unfold';
-    }
-  | {
-      effectActionType: 'toggleFold';
     };

@@ -52,3 +52,7 @@ enable:
   }
 }
 ```
+
+## Root
+
+The root should be considered as an open branch node, with only the children displayed.

@@ -1,5 +1,4 @@
 import {
-  FoldNodeApi,
   FoldNodeService,
   SerializableKey,
   State,

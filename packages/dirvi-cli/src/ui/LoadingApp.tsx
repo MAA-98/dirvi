@@ -41,7 +41,6 @@ function createInitialState<
     buffer: rootBranches,
     foldNode: createEmptyFoldRoot(),
     cursor: {
-      kind: 'entry',
       parentPath: [],
       entryId: rootBranches[0]!.id,
     },

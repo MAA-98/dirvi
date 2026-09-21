@@ -70,10 +70,6 @@ export function createEffectToAction<
       }
 
       case 'fold': {
-        if (state.cursor.kind === 'fold') {
-          return undefined;
-        }
-
         const path = [...state.cursor.parentPath, state.cursor.entryId];
 
         const entry = treeNodeApi.getAtPath(state.buffer, path, (node) => node);
@@ -96,39 +92,20 @@ export function createEffectToAction<
       }
 
       case 'unfold': {
-        if (state.cursor.kind !== 'fold') {
-          return undefined;
-        }
+        const currentPath = cursorApi.getPath(state.cursor);
 
-        const node = navNodeApi.getNodeAtPath(navigation, [
-          ...state.cursor.parentPath,
-        ]);
+        const node = navNodeApi.getNodeAtPath(navigation, currentPath);
 
         if (node === undefined || node.foldedEntries.length === 0) {
           return undefined;
         }
-
-        const firstFoldedEntry = node.foldedEntries[0];
-
+        
         return {
           kind: 'unfold',
-          parentPath: [...state.cursor.parentPath],
-          cursor: {
-            kind: 'entry',
-            parentPath: state.cursor.parentPath,
-            entryId: firstFoldedEntry.id,
-          },
+          parentPath: currentPath,
+          cursor: state.cursor,
         };
       }
-
-      case 'toggleFold':
-        return effectToAction(
-          state.cursor.kind === 'fold'
-            ? { effectActionType: 'unfold' }
-            : { effectActionType: 'fold' },
-          navigation,
-          state,
-        );
     }
   }
 

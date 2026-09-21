@@ -4,7 +4,7 @@ import {
   TreeNodeApi,
 } from '../tree-node/tree-node.types.js';
 import { FoldNode, FoldNodeApi } from '../fold-node/fold-node.types.js';
-import { Cursor, CursorApi, CursorKind } from '../cursor.js';
+import { Cursor, CursorApi } from '../cursor.js';
 import {
   isNavBranch,
   NavBranch,
@@ -163,10 +163,6 @@ export function createNavNodeApi<
       rootNode: NavNode<Id, BufferNode>,
       cursor: Cursor<Id>,
     ): Cursor<Id> | undefined {
-      if (cursorApi.isFold(cursor)) {
-        return undefined;
-      }
-
       const cursors = cursorsInNode(rootNode, []);
 
       const currentIndex = cursors.findIndex((candidate) =>
@@ -195,7 +191,7 @@ export function createNavNodeApi<
 
       // The fold row will be created at the end of this directory.
       return {
-        kind: CursorKind.Fold,
+        ...cursor,
         parentPath: cursor.parentPath,
       };
     },
@@ -226,7 +222,6 @@ export function createNavNodeApi<
       }
 
       return {
-        kind: CursorKind.Entry,
         parentPath: containingPath,
         entryId: entryId,
       };
@@ -283,7 +278,6 @@ function cursorsInNode<
 
   for (const entry of node.entries) {
     cursors.push({
-      kind: CursorKind.Entry,
       parentPath,
       entryId: entry.id,
     });
@@ -293,13 +287,6 @@ function cursorsInNode<
     }
 
     cursors.push(...cursorsInNode(entry.children, [...parentPath, entry.id]));
-  }
-
-  if (node.foldedEntries.length > 0) {
-    cursors.push({
-      kind: CursorKind.Fold,
-      parentPath,
-    });
   }
 
   return cursors;

@@ -121,11 +121,6 @@ function normalBufferToEffectResult<
         },
       };
 
-    case 'za':
-      return dispatchAction<Id, BufferNode>({
-        effectActionType: 'toggleFold',
-      });
-
     case 'zc':
       return dispatchAction<Id, BufferNode>({
         effectActionType: 'fold',
@@ -159,12 +154,6 @@ function normalInteractRightToEffect<
   const currentEntry = stateApi.getNodeAtCursor(state);
 
   if (currentEntry === undefined) {
-    if (state.cursor.kind === 'fold') {
-      return {
-        effectType: 'peekFold',
-        parentPath: state.cursor.parentPath
-      }
-    }
     return undefined;
   }
 

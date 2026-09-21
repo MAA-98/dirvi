@@ -1,98 +1,49 @@
 import { z } from 'zod';
 
-export const CursorKind = {
-  Entry: 'entry',
-  Fold: 'fold',
-} as const;
-
-export type CursorKind = (typeof CursorKind)[keyof typeof CursorKind];
-
-export type CursorEntry<Id> = {
-  kind: typeof CursorKind.Entry;
+export type Cursor<Id> = {
   parentPath: readonly Id[];
   entryId: Id;
 };
-
-export type CursorFold<Id> = {
-  kind: typeof CursorKind.Fold;
-  parentPath: readonly Id[];
-};
-
-export type Cursor<Id> = CursorEntry<Id> | CursorFold<Id>;
 
 export function createCursorSchema<IdSchema extends z.ZodTypeAny>(
   idSchema: IdSchema,
 ) {
   const parentPathSchema = z.array(idSchema);
 
-  return z.discriminatedUnion('kind', [
-    z.object({
-      kind: z.literal(CursorKind.Entry),
-      parentPath: parentPathSchema,
-      entryId: idSchema,
-    }),
-
-    z.object({
-      kind: z.literal(CursorKind.Fold),
-      parentPath: parentPathSchema,
-    }),
-  ]);
+  return z.object({
+    parentPath: parentPathSchema,
+    entryId: idSchema,
+  })
 }
 
 export type CursorApi<Id> = {
-  isEntry(cursor: Cursor<Id>): cursor is CursorEntry<Id>;
-
-  isFold(cursor: Cursor<Id>): cursor is CursorFold<Id>;
 
   equal(left: Cursor<Id>, right: Cursor<Id>): boolean;
 
-  getPath(cursor: Cursor<Id>): Id[] | undefined;
+  getPath(cursor: Cursor<Id>): Id[];
 
   cursorBelongsToSubtree(cursor: Cursor<Id>, entryPath: readonly Id[]): boolean;
 };
 
 export function createCursorApi<Id>(): CursorApi<Id> {
-  const cursorApi: CursorApi<Id> = {
-    isEntry(cursor): cursor is CursorEntry<Id> {
-      return cursor.kind === CursorKind.Entry;
-    },
-
-    isFold(cursor): cursor is CursorFold<Id> {
-      return cursor.kind === CursorKind.Fold;
-    },
-
+  return {
     equal(left, right) {
-      if (!idPathEqual(left.parentPath, right.parentPath)) {
-        return false;
-      }
-
-      if (cursorApi.isFold(left)) {
-        return cursorApi.isFold(right);
-      }
-
-      return cursorApi.isEntry(right) && left.entryId === right.entryId;
+      return (
+        idPathEqual(left.parentPath, right.parentPath) &&
+        left.entryId === right.entryId
+      );
     },
 
     getPath(cursor) {
-      if (cursorApi.isFold(cursor)) {
-        return undefined;
-      }
-
       return [...cursor.parentPath, cursor.entryId];
     },
 
     cursorBelongsToSubtree(cursor, entryPath) {
-      if (cursorApi.isFold(cursor)) {
-        return isStrictPathPrefix(entryPath, cursor.parentPath);
-      }
-
       const cursorPath = [...cursor.parentPath, cursor.entryId];
 
       return isStrictPathPrefix(entryPath, cursorPath);
     },
   };
-
-  return cursorApi;
 }
 
 /**
