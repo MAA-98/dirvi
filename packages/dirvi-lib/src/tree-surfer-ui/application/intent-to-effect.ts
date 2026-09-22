@@ -185,7 +185,7 @@ function normalInteractLeftToEffect<
   Id extends SerializableKey,
   BufferNode extends TreeNode<Id, BufferNode>,
 >(state: State<Id, BufferNode>): Effect<Id, BufferNode> | undefined {
-  if (state.cursor.parentPath.length === 0) {
+  if (state.cursor.length === 0) {
     return undefined;
   }
 

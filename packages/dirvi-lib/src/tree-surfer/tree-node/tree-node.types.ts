@@ -163,7 +163,7 @@ export type TreeNodeApi<
    */
   getAtPath<Result>(
     root: Node,
-    path: Id[],
+    path: readonly Id[],
     selector: (node: Node) => Result,
   ): Result | undefined;
 
@@ -178,14 +178,14 @@ export type TreeNodeApi<
    * input array is never modified.
    *
    * @param root - The root node to modify.
-   * @param path - Path relative to root, with empty selecting the root.
+   * @param path - A path relative to root. An empty path selects the root.
    * @param modifier - Produces the replacement node.
-   * @returns A new forest, or `undefined` when the path cannot be resolved or
+   * @returns A new root, or `undefined` when the path cannot be resolved or
    * the modifier returns `undefined`.
    */
   modifyAtPath(
     root: Node,
-    path: Id[],
+    path: readonly Id[],
     modifier: (node: Node) => Node | undefined,
   ): Node | undefined;
 };

@@ -1,16 +1,15 @@
 import { createTreeNodeApi } from '../tree-node/tree-node.impl.js';
 import {
-  FoldNode,
+  FoldNode, FoldNodeApi,
   FoldNodeService,
 } from './fold-node.types.js';
 import { SerializableKey } from '../tree-node/tree-node.types.js';
 
 export function createFoldNodeService<Id extends SerializableKey>(
   rootId: Id,
+  foldNodeApi: FoldNodeApi<Id>,
   createChild: (id: Id) => FoldNode<Id>,
 ): FoldNodeService<Id> {
-  const foldNodeApi = createTreeNodeApi<Id, FoldNode<Id>>()
-  
   return {
     createEmptyRoot() {
       return {
@@ -26,7 +25,7 @@ export function createFoldNodeService<Id extends SerializableKey>(
       }
 
       const node = foldNodeApi.getAtPath(
-        rootNode.children,
+        rootNode,
         path,
         (candidate) => candidate,
       );
@@ -35,70 +34,28 @@ export function createFoldNodeService<Id extends SerializableKey>(
     },
 
     addFoldedEntryAtPath(rootNode, path, entryId) {
-      const ensuredRoot = ensurePath(rootNode, path);
+      const rootWithPath = ensurePath(rootNode, path);
 
-      if (path.length === 0) {
-        return addFoldedEntry(ensuredRoot, entryId);
-      }
-
-      const children = foldNodeApi.modifyAtPath(ensuredRoot.children, path, (node) =>
+      return foldNodeApi.modifyAtPath(rootWithPath, path, (node) =>
         addFoldedEntry(node, entryId),
       );
-      
-      if (children === undefined) {
-        return undefined
-      }
-      
-      return {
-        ...rootNode,
-        children,
-      }
     },
 
     removeFoldedEntryAtPath(rootNode, path, entryId) {
-      if (path.length === 0) {
-        return removeFoldedEntry(rootNode, entryId);
-      }
-
-      const children = foldNodeApi.modifyAtPath(rootNode.children, path, (node) =>
+      return foldNodeApi.modifyAtPath(rootNode, path, (node) =>
         removeFoldedEntry(node, entryId),
       );
-      
-      if (children === undefined) {
-        return undefined;
-      }
-
-      return {
-        ...rootNode,
-        children,
-      };
     },
 
     clearFoldedEntriesAtPath(rootNode, path) {
-      if (path.length === 0) {
-        return clearFoldedEntries(rootNode);
-      }
-
-      const children = foldNodeApi.modifyAtPath(rootNode.children, path, clearFoldedEntries);
-      
-      if (children === undefined) {
-        return undefined;
-      }
-
-      return {
-        ...rootNode,
-        children,
-      };
+      return foldNodeApi.modifyAtPath(rootNode, path, clearFoldedEntries);
     },
   };
 
-  // Helpers:
-  // `Node extends FoldNodeRoot<Id> | FoldNode<Id>` is used to create two
-  // versions of functions: one for the root and one for the children.
-
-  // "Flat" functions
+  // Node-local operations.
   //
-  // Adds entry name to the given node.
+  // These functions update only the selected node. Path traversal and immutable
+  // ancestor updates are handled by FoldNodeApi.
   function addFoldedEntry<Node extends FoldNode<Id>>(
     node: Node,
     entryId: Id,
@@ -133,9 +90,7 @@ export function createFoldNodeService<Id extends SerializableKey>(
     } as Node;
   }
 
-  function clearFoldedEntries<Node extends FoldNode<Id>>(
-    node: Node,
-  ): Node {
+  function clearFoldedEntries<Node extends FoldNode<Id>>(node: Node): Node {
     if (node.folds.size === 0) {
       return node;
     }
@@ -149,12 +104,10 @@ export function createFoldNodeService<Id extends SerializableKey>(
   /**
    * Ensures that the requested path exists in the fold-state tree.
    *
-   * This creates fold nodes only; it does not modify the buffer tree.
+   * The path is relative to `rootNode`; an empty path selects the root.
+   * This creates fold nodes only and does not modify the buffer tree.
    */
-  function ensurePath(
-    rootNode: FoldNode<Id>,
-    path: Id[],
-  ): FoldNode<Id> {
+  function ensurePath(rootNode: FoldNode<Id>, path: Id[]): FoldNode<Id> {
     if (path.length === 0) {
       return rootNode;
     }

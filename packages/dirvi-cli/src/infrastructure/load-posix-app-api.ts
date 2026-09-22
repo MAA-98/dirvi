@@ -1,4 +1,4 @@
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { watch, type FSWatcher } from 'node:fs';
 import { AppApi, createAppApis } from '../domain/app-api.js';
 import { getUnixAbsPath } from './get-unix-abs-path.js';
@@ -11,7 +11,7 @@ import {
   PosixFoldNode,
   PosixName,
   PosixNameSchema,
-  PosixState,
+  PosixState, PosixStateRootSchema,
   PosixTreeNode,
   PosixTreeNodeSchema,
 } from '../domain/posix-tree-node.js';
@@ -46,14 +46,18 @@ const StoredPosixFoldNodeSchema: z.ZodType<StoredPosixFoldNode> = z.lazy(() =>
   }),
 );
 
-const StoredPosixStateSchema: z.ZodType<StoredPosixState> = z.object({
-  root: PosixTreeNodeSchema,
-  foldNode: StoredPosixFoldNodeSchema,
-  cursor: PosixCursorSchema,
-});
+const StoredPosixStateSchema: z.ZodType<StoredPosixState> = z
+  .object({
+    root: PosixStateRootSchema,
+    foldRoot: StoredPosixFoldNodeSchema,
+    cursor: PosixCursorSchema,
+  })
+  .refine((state) => state.root.id !== state.foldRoot.id, {
+    message: 'The fold root ID must match the tree root ID.',
+  });
 
-export type StoredPosixState = Omit<PosixState, 'foldNode'> & {
-  foldNode: StoredPosixFoldNode;
+export type StoredPosixState = Omit<PosixState, 'foldRoot'> & {
+  foldRoot: StoredPosixFoldNode;
 };
 
 // ---*--- Codec ---*---
@@ -80,15 +84,15 @@ const posixStateCodec: StateCodec<PosixState, StoredPosixState> = {
   encode(state): StoredPosixState {
     return {
       root: state.root,
-      foldNode: encodePosixFoldNode(state.foldNode),
+      foldRoot: encodePosixFoldNode(state.foldRoot),
       cursor: state.cursor,
     };
   },
 
   decode(state): PosixState {
     return {
-      buffer: state.root,
-      foldNode: decodePosixFoldNode(state.foldNode),
+      root: state.root,
+      foldRoot: decodePosixFoldNode(state.foldRoot),
       cursor: state.cursor,
     };
   },
@@ -105,16 +109,27 @@ export function loadPosixAppApi(
   directory?: string,
 ): AppApi<PosixName, PosixTreeNode, UnixAbsolutePath> {
   const unixAbsPath = getUnixAbsPath(directory ?? process.cwd());
-  const apis = createAppApis<PosixName, PosixTreeNode>(unixAbsPath[-1]);
+  const rootId = PosixNameSchema.parse(basename(unixAbsPath));
+  const apis = createAppApis<PosixName, PosixTreeNode>(rootId);
 
   return {
     appId: 'posix',
     name: unixAbsPath,
-    emptyForestMessage: 'The directory is empty.',
+    emptyRootMessage: 'The directory is empty.',
 
     loadBranches: (path) => {
       const address = join(unixAbsPath, ...path);
       return getDirEntries(address);
+    },
+    createRoot: async () => {
+      const address = join(unixAbsPath);
+      const children = await getDirEntries(address);
+      
+      return {
+        id: rootId,
+        kind: 'directory',
+        children
+      }
     },
 
     subscribeToResync: createFsResyncSubscription(join(unixAbsPath)),

@@ -24,8 +24,6 @@ export function createTreeNodeApi<
   Node extends TreeNode<Id, Node>,
 >(): TreeNodeApi<Id, Node> {
   const treeNodeApi: TreeNodeApi<Id, Node> = {
-    // Type Narrowers:
-
     isLeaf(node): node is Node & LeafTreeNode<Id> {
       return !('children' in node);
     },
@@ -81,7 +79,7 @@ export function createTreeNodeApi<
   
   function modifyChildAtPath(
     node: Node,
-    path: Id[],
+    path: readonly Id[],
     modifier: (node: Node) => Node | undefined,
   ): Node | undefined {
     const childId = path[0];

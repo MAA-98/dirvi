@@ -3,7 +3,6 @@ import { UnixPath, UnixPathSchema } from './unix-path.js';
 import {
   createCursorApi,
   createCursorSchema,
-  createFoldNodeApi,
   createFoldNodeSchemas,
   createNavNodeApi,
   createStateApi,
@@ -71,6 +70,12 @@ export const PosixTreeNodeSchema: z.ZodType<PosixTreeNode> = z.lazy(() => {
   ]);
 });
 
+export const PosixStateRootSchema = z.object({
+  kind: z.literal('directory'),
+  id: PosixNameSchema,
+  children: z.array(PosixTreeNodeSchema),
+});
+
 // Authoritative Type
 export type PosixTreeNode =
   | {
@@ -107,7 +112,7 @@ export const PosixFoldNodeSchema: z.ZodType<PosixFoldNode> = foldNodeSchema;
 export type PosixFoldNode = FoldNode<PosixName>;
 
 // API
-export const PosixFoldNodeApi = createFoldNodeApi<PosixName>();
+export const PosixFoldNodeApi = createTreeNodeApi<PosixName, FoldNode<PosixName>>();
 
 // --- PosixCursor ---
 
@@ -121,7 +126,7 @@ export type PosixCursor = Cursor<PosixName>;
 export const PosixCursorApi = createCursorApi<PosixName>();
 
 // --- PosixNavNode ---
-export type PosixNavNode = NavNode<PosixName, PosixTreeNode>;
+export type PosixNavNode = NavNode<PosixName>;
 
 export const PosixNavApi = createNavNodeApi<PosixName, PosixTreeNode>(
   PosixTreeNodeApi,
@@ -133,7 +138,7 @@ export const PosixNavApi = createNavNodeApi<PosixName, PosixTreeNode>(
 
 // Schema
 export const PosixStateSchema: z.ZodType<PosixState> = createStateSchema(
-  PosixTreeNodeSchema,
+  PosixStateRootSchema,
   PosixFoldNodeSchema,
   PosixCursorSchema,
 );

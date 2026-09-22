@@ -8,26 +8,26 @@ import { CursorApi, EffectAction, NavNode, NavNodeApi, State } from 'dirvi-lib';
 
 export type EffectToAction<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
+  Node extends TreeNode<Id, Node>,
 > = (
-  effectAction: EffectAction<Id, BufferNode>,
-  navigation: NavNode<Id, BufferNode>,
-  state: State<Id, BufferNode>,
-) => ReducerAction<Id, BufferNode> | undefined;
+  effectAction: EffectAction<Id, Node>,
+  navigation: NavNode<Id>,
+  state: State<Id, Node>,
+) => ReducerAction<Id, Node> | undefined;
 
 export function createEffectToAction<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
+  Node extends TreeNode<Id, Node>,
 >(
-  treeNodeApi: TreeNodeApi<Id, BufferNode>,
+  treeNodeApi: TreeNodeApi<Id, Node>,
   cursorApi: CursorApi<Id>,
-  navNodeApi: NavNodeApi<Id, BufferNode>,
-): EffectToAction<Id, BufferNode> {
+  navNodeApi: NavNodeApi<Id, Node>,
+): EffectToAction<Id, Node> {
   function effectToAction(
-    effectAction: EffectAction<Id, BufferNode>,
-    navigation: NavNode<Id, BufferNode>,
-    state: State<Id, BufferNode>,
-  ): ReducerAction<Id, BufferNode> | undefined {
+    effectAction: EffectAction<Id, Node>,
+    navigation: NavNode<Id>,
+    state: State<Id, Node>,
+  ): ReducerAction<Id, Node> | undefined {
     switch (effectAction.effectActionType) {
       case 'nextEntry': {
         const cursor = navNodeApi.nextCursor(navigation, state.cursor);
@@ -70,23 +70,19 @@ export function createEffectToAction<
       }
 
       case 'fold': {
-        const path = [...state.cursor.parentPath, state.cursor.entryId];
-
-        const entry = treeNodeApi.getAtPath(state.root.children, path, (node) => node);
-
-        if (entry === undefined) {
+        if (state.cursor.length === 0) {
           return undefined;
         }
-
+        
         const cursor = navNodeApi.cursorAfterFold(navigation, state.cursor);
+        
         if (cursor === undefined) {
           return undefined;
         }
 
         return {
           kind: 'fold',
-          parentPath: [...state.cursor.parentPath],
-          entry,
+          path: state.cursor,
           cursor,
         };
       }
@@ -102,7 +98,7 @@ export function createEffectToAction<
         
         return {
           kind: 'unfold',
-          parentPath: currentPath,
+          path: currentPath,
           cursor: state.cursor,
         };
       }

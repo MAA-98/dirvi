@@ -27,7 +27,7 @@ export const View = {
     Id extends SerializableKey,
     BufferNode extends TreeNode<Id, BufferNode>,
   >(
-    navigation: NavNode<Id, BufferNode>,
+    navigation: NavNode<Id>,
     cursor: Cursor<Id>,
     cursorApi: CursorApi<Id>,
   ): ViewRow[] {
@@ -38,7 +38,7 @@ export const View = {
     Id extends SerializableKey,
     BufferNode extends TreeNode<Id, BufferNode>,
   >(
-    navigation: NavNode<Id, BufferNode>,
+    navigation: NavNode<Id>,
     cursor: Cursor<Id>,
     cursorApi: CursorApi<Id>,
     viewportHeight: number,
@@ -67,7 +67,7 @@ function viewRowsAtNode<
   Id extends SerializableKey,
   BufferNode extends TreeNode<Id, BufferNode>,
 >(
-  node: NavNode<Id, BufferNode>,
+  node: NavNode<Id>,
   parentPath: Id[],
   cursor: Cursor<Id>,
   cursorApi: CursorApi<Id>,
@@ -78,10 +78,7 @@ function viewRowsAtNode<
    * `node.entries` contains only the entries currently visible in this directory.
    */
   for (const entry of node.entries) {
-    const entryCursor: Cursor<Id> = {
-      parentPath,
-      entryId: entry.id,
-    };
+    const entryCursor: Cursor<Id> = [...parentPath, entry.id]
 
     const isCursor = cursorApi.equal(cursor, entryCursor);
     rows.push(viewRowForEntry(entry, parentPath, isCursor));
@@ -107,7 +104,7 @@ function viewRowsAtNode<
 function viewRowForEntry<
   Id extends SerializableKey,
   BufferNode extends TreeNode<Id, BufferNode>,
->(entry: NavEntry<Id, BufferNode>, parentPath: Id[], cursor: boolean): ViewRow {
+>(entry: NavEntry<Id>, parentPath: Id[], cursor: boolean): ViewRow {
   if (isNavBranch(entry)) {
     const foldedCount =
       entry.children === null ? 0 : entry.children.foldedEntries.length;

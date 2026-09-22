@@ -32,7 +32,7 @@ export function createReducer<
 
       case 'updateBranch':
         const buffer = treeNodeApi.modifyAtPath(
-          state.root.children,
+          state.root,
           action.path,
           (node) => {
             // A branch update cannot turn a leaf into a branch.
@@ -68,10 +68,18 @@ export function createReducer<
       }
 
       case 'fold': {
+        const entryId = action.path.at(-1);
+
+        if (entryId === undefined) {
+          return state;
+        }
+
+        const parentPath = action.path.slice(0, -1);
+        
         const foldNode = foldNodeService.addFoldedEntryAtPath(
-          state.foldNode,
-          action.parentPath,
-          action.entry.id,
+          state.foldRoot,
+          parentPath,
+          entryId,
         );
 
         /*
@@ -91,8 +99,8 @@ export function createReducer<
 
       case 'unfold': {
         const foldNode = foldNodeService.clearFoldedEntriesAtPath(
-          state.foldNode,
-          action.parentPath,
+          state.foldRoot,
+          action.path,
         );
 
         /*

@@ -29,7 +29,7 @@ function createInitialState<
   Node extends TreeNode<Id, Node>,
 >(
   root: State<Id, Node>['root'],
-  createEmptyFoldRoot: () => State<Id, Node>['foldNode'],
+  createEmptyFoldRoot: () => State<Id, Node>['foldRoot'],
 ): State<Id, Node> {
   if (root.children.length === 0) {
     throw new Error(
@@ -39,11 +39,8 @@ function createInitialState<
 
   return {
     root,
-    foldNode: createEmptyFoldRoot(),
-    cursor: {
-      parentPath: [],
-      entryId: root.children[0]!.id,
-    },
+    foldRoot: createEmptyFoldRoot(),
+    cursor: [],
   };
 }
 
@@ -61,21 +58,22 @@ export function LoadingApp<
   const [empty, setEmpty] = useState(false);
   const [error, setError] = useState<Error>();
 
+  // Loading and setting initial state.
   useEffect(() => {
     let mounted = true;
 
     appApi
-      .loadBranches([])
-      .then((rootChildren) => {
+      .createRoot()
+      .then((root) => {
         if (!mounted) {
           return;
         }
 
-        if (rootChildren.length === 0) {
+        if (root.children.length === 0) {
           setEmpty(true);
           return;
         }
-
+        
         setInitialState(
           createInitialState(root, () =>
             appApi.foldNodeService.createEmptyRoot(),
@@ -133,7 +131,7 @@ export function LoadingApp<
   }
 
   if (empty) {
-    return <Text dimColor>{appApi.emptyForestMessage}</Text>;
+    return <Text dimColor>{appApi.emptyRootMessage}</Text>;
   }
 
   if (initialState === undefined) {

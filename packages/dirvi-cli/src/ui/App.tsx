@@ -58,8 +58,8 @@ export function App<
   stateRef.current = state;
 
   const navigation = useMemo(
-    () => appApi.navNodeApi.from(state.root, state.foldNode),
-    [appApi.navNodeApi, state.root, state.foldNode],
+    () => appApi.navNodeApi.from(state.root, state.foldRoot),
+    [appApi.navNodeApi, state.root, state.foldRoot],
   );
 
   const [inputState, setInputState] = useState<InputState>({

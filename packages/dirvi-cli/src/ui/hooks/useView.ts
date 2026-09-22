@@ -13,7 +13,7 @@ export type UseView = <
   Id extends SerializableKey,
   BufferNode extends TreeNode<Id, BufferNode>,
 >(
-  navigation: NavNode<Id, BufferNode>,
+  navigation: NavNode<Id>,
   state: State<Id, BufferNode>,
   terminalRows: number,
 ) => View;
@@ -24,7 +24,7 @@ export function useView<
   Id extends SerializableKey,
   BufferNode extends TreeNode<Id, BufferNode>,
 >(
-  navigation: NavNode<Id, BufferNode>,
+  navigation: NavNode<Id>,
   state: State<Id, BufferNode>,
   cursorApi: CursorApi<Id>,
   terminalRows: number,
