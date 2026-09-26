@@ -54,7 +54,7 @@ const generatedLeafNodeWithReachableNodes = (id: TestNodeId): NodeWithReachableN
 
   return {
     node,
-    reachableNodes: [{ path: [id], node }],
+    reachableNodes: [{ path: [], node }],
   };
 };
 
@@ -77,7 +77,7 @@ const generatedClosedBranchWithReachableNodes = (
   
   return {
     node,
-    reachableNodes: [{ path: [id], node }],
+    reachableNodes: [{ path: [], node }],
   };
 };
 
@@ -97,20 +97,16 @@ const generatedOpenBranchWithReachableNodes = (
     children: children.map(({ node }) => node),
   };
   
-  const descendantNodes = children.flatMap(
-    ({ reachableNodes }) =>
-      reachableNodes.map(({ path, node }) => ({
-        path: [id, ...path],
-        node,
-      })),
+  const descendantNodes = children.flatMap(({ node: child, reachableNodes }) =>
+    reachableNodes.map(({ path, node }) => ({
+      path: [child.id, ...path],
+      node,
+    })),
   );
   
   return {
     node,
-    reachableNodes: [
-      { path: [id], node },
-      ...descendantNodes,
-    ],
+    reachableNodes: [{ path: [], node }, ...descendantNodes],
   };
 };
 
@@ -192,11 +188,9 @@ export const generatedNodeArb: fc.Arbitrary<NodeWithReachableNodes> = fc.letrec(
 ).node;
 
 /**
- * Generates an array of generated nodes with unique IDs suitable for use as
- * the root of a forest.
+ * Generates an array of generated nodes with unique sibling IDs.
  *
- * Root IDs must be unique because paths begin by looking up an ID in this
- * array.
+ * The result is suitable for use as the loaded children of an open branch.
  */
 export const generatedNodesArrayArb = fc.uniqueArray(generatedNodeArb, {
   minLength: 0,
@@ -211,12 +205,10 @@ export const generatedNodesArrayArb = fc.uniqueArray(generatedNodeArb, {
  * Paths through closed branches stop at the closed branch because its
  * descendants are not loaded.
  */
-export const nodesArrayAndPathsArb = generatedNodesArrayArb.map(
-  (generatedNodes) => ({
-    entries: generatedNodes.map(({ node }) => node),
-    pathEntries: generatedNodes.flatMap(
-      ({ reachableNodes }) => reachableNodes,
-    ),
+export const nodeAndPathsArb = generatedNodeArb.map(
+  ({ node: root, reachableNodes }) => ({
+    root,
+    pathEntries: reachableNodes,
   }),
 );
 
@@ -226,11 +218,11 @@ export const nodesArrayAndPathsArb = generatedNodesArrayArb.map(
  * Every generated path is valid for `getAtPath`; unreachable paths are not
  * included.
  */
-export const nodesArrayAndPathAndExpectedArb = nodesArrayAndPathsArb
+export const nodeAndPathAndExpectedArb = nodeAndPathsArb
   .filter(({ pathEntries }) => pathEntries.length > 0)
-  .chain(({ entries, pathEntries }) =>
+  .chain(({ root, pathEntries }) =>
     fc.constantFrom(...pathEntries).map(({ path, node }) => ({
-      entries,
+      root,
       path,
       expected: node,
     })),
@@ -242,17 +234,15 @@ export const nodesArrayAndPathAndExpectedArb = nodesArrayAndPathsArb
  * Both open and closed branches are included. A path to a closed branch is
  * valid, but a path through a closed branch cannot reach any descendants.
  */
-export const nodesArrayAndBranchPathArb = nodesArrayAndPathsArb
-  .map(({ entries, pathEntries }) => ({
-    entries,
-    branchPathEntries: pathEntries.filter(
-      ({ node }) => 'children' in node,
-    ),
+export const nodesArrayAndBranchPathArb = nodeAndPathsArb
+  .map(({ root, pathEntries }) => ({
+    root,
+    branchPathEntries: pathEntries.filter(({ node }) => 'children' in node),
   }))
   .filter(({ branchPathEntries }) => branchPathEntries.length > 0)
-  .chain(({ entries, branchPathEntries }) =>
+  .chain(({ root, branchPathEntries }) =>
     fc.constantFrom(...branchPathEntries).map(({ path, node }) => ({
-      entries,
+      root,
       path,
       expected: node,
     })),

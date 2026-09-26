@@ -1,16 +1,23 @@
-import { UserInput, InputState, Intent } from '../domain/index.js';
+import { UserInput, InputModeState, Intent } from '../domain/index.js';
 
-// Derive the intent from the user input and the current input state.
+/**
+ * By design "intent = input + mode + modeState", so it interprets the key
+ * inputs depending on the mode and input so far. No context in terms of UI.
+ *
+ * @param userInput - the key user input.
+ * @param inputModeState - the current mode and the user inputs so far.
+ * @returns The user's intent.
+ */
 export function userInputToIntent(
   userInput: UserInput,
-  inputState: InputState,
+  inputModeState: InputModeState,
 ): Intent | undefined {
-  switch (inputState.inputMode) {
+  switch (inputModeState.inputMode) {
     case 'normal':
-      return normalUserInputToIntent(userInput, inputState.normalBuffer);
+      return normalUserInputToIntent(userInput, inputModeState.normalBuffer);
 
     case 'command':
-      return commandUserInputToIntent(userInput, inputState.commandLine);
+      return commandUserInputToIntent(userInput, inputModeState.commandLine);
   }
 }
 

@@ -1,8 +1,6 @@
 # TODO
 
-1. Refactor tree node to use just node at the root, instead of array of entries.
+Loading is not working atm.
 
-2. Update `.md`s.
-
-3. Change nav node to display row so it displays folds inline
-
+1. Finalize fold node design
+2. Test with `fast-check` as with node tree

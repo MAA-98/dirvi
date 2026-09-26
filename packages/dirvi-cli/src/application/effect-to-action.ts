@@ -4,30 +4,31 @@ import {
   TreeNode,
   TreeNodeApi,
 } from 'dirvi-lib/dist/tree-surfer/tree-node/tree-node.types.js';
-import { CursorApi, EffectAction, NavNode, NavNodeApi, State } from 'dirvi-lib';
+import { CursorApi, EffectAction, NavBranch, NavNode, NavNodeApi, State } from 'dirvi-lib';
 
 export type EffectToAction<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
+  Node extends TreeNode<Id, Node>,
 > = (
-  effectAction: EffectAction<Id, BufferNode>,
-  navigation: NavNode<Id, BufferNode>,
-  state: State<Id, BufferNode>,
-) => ReducerAction<Id, BufferNode> | undefined;
+  effectAction: EffectAction<Id, Node>,
+  navigation: NavBranch<Id>,
+  state: State<Id, Node>,
+) => ReducerAction<Id, Node> | undefined;
 
 export function createEffectToAction<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
+  Node extends TreeNode<Id, Node>,
 >(
-  treeNodeApi: TreeNodeApi<Id, BufferNode>,
+  treeNodeApi: TreeNodeApi<Id, Node>,
   cursorApi: CursorApi<Id>,
-  navNodeApi: NavNodeApi<Id, BufferNode>,
-): EffectToAction<Id, BufferNode> {
+  navNodeApi: NavNodeApi<Id, Node>,
+): EffectToAction<Id, Node> {
   function effectToAction(
-    effectAction: EffectAction<Id, BufferNode>,
-    navigation: NavNode<Id, BufferNode>,
-    state: State<Id, BufferNode>,
-  ): ReducerAction<Id, BufferNode> | undefined {
+    effectAction: EffectAction<Id, Node>,
+    navigation: NavBranch<Id>,
+    state: State<Id, Node>,
+  ): ReducerAction<Id, Node> | undefined {
+    
     switch (effectAction.effectActionType) {
       case 'nextEntry': {
         const cursor = navNodeApi.nextCursor(navigation, state.cursor);
@@ -59,7 +60,13 @@ export function createEffectToAction<
         };
 
       case 'navigateToParent': {
-        const cursor = navNodeApi.parentCursor(navigation, state.cursor);
+        const navNode = navigation.children;
+        
+        if (navNode === null) {
+          return undefined
+        }
+        
+        const cursor = navNodeApi.parentCursor(navNode, state.cursor);
 
         return cursor === undefined
           ? undefined
@@ -70,65 +77,43 @@ export function createEffectToAction<
       }
 
       case 'fold': {
-        if (state.cursor.kind === 'fold') {
+        if (state.cursor.length === 0) {
           return undefined;
         }
-
-        const path = [...state.cursor.parentPath, state.cursor.entryId];
-
-        const entry = treeNodeApi.getAtPath(state.buffer, path, (node) => node);
-
-        if (entry === undefined) {
-          return undefined;
-        }
-
+        
         const cursor = navNodeApi.cursorAfterFold(navigation, state.cursor);
+        
         if (cursor === undefined) {
           return undefined;
         }
 
         return {
           kind: 'fold',
-          parentPath: [...state.cursor.parentPath],
-          entry,
+          path: state.cursor,
           cursor,
         };
       }
 
       case 'unfold': {
-        if (state.cursor.kind !== 'fold') {
+        const currentPath = cursorApi.getPath(state.cursor);
+        const navNode = navigation.children;
+
+        if (navNode === null) {
           return undefined;
         }
+        
+        const node = navNodeApi.getNodeAtPath(navNode, currentPath);
 
-        const node = navNodeApi.getNodeAtPath(navigation, [
-          ...state.cursor.parentPath,
-        ]);
-
-        if (node === undefined || node.foldedEntries.length === 0) {
+        if (node === undefined || node.folded?.entries.length === 0) {
           return undefined;
         }
-
-        const firstFoldedEntry = node.foldedEntries[0];
-
+        
         return {
           kind: 'unfold',
-          parentPath: [...state.cursor.parentPath],
-          cursor: {
-            kind: 'entry',
-            parentPath: state.cursor.parentPath,
-            entryId: firstFoldedEntry.id,
-          },
+          path: currentPath,
+          cursor: state.cursor,
         };
       }
-
-      case 'toggleFold':
-        return effectToAction(
-          state.cursor.kind === 'fold'
-            ? { effectActionType: 'unfold' }
-            : { effectActionType: 'fold' },
-          navigation,
-          state,
-        );
     }
   }
 

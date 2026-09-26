@@ -20,12 +20,11 @@ export type ReducerAction<
     }
   | {
       kind: 'fold';
-      parentPath: Id[];
-      entry: BufferNode;
+      path: readonly Id[];
       cursor: Cursor<Id>;
     }
   | {
       kind: 'unfold';
-      parentPath: Id[];
+      path: Id[];
       cursor: Cursor<Id>;
     };

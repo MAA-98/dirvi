@@ -6,13 +6,13 @@ export function createStateSchema<
   Id extends SerializableKey,
   Node extends TreeNode<Id, Node>,
 >(
-  bufferNodeSchema: z.ZodType<Node>,
-  foldNodeRootSchema: z.ZodType<State<Id, Node>['foldNode']>,
+  rootSchema: z.ZodType<State<Id, Node>['root']>,
+  foldNodeRootSchema: z.ZodType<State<Id, Node>['foldRoot']>,
   cursorSchema: z.ZodType<State<Id, Node>['cursor']>,
 ) {
   return z.object({
-    buffer: z.array(bufferNodeSchema),
-    foldNode: foldNodeRootSchema,
+    root: rootSchema,
+    foldRoot: foldNodeRootSchema,
     cursor: cursorSchema,
   });
 }

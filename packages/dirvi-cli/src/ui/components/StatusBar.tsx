@@ -1,10 +1,10 @@
 import { Box, Text } from 'ink';
-import { InputState } from 'dirvi-lib';
+import { InputModeState } from 'dirvi-lib';
 
 export const STATUS_BAR_HEIGHT = 1;
 
 type StatusBarProps = {
-  inputState: InputState;
+  inputState: InputModeState;
 };
 
 export function StatusBar({ inputState }: StatusBarProps) {

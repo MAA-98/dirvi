@@ -24,30 +24,6 @@ type LoadingAppProps<
   onError?: (error: Error) => void;
 };
 
-function createInitialState<
-  Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
->(
-  rootBranches: State<Id, BufferNode>['buffer'],
-  createEmptyFoldRoot: () => State<Id, BufferNode>['foldNode'],
-): State<Id, BufferNode> {
-  if (rootBranches.length === 0) {
-    throw new Error(
-      'createInitialState cannot create a state for an empty forest',
-    );
-  }
-
-  return {
-    buffer: rootBranches,
-    foldNode: createEmptyFoldRoot(),
-    cursor: {
-      kind: 'entry',
-      parentPath: [],
-      entryId: rootBranches[0]!.id,
-    },
-  };
-}
-
 export function LoadingApp<
   Id extends SerializableKey,
   BufferNode extends TreeNode<Id, BufferNode>,
@@ -62,26 +38,22 @@ export function LoadingApp<
   const [empty, setEmpty] = useState(false);
   const [error, setError] = useState<Error>();
 
+  // Loading and setting initial state.
   useEffect(() => {
     let mounted = true;
 
     appApi
-      .loadBranches([])
-      .then((rootBranches) => {
+      .createRoot()
+      .then((root) => {
         if (!mounted) {
           return;
         }
-
-        if (rootBranches.length === 0) {
-          setEmpty(true);
-          return;
-        }
-
-        setInitialState(
-          createInitialState(rootBranches, () =>
-            appApi.foldNodeService.createEmptyRoot(),
-          ),
-        );
+        
+        setInitialState({
+          root,
+          foldRoot: appApi.foldNodeService.createEmptyNode(appApi.rootId),
+          cursor: [],
+        });
       })
       .catch((cause: unknown) => {
         const nextError =
@@ -134,7 +106,7 @@ export function LoadingApp<
   }
 
   if (empty) {
-    return <Text dimColor>{appApi.emptyForestMessage}</Text>;
+    return <Text dimColor>{appApi.emptyRootMessage}</Text>;
   }
 
   if (initialState === undefined) {

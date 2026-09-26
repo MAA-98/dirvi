@@ -52,3 +52,9 @@ enable:
   }
 }
 ```
+
+## Root
+
+The root is just another tree node, but for normal navigation inside the root directory
+it will be an open branch node. Tree paths passed to `TreeNodeApi` are relative to the 
+supplied root node, i.e. `[]` addresses the root itself.

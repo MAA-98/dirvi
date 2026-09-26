@@ -1,4 +1,4 @@
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { watch, type FSWatcher } from 'node:fs';
 import { AppApi, createAppApis } from '../domain/app-api.js';
 import { getUnixAbsPath } from './get-unix-abs-path.js';
@@ -7,6 +7,7 @@ import envPaths from 'env-paths';
 import { createFileViewApi, StateCodec } from './create-file-view-api.js';
 import { createHash } from 'node:crypto';
 import {
+  PosixBranchTreeNodeSchema,
   PosixCursorSchema,
   PosixFoldNode,
   PosixName,
@@ -21,12 +22,11 @@ import { z } from 'zod';
 // ---*--- App Data ---*---
 
 // Paths for app data:
-const paths = envPaths('dirvi');
-const posixAppDataDirectory = join(paths.data, 'apps', 'posix');
+const environmentPaths = envPaths('dirvi');
+const posixAppDataDirectory = join(environmentPaths.data, 'apps', 'posix');
 const posixAppViewsDirectory = join(posixAppDataDirectory, 'views');
 
 // Helpers for saving app data:
-// The key for the Posix app instance is just the directory working in.
 function encodeKey(key: UnixAbsolutePath): string {
   return createHash('sha256').update(key).digest('hex');
 }
@@ -36,25 +36,29 @@ function encodeKey(key: UnixAbsolutePath): string {
 export type StoredPosixFoldNode = {
   id: PosixName;
   children: StoredPosixFoldNode[];
-  folds: PosixName[];
+  foldedChildren: StoredPosixFoldNode[];
 };
 
 const StoredPosixFoldNodeSchema: z.ZodType<StoredPosixFoldNode> = z.lazy(() =>
   z.object({
     id: PosixNameSchema,
     children: z.array(StoredPosixFoldNodeSchema),
-    folds: z.array(PosixNameSchema),
+    foldedChildren: z.array(StoredPosixFoldNodeSchema),
   }),
 );
 
-const StoredPosixStateSchema: z.ZodType<StoredPosixState> = z.object({
-  buffer: z.array(PosixTreeNodeSchema),
-  foldNode: StoredPosixFoldNodeSchema,
-  cursor: PosixCursorSchema,
-});
+const StoredPosixStateSchema: z.ZodType<StoredPosixState> = z
+  .object({
+    root: PosixBranchTreeNodeSchema,
+    foldRoot: StoredPosixFoldNodeSchema,
+    cursor: PosixCursorSchema,
+  })
+  .refine((state) => state.root.id !== state.foldRoot.id, {
+    message: 'The fold root ID must match the tree root ID.',
+  });
 
-export type StoredPosixState = Omit<PosixState, 'foldNode'> & {
-  foldNode: StoredPosixFoldNode;
+export type StoredPosixState = Omit<PosixState, 'foldRoot'> & {
+  foldRoot: StoredPosixFoldNode;
 };
 
 // ---*--- Codec ---*---
@@ -63,7 +67,7 @@ function encodePosixFoldNode(node: PosixFoldNode): StoredPosixFoldNode {
   return {
     id: node.id,
     children: node.children.map(encodePosixFoldNode),
-    folds: [...node.folds],
+    foldedChildren: [...node.foldedChildren],
   };
 }
 
@@ -71,7 +75,7 @@ function decodePosixFoldNode(node: StoredPosixFoldNode): PosixFoldNode {
   return {
     id: node.id,
     children: node.children.map(decodePosixFoldNode),
-    folds: new Set(node.folds),
+    foldedChildren: node.foldedChildren.map(decodePosixFoldNode),
   };
 }
 
@@ -80,40 +84,57 @@ const posixStateCodec: StateCodec<PosixState, StoredPosixState> = {
 
   encode(state): StoredPosixState {
     return {
-      buffer: state.buffer,
-      foldNode: encodePosixFoldNode(state.foldNode),
+      root: state.root,
+      foldRoot: encodePosixFoldNode(state.foldRoot),
       cursor: state.cursor,
     };
   },
 
   decode(state): PosixState {
     return {
-      buffer: state.buffer,
-      foldNode: decodePosixFoldNode(state.foldNode),
+      root: state.root,
+      foldRoot: decodePosixFoldNode(state.foldRoot),
       cursor: state.cursor,
     };
   },
 };
 
 // --- Creating Posix App API ---
+
+/**
+ * Creates the AppApi for the POSIX app.
+ *
+ * @param directory - optional directory path for loading the app not at the cwd.
+ */
 export function loadPosixAppApi(
   directory?: string,
 ): AppApi<PosixName, PosixTreeNode, UnixAbsolutePath> {
   const unixAbsPath = getUnixAbsPath(directory ?? process.cwd());
-  const apis = createAppApis<PosixName, PosixTreeNode>(unixAbsPath[-1]);
+  const rootId = PosixNameSchema.parse(basename(unixAbsPath));
+  const apis = createAppApis<PosixName, PosixTreeNode>();
 
   return {
     appId: 'posix',
-    name: `Posix(${unixAbsPath})`,
-    emptyForestMessage: 'The directory is empty.',
+    name: unixAbsPath,
+    rootId,
+    emptyRootMessage: 'The directory is empty.',
 
     loadBranches: (path) => {
       const address = join(unixAbsPath, ...path);
       return getDirEntries(address);
     },
+    
+    createRoot: async () => {
+      return {
+        id: rootId,
+        kind: 'directory',
+        children: null
+      }
+    },
 
     subscribeToResync: createFsResyncSubscription(join(unixAbsPath)),
 
+    // The key for the Posix app instance is just the directory working in:
     viewKey: unixAbsPath,
     viewApi: createFileViewApi({
       directory: posixAppViewsDirectory,

@@ -1,176 +1,181 @@
-import { z } from 'zod';
-import { createTreeNodeApi } from '../tree-node/tree-node.impl.js';
-import {
+import type {
   FoldNode,
   FoldNodeApi,
   FoldNodeService,
 } from './fold-node.types.js';
-import { SerializableKey } from '../tree-node/tree-node.types.js';
+import type { SerializableKey } from '../tree-node/tree-node.types.js';
 
-export function createFoldNodeApi<
-  Id extends SerializableKey,
->(): FoldNodeApi<Id> {
-  const treeNodeApi = createTreeNodeApi<Id, FoldNode<Id>>();
+function getFoldedChildById<Id extends SerializableKey>(
+  node: FoldNode<Id>,
+  id: Id,
+): FoldNode<Id> | undefined {
+  return node.foldedChildren.find((child) => child.id === id);
+}
 
-  return {
-    getChildren(node) {
-      return node.children;
-    },
-
-    getChildById(node, id) {
-      return node.children.find((child) => child.id === id);
-    },
-
-    getAtPath(rootNode, path, selector) {
-      return treeNodeApi.getAtPath(rootNode.children, path, selector);
-    },
-
-    modifyAtPath(rootNode, path, modifier) {
-      const children = treeNodeApi.modifyAtPath(
-        rootNode.children,
-        path,
-        modifier,
-      );
-
-      if (children === undefined) {
-        return undefined;
-      }
-
-      return {
-        ...rootNode,
-        children,
-      };
-    },
-  };
+function hasFoldedChildWithId<Id extends SerializableKey>(
+  node: FoldNode<Id>,
+  id: Id,
+): boolean {
+  return getFoldedChildById(node, id) !== undefined;
 }
 
 export function createFoldNodeService<Id extends SerializableKey>(
-  rootId: Id,
   foldNodeApi: FoldNodeApi<Id>,
-  createChild: (id: Id) => FoldNode<Id>,
 ): FoldNodeService<Id> {
+  function createEmptyNode(id: Id): FoldNode<Id> {
+    return {
+      id,
+      children: [],
+      foldedChildren: [],
+    };
+  }
+  
   return {
-    createEmptyRoot() {
-      return {
-        id: rootId,
-        children: [],
-        folds: new Set<Id>(),
-      };
-    },
+    createEmptyNode,
 
     getIfEntryFoldedAtPath(rootNode, path, entryId) {
-      if (path.length === 0) {
-        return rootNode.folds.has(entryId);
-      }
-
       const node = foldNodeApi.getAtPath(
         rootNode,
         path,
         (candidate) => candidate,
       );
 
-      return node !== undefined && node.folds.has(entryId);
+      return node !== undefined && hasFoldedChildWithId(node, entryId);
+    },
+
+    foldedEntriesAtPath(rootNode, path) {
+      const node = foldNodeApi.getAtPath(
+        rootNode,
+        path,
+        (candidate) => candidate,
+      );
+
+      return node?.foldedChildren.map((child) => child.id);
     },
 
     addFoldedEntryAtPath(rootNode, path, entryId) {
-      const ensuredRoot = ensurePath(rootNode, path);
+      const rootWithPath = ensurePath(rootNode, path);
 
-      if (path.length === 0) {
-        return addFoldedEntry(ensuredRoot, entryId);
+      if (rootWithPath === undefined) {
+        return undefined;
       }
 
-      return foldNodeApi.modifyAtPath(ensuredRoot, path, (node) =>
+      return foldNodeApi.modifyAtPath(rootWithPath, path, (node) =>
         addFoldedEntry(node, entryId),
       );
     },
 
     removeFoldedEntryAtPath(rootNode, path, entryId) {
-      if (path.length === 0) {
-        return removeFoldedEntry(rootNode, entryId);
-      }
-
       return foldNodeApi.modifyAtPath(rootNode, path, (node) =>
         removeFoldedEntry(node, entryId),
       );
     },
 
     clearFoldedEntriesAtPath(rootNode, path) {
-      if (path.length === 0) {
-        return clearFoldedEntries(rootNode);
-      }
-
-      return foldNodeApi.modifyAtPath(rootNode, path, clearFoldedEntries);
+      return foldNodeApi.modifyAtPath(rootNode, path, (node) =>
+        clearFoldedEntries(node),
+      );
     },
   };
 
-  // Helpers:
-  // `Node extends FoldNodeRoot<Id> | FoldNode<Id>` is used to create two
-  // versions of functions: one for the root and one for the children.
-
-  // "Flat" functions
+  // Node-local operations.
   //
-  // Adds entry name to the given node.
-  function addFoldedEntry<Node extends FoldNode<Id>>(
-    node: Node,
-    entryId: Id,
-  ): Node {
-    if (node.folds.has(entryId)) {
+  // These functions update only the selected node. Path traversal and immutable
+  // ancestor updates are handled by FoldNodeApi.
+  function addFoldedEntry(node: FoldNode<Id>, entryId: Id): FoldNode<Id> {
+    const existingFoldedChild = getFoldedChildById(node, entryId);
+
+    if (existingFoldedChild !== undefined) {
       return node;
     }
 
-    const folds = new Set(node.folds);
-    folds.add(entryId);
+    const childIndex = node.children.findIndex((child) => child.id === entryId);
+
+    const child =
+      childIndex === -1 ? createEmptyNode(entryId) : node.children[childIndex]!;
+
+    const children =
+      childIndex === -1
+        ? node.children
+        : node.children.filter((_, index) => index !== childIndex);
 
     return {
       ...node,
-      folds,
-    } as Node;
+      children,
+      foldedChildren: [...node.foldedChildren, child],
+    };
   }
 
-  function removeFoldedEntry<Node extends FoldNode<Id>>(
-    node: Node,
-    entryId: Id,
-  ): Node {
-    if (!node.folds.has(entryId)) {
+  function removeFoldedEntry(node: FoldNode<Id>, entryId: Id): FoldNode<Id> {
+    const foldedChildIndex = node.foldedChildren.findIndex(
+      (child) => child.id === entryId,
+    );
+
+    if (foldedChildIndex === -1) {
       return node;
     }
 
-    const folds = new Set(node.folds);
-    folds.delete(entryId);
+    const foldedChild = node.foldedChildren[foldedChildIndex]!;
+
+    const foldedChildren = node.foldedChildren.filter(
+      (_, index) => index !== foldedChildIndex,
+    );
+
+    const hasNestedFoldState =
+      foldedChild.children.length > 0 || foldedChild.foldedChildren.length > 0;
 
     return {
       ...node,
-      folds,
-    } as Node;
+      children: hasNestedFoldState
+        ? [...node.children, foldedChild]
+        : node.children,
+      foldedChildren,
+    };
   }
-
-  function clearFoldedEntries<Node extends FoldNode<Id>>(
-    node: Node,
-  ): Node {
-    if (node.folds.size === 0) {
+  
+  function clearFoldedEntries(node: FoldNode<Id>): FoldNode<Id> {
+    if (node.foldedChildren.length === 0) {
       return node;
+    }
+
+    const children = [...node.children];
+
+    for (const foldedChild of node.foldedChildren) {
+      const hasNestedFoldState =
+        foldedChild.children.length > 0 ||
+        foldedChild.foldedChildren.length > 0;
+
+      if (hasNestedFoldState) {
+        children.push(foldedChild);
+      }
     }
 
     return {
       ...node,
-      folds: new Set<Id>(),
-    } as Node;
+      children,
+      foldedChildren: [],
+    };
   }
 
   /**
    * Ensures that the requested path exists in the fold-state tree.
    *
-   * This creates fold nodes only; it does not modify the buffer tree.
+   * The path is relative to `rootNode`; an empty path selects the root.
+   * This creates fold nodes only and does not modify the buffer tree.
    */
   function ensurePath(
     rootNode: FoldNode<Id>,
-    path: Id[],
-  ): FoldNode<Id> {
+    path: readonly Id[],
+  ): FoldNode<Id> | undefined {
     if (path.length === 0) {
       return rootNode;
     }
 
-    const children = ensureChildPath(rootNode.children, path, 0);
+    const children = ensureChildPath(rootNode, path, 0);
+
+    if (children === undefined) {
+      return undefined;
+    }
 
     if (children === rootNode.children) {
       return rootNode;
@@ -181,36 +186,41 @@ export function createFoldNodeService<Id extends SerializableKey>(
       children,
     };
   }
-
+  
   function ensureChildPath(
-    children: FoldNode<Id>[],
-    path: Id[],
+    parent: FoldNode<Id>,
+    path: readonly Id[],
     pathIndex: number,
-  ): FoldNode<Id>[] {
+  ): FoldNode<Id>[] | undefined {
     const id = path[pathIndex];
 
     if (id === undefined) {
-      return children;
+      return parent.children;
     }
 
+    if (hasFoldedChildWithId(parent, id)) {
+      return undefined;
+    }
+
+    const children = parent.children;
     const childIndex = children.findIndex((child) => child.id === id);
 
-    const child = childIndex === -1 ? createChild(id) : children[childIndex]!;
+    const child = childIndex === -1 ? createEmptyNode(id) : children[childIndex]!;
 
     let updatedChild = child;
 
     if (pathIndex < path.length - 1) {
-      const updatedChildren = ensureChildPath(
-        child.children,
-        path,
-        pathIndex + 1,
-      );
+      const updatedChildren = ensureChildPath(child, path, pathIndex + 1);
+
+      if (updatedChildren === undefined) {
+        return undefined;
+      }
 
       if (updatedChildren !== child.children) {
         updatedChild = {
           ...child,
           children: updatedChildren,
-        } as FoldNode<Id>;
+        };
       }
     }
 
@@ -224,6 +234,7 @@ export function createFoldNodeService<Id extends SerializableKey>(
 
     const result = [...children];
     result[childIndex] = updatedChild;
+
     return result;
   }
 }

@@ -1,5 +1,4 @@
 import {
-  FoldNodeApi,
   FoldNodeService,
   SerializableKey,
   State,
@@ -18,11 +17,11 @@ export type Reducer<
 
 export function createReducer<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
+  Node extends TreeNode<Id, Node>,
 >(
-  treeNodeApi: TreeNodeApi<Id, BufferNode>,
+  treeNodeApi: TreeNodeApi<Id, Node>,
   foldNodeService: FoldNodeService<Id>,
-): Reducer<Id, BufferNode> {
+): Reducer<Id, Node> {
   return (state, action) => {
     switch (action.kind) {
       case 'changeCursor':
@@ -32,8 +31,8 @@ export function createReducer<
         };
 
       case 'updateBranch':
-        const buffer = treeNodeApi.modifyAtPath(
-          state.buffer,
+        const root = treeNodeApi.modifyAtPath(
+          state.root,
           action.path,
           (node) => {
             // A branch update cannot turn a leaf into a branch.
@@ -44,17 +43,17 @@ export function createReducer<
             return {
               ...node,
               children: action.entries,
-            } as BufferNode;
+            } as Node;
           },
         );
 
-        if (buffer === undefined) {
+        if (root === undefined) {
           return state;
         }
 
         return {
           ...state,
-          buffer,
+          root,
         };
 
       case 'setState': {
@@ -69,44 +68,52 @@ export function createReducer<
       }
 
       case 'fold': {
-        const foldNode = foldNodeService.addFoldedEntryAtPath(
-          state.foldNode,
-          action.parentPath,
-          action.entry.id,
+        const entryId = action.path.at(-1);
+
+        if (entryId === undefined) {
+          return state;
+        }
+
+        const parentPath = action.path.slice(0, -1);
+        
+        const foldRoot = foldNodeService.addFoldedEntryAtPath(
+          state.foldRoot,
+          parentPath,
+          entryId,
         );
 
         /*
          * addFoldedEntryAtPath creates missing fold paths, so this should
          * normally never be undefined. Preserve the existing state if it is.
          */
-        if (foldNode === undefined) {
+        if (foldRoot === undefined) {
           return state;
         }
 
         return {
           ...state,
-          foldNode,
+          foldRoot,
           cursor: action.cursor,
         };
       }
 
       case 'unfold': {
-        const foldNode = foldNodeService.clearFoldedEntriesAtPath(
-          state.foldNode,
-          action.parentPath,
+        const foldRoot = foldNodeService.clearFoldedEntriesAtPath(
+          state.foldRoot,
+          action.path,
         );
 
         /*
          * Unlike adding a fold, clearing only operates on an existing path.
          * An undefined result means that the fold path no longer exists.
          */
-        if (foldNode === undefined) {
+        if (foldRoot === undefined) {
           return state;
         }
 
         return {
           ...state,
-          foldNode,
+          foldRoot,
           cursor: action.cursor,
         };
       }

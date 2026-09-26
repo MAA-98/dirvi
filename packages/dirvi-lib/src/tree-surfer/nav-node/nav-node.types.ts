@@ -1,108 +1,113 @@
 import {
-  LeafTreeNode,
+  BranchTreeNode,
   SerializableKey,
   TreeNode,
 } from '../tree-node/tree-node.types.js';
 import { Cursor } from '../cursor.js';
 import { FoldNode } from '../fold-node/fold-node.types.js';
 
-/**
- * A navigation entry preserves the original buffer-node properties, but
- * replaces a branch's buffer children with a NavNode.
- */
-export type NavEntry<
-  Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
-> = NavLeaf<Id, BufferNode> | NavBranch<Id, BufferNode>;
-
-export type NavLeaf<
-  Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
-> = BufferNode & LeafTreeNode<Id>;
-
-type ReplaceChildren<Node, Children> = Node extends {
-  children: unknown;
-}
-  ? Omit<Node, 'children'> & {
-      children: Children;
-    }
-  : never;
-
-export type NavBranch<
-  Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
-> = ReplaceChildren<BufferNode, NavNode<Id, BufferNode> | null>;
-
-export function isNavBranch<
-  Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
->(entry: NavEntry<Id, BufferNode>): entry is NavBranch<Id, BufferNode> {
-  return 'children' in entry;
-}
-
-/**
- * The derived tree as navigated: list of visible entries and folded entries.
- */
-export type NavNode<
-  Id extends SerializableKey,
-  Node extends TreeNode<Id, Node>,
-> = {
+export type NavNode<Id extends SerializableKey> = {
   /**
-   * Currently visible entries.
+   * Synthetic UI entry representing folded children.
+   *
+   * It is absent when this directory has no folded children.
    */
-  entries: NavEntry<Id, Node>[];
-
+  folded: NavFoldEntry<Id> | null;
+  
   /**
-   * Currently loaded entries hidden by this directory's fold.
+   * Loaded entries that are not folded at this directory, corresponding to
+   * navigable rows. Entries retain the order from the TreeNode.
    */
-  foldedEntries: NavEntry<Id, Node>[];
+  entries: NavEntry<Id>[];
 };
 
-// ---*--- Nav Node API Types ---*---
+export type NavFoldEntry<Id extends SerializableKey> = {
+  /**
+   * Folded entries that are present in the loaded TreeNode.
+   *
+   * This is information for rendering the folded row.
+   */
+  entries: NavEntry<Id>[];
+};
 
-export type NavNodeApi<
-  Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
-> = {
+export type NavEntry<Id extends SerializableKey> = NavLeaf<Id> | NavBranch<Id>;
+
+export type NavLeaf<Id extends SerializableKey> = {
+  id: Id;
+};
+
+export type NavBranch<Id extends SerializableKey> = {
+  id: Id;
+  children: NavNode<Id> | null;
+};
+
+export type NavNodeApi<Id extends SerializableKey, Node extends TreeNode<Id, Node>> = {
+  /**
+   * Tests whether a navigation entry represents a branch.
+   *
+   * A branch is an entry with a `children` property. Its `children` value is
+   * `null` when the corresponding tree branch has not been loaded or opened.
+   */
+  entryIsBranch(entry: NavEntry<Id>): entry is NavBranch<Id>;
+
+  /**
+   * Creates a navigation projection of the tree node root.
+   *
+   * The root must be a branch node because navigation is rooted at a
+   * directory-like node. The returned navigation entry is always a `NavBranch`.
+   *
+   * The TreeNode is authoritative for:
+   *
+   * - entry identity and order;
+   * - whether the entry is a leaf or branch;
+   * - whether branch children are loaded; and
+   * - the loaded child entries.
+   *
+   * The optional FoldNode is authoritative for folding. When `foldRoot` is
+   * undefined, the projection contains no folded entries.
+   *
+   * A folded entry is omitted from its parent's navigable entries and is
+   * represented by that parent's synthetic `folded` entry instead.
+   */
   from(
-    entries: BufferNode[],
-    foldNode: FoldNode<Id>,
-  ): NavNode<Id, BufferNode>;
+    root: Node & BranchTreeNode<Id, Node>,
+    foldRoot: FoldNode<Id> | undefined
+  ): NavBranch<Id>;
 
   getNodeAtPath(
-    navigation: NavNode<Id, BufferNode>,
-    path: Id[],
-  ): NavNode<Id, BufferNode> | undefined;
+    navigation: NavNode<Id>,
+    path: readonly Id[],
+  ): NavNode<Id> | undefined;
 
   getEntryAtPath(
-    navigation: NavNode<Id, BufferNode>,
-    path: Id[],
-  ): NavEntry<Id, BufferNode> | undefined;
+    navigation: NavNode<Id>,
+    path: readonly Id[],
+  ): NavEntry<Id> | undefined;
 
   nextCursor(
-    rootNode: NavNode<Id, BufferNode>,
+    rootNode: NavBranch<Id>,
     cursor: Cursor<Id>,
   ): Cursor<Id> | undefined;
 
   previousCursor(
-    rootNode: NavNode<Id, BufferNode>,
+    rootNode: NavBranch<Id>,
     cursor: Cursor<Id>,
   ): Cursor<Id> | undefined;
 
   cursorAfterFold(
-    rootNode: NavNode<Id, BufferNode>,
+    rootNode: NavBranch<Id>,
     cursor: Cursor<Id>,
   ): Cursor<Id> | undefined;
 
   parentCursor(
-    navigation: NavNode<Id, BufferNode>,
+    navigation: NavNode<Id>,
     cursor: Cursor<Id>,
   ): Cursor<Id> | undefined;
 
-  cursors(navigation: NavNode<Id, BufferNode>, parentPath?: Id[]): Cursor<Id>[];
+  cursors(navigation: NavNode<Id>, parentPath?: Id[]): Cursor<Id>[];
 
   visibleLeavesPaths(
-    navigation: NavNode<Id, BufferNode>,
-    parentPath?: Id[],
+    navigation: NavNode<Id>,
+    parentPath?: readonly Id[],
   ): Id[][];
 };

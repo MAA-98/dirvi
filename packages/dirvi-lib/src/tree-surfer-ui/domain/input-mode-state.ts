@@ -1,4 +1,4 @@
-export type InputState =
+export type InputModeState =
   | {
       inputMode: 'normal';
       normalBuffer: string;

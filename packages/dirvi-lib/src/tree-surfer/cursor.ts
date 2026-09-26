@@ -1,102 +1,89 @@
 import { z } from 'zod';
 
-export const CursorKind = {
-  Entry: 'entry',
-  Fold: 'fold',
-} as const;
+/**
+ * A root-relative path identifying the current tree position.
+ *
+ * The empty path identifies the tree root. A non-empty path identifies a
+ * descendant by following child IDs from the root.
+ *
+ * For example, given:
+ *
+ * ```
+ * root
+ * └── src
+ *     └── main.ts
+ * ```
+ *
+ * the cursors are:
+ *
+ * ```ts
+ * []                    // root
+ * ['src']               // src
+ * ['src', 'main.ts']    // main.ts
+ * ```
+ *
+ * @typeParam Id - The type of node IDs.
+ */
+export type Cursor<Id> = readonly Id[];
 
-export type CursorKind = (typeof CursorKind)[keyof typeof CursorKind];
-
-export type CursorEntry<Id> = {
-  kind: typeof CursorKind.Entry;
-  parentPath: readonly Id[];
-  entryId: Id;
-};
-
-export type CursorFold<Id> = {
-  kind: typeof CursorKind.Fold;
-  parentPath: readonly Id[];
-};
-
-export type Cursor<Id> = CursorEntry<Id> | CursorFold<Id>;
-
+/**
+ * Creates a schema for root-relative tree cursors.
+ *
+ * The schema validates the IDs in the path, but does not verify that the path
+ * exists in a particular tree.
+ */
 export function createCursorSchema<IdSchema extends z.ZodTypeAny>(
   idSchema: IdSchema,
 ) {
-  const parentPathSchema = z.array(idSchema);
-
-  return z.discriminatedUnion('kind', [
-    z.object({
-      kind: z.literal(CursorKind.Entry),
-      parentPath: parentPathSchema,
-      entryId: idSchema,
-    }),
-
-    z.object({
-      kind: z.literal(CursorKind.Fold),
-      parentPath: parentPathSchema,
-    }),
-  ]);
+  return z.array(idSchema);
 }
 
+/**
+ * Operations for comparing and inspecting root-relative tree cursors.
+ *
+ * @typeParam Id - The type of node IDs.
+ */
 export type CursorApi<Id> = {
-  isEntry(cursor: Cursor<Id>): cursor is CursorEntry<Id>;
-
-  isFold(cursor: Cursor<Id>): cursor is CursorFold<Id>;
-
+  /**
+   * Tests whether two cursors identify the same tree position.
+   */
   equal(left: Cursor<Id>, right: Cursor<Id>): boolean;
 
-  getPath(cursor: Cursor<Id>): Id[] | undefined;
+  /**
+   * Returns a mutable copy of the cursor path.
+   *
+   * The empty path identifies the tree root.
+   */
+  getPath(cursor: Cursor<Id>): Id[];
 
+  /**
+   * Tests whether the cursor is within the subtree at `entryPath`.
+   *
+   * The subtree includes the node at `entryPath` itself. Therefore, equal
+   * paths return `true`, and an empty `entryPath` contains every cursor.
+   */
   cursorBelongsToSubtree(cursor: Cursor<Id>, entryPath: readonly Id[]): boolean;
 };
 
 export function createCursorApi<Id>(): CursorApi<Id> {
-  const cursorApi: CursorApi<Id> = {
-    isEntry(cursor): cursor is CursorEntry<Id> {
-      return cursor.kind === CursorKind.Entry;
-    },
-
-    isFold(cursor): cursor is CursorFold<Id> {
-      return cursor.kind === CursorKind.Fold;
-    },
-
+  return {
     equal(left, right) {
-      if (!idPathEqual(left.parentPath, right.parentPath)) {
-        return false;
-      }
-
-      if (cursorApi.isFold(left)) {
-        return cursorApi.isFold(right);
-      }
-
-      return cursorApi.isEntry(right) && left.entryId === right.entryId;
+      return idPathEqual(left, right);
     },
 
     getPath(cursor) {
-      if (cursorApi.isFold(cursor)) {
-        return undefined;
-      }
-
-      return [...cursor.parentPath, cursor.entryId];
+      return [...cursor];
     },
 
     cursorBelongsToSubtree(cursor, entryPath) {
-      if (cursorApi.isFold(cursor)) {
-        return isStrictPathPrefix(entryPath, cursor.parentPath);
-      }
-
-      const cursorPath = [...cursor.parentPath, cursor.entryId];
-
-      return isStrictPathPrefix(entryPath, cursorPath);
+      return isPathPrefix(entryPath, cursor);
     },
   };
-
-  return cursorApi;
 }
 
 /**
- * Returns true when both paths contain the same IDs in the same order.
+ * Returns true when both root-relative paths contain the same IDs in the same
+ * order.
  */
 function idPathEqual<Id>(left: readonly Id[], right: readonly Id[]): boolean {
   if (left.length !== right.length) {
@@ -113,21 +100,24 @@ function idPathEqual<Id>(left: readonly Id[], right: readonly Id[]): boolean {
 }
 
 /**
- * Returns true when `prefix` is a strict prefix of `path`.
+ * Returns true when `prefix` is a prefix of `path`.
+ *
+ * Equal paths are included. An empty prefix is therefore a prefix of every
+ * path.
  */
-function isStrictPathPrefix<Id>(
+function isPathPrefix<Id>(
   prefix: readonly Id[],
   path: readonly Id[],
 ): boolean {
-  if (prefix.length >= path.length) {
+  if (prefix.length > path.length) {
     return false;
   }
-
+  
   for (let index = 0; index < prefix.length; index += 1) {
     if (prefix[index] !== path[index]) {
       return false;
     }
   }
-
+  
   return true;
 }

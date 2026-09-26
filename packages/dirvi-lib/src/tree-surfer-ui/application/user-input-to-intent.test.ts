@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import type { InputState, UserInput } from '../domain/index.js';
+import type { InputModeState, UserInput } from '../domain/index.js';
 import { userInputToIntent } from './user-input-to-intent.js';
 
-function normalInputState(normalBuffer = ''): InputState {
+function normalInputState(normalBuffer = ''): InputModeState {
   return {
     inputMode: 'normal',
     normalBuffer,
   };
 }
 
-function commandInputState(commandLine = ':'): InputState {
+function commandInputState(commandLine = ':'): InputModeState {
   return {
     inputMode: 'command',
     commandLine,

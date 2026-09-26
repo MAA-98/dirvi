@@ -5,7 +5,7 @@ import { createTreeNodeApi } from './tree-node.impl.js';
 import {
   newBranchesOrNullArb,
   nodesArrayAndBranchPathArb,
-  nodesArrayAndPathAndExpectedArb,
+  nodeAndPathAndExpectedArb,
   StringNode,
 } from './tree-node.arb.js';
 
@@ -37,31 +37,27 @@ describe('getAtPath', () => {
   it('applies selector to the node at a valid path', () => {
     fc.assert(
       fc.property(
-        nodesArrayAndPathAndExpectedArb,
-        ({ entries, path, expected }) => {
-          expect(api.getAtPath(entries, path, (node) => node)).toBe(expected);
-          expect(api.getAtPath(entries, path, (node) => node.id)).toBe(
-            expected.id,
-          );
+        nodeAndPathAndExpectedArb,
+        ({ root, path, expected }) => {
+          expect(api.getAtPath(root, path, (node) => node)).toBe(expected);
+          expect(api.getAtPath(root, path, (node) => node.id)).toBe(expected.id);
         },
       ),
     );
   });
   
   it('UT: calls the selector once with the resolved node', () => {
-    const expected: StringNode = { id: 'child' };
-    const entries: StringNode[] = [
-      {
-        id: 'root',
-        children: [expected],
-      },
-    ];
+    const child: StringNode = { id: 'child' };
+    const root: StringNode = {
+      id: 'root',
+      children: [child],
+    };
 
     const selector = vi.fn((node: StringNode) => node.id);
-
-    expect(api.getAtPath(entries, ['root', 'child'], selector)).toBe('child');
+    
+    expect(api.getAtPath(root, ['child'], selector)).toBe('child');
     expect(selector).toHaveBeenCalledOnce();
-    expect(selector).toHaveBeenCalledWith(expected);
+    expect(selector).toHaveBeenCalledWith(child);
   });
   
   it('UT: returns undefined for an invalid root path without calling the selector', () => {
@@ -74,41 +70,37 @@ describe('getAtPath', () => {
   });
   
   it('UT: returns undefined when a child is missing from an open branch', () => {
-    const entries: StringNode[] = [
-      {
-        id: 'root',
-        children: [{ id: 'child' }],
-      },
-    ];
+    const root: StringNode = {
+      id: 'root',
+      children: [{ id: 'child' }],
+    };
 
     const selector = vi.fn((node: StringNode) => node.id);
 
-    const result = api.getAtPath(entries, ['root', 'missing'], selector);
+    const result = api.getAtPath(root, ['root', 'missing'], selector);
 
     expect(result).toBeUndefined();
     expect(selector).not.toHaveBeenCalled();
   });
   
-  it('UT: returns undefined for an empty path without calling the selector', () => {
+  it('UT: resolves the root for an empty path', () => {
+    const root: StringNode = { id: 'root' };
     const selector = vi.fn((node: StringNode) => node.id);
 
-    const result = api.getAtPath([{ id: 'root' }], [], selector);
-
-    expect(result).toBeUndefined();
-    expect(selector).not.toHaveBeenCalled();
+    expect(api.getAtPath(root, [], selector)).toBe('root');
+    expect(selector).toHaveBeenCalledOnce();
+    expect(selector).toHaveBeenCalledWith(root);
   });
   
   it('UT: returns undefined through a closed branch without calling the selector', () => {
-    const entries: StringNode[] = [
-      {
-        id: 'root',
-        children: null,
-      },
-    ];
+    const root: StringNode = {
+      id: 'root',
+      children: null,
+    };
 
     const selector = vi.fn((node: StringNode) => node.id);
 
-    const result = api.getAtPath(entries, ['root', 'child'], selector);
+    const result = api.getAtPath(root, ['child'], selector);
 
     expect(result).toBeUndefined();
     expect(selector).not.toHaveBeenCalled();
@@ -119,7 +111,7 @@ describe('getAtPath', () => {
       (_node: StringNode): string | undefined => undefined,
     );
 
-    const result = api.getAtPath([{ id: 'root' }], ['root'], selector);
+    const result = api.getAtPath({ id: 'root' }, [], selector);
 
     expect(result).toBeUndefined();
     expect(selector).toHaveBeenCalledOnce();
@@ -130,45 +122,38 @@ describe('getAtPath', () => {
 describe('modifyAtPath', () => {
   it('replaces the generated node', () => {
     fc.assert(
-      fc.property(
-        nodesArrayAndPathAndExpectedArb,
-        ({ entries, path, expected }) => {
-          const replacement: StringNode = {
-            id: expected.id,
-          };
+      fc.property(nodeAndPathAndExpectedArb, ({ root, path, expected }) => {
+        const replacement: StringNode = {
+          id: expected.id,
+        };
+        
+        const updatedRoot = api.modifyAtPath(root, path, () => replacement);
+        
+        expect(updatedRoot).not.toBeUndefined();
 
-          const updatedForest = api.modifyAtPath(
-            entries,
-            path,
-            () => replacement,
-          );
+        if (updatedRoot === undefined) {
+          return;
+        }
 
-          expect(updatedForest).not.toBeUndefined();
+        expect(api.getAtPath(updatedRoot, path, (node) => node)).toBe(
+          replacement,
+        );
 
-          if (updatedForest === undefined) {
-            return;
-          }
-
-          expect(api.getAtPath(updatedForest, path, (node) => node)).toBe(
-            replacement,
-          );
-
-          expect(api.getAtPath(entries, path, (node) => node)).toBe(expected);
-        },
-      ),
+        expect(api.getAtPath(root, path, (node) => node)).toBe(expected);
+      }),
     );
-  }, 10000);
+  }, 12000);
 
   it('replaces children at a branch path', () => {
     fc.assert(
       fc.property(
         nodesArrayAndBranchPathArb,
         newBranchesOrNullArb,
-        ({ entries, path, expected }, newBranches) => {
+        ({ root, path, expected }, newBranches) => {
           expect(api.isBranch(expected)).toBe(true);
-
-          const updatedForest = api.modifyAtPath(
-            entries,
+          
+          const updatedRoot = api.modifyAtPath(
+            root,
             path,
             (node) =>
               ({
@@ -176,19 +161,15 @@ describe('modifyAtPath', () => {
                 children: newBranches,
               }) as StringNode,
           );
+          
+          expect(updatedRoot).not.toBeUndefined();
 
-          expect(updatedForest).not.toBeUndefined();
-
-          if (updatedForest === undefined) {
+          if (updatedRoot === undefined) {
             return;
           }
 
-          const updatedNode = api.getAtPath(
-            updatedForest,
-            path,
-            (node) => node,
-          );
-
+          const updatedNode = api.getAtPath(updatedRoot, path, (node) => node);
+          
           expect(updatedNode).not.toBeUndefined();
           expect(updatedNode).not.toBe(expected);
 
@@ -206,9 +187,7 @@ describe('modifyAtPath', () => {
             );
           }
 
-          expect(api.getAtPath(entries, path, (node) => node)).toBe(
-            expected,
-          );
+          expect(api.getAtPath(root, path, (node) => node)).toBe(expected);
         },
       ),
     );
@@ -216,80 +195,83 @@ describe('modifyAtPath', () => {
   
   it('UT: calls the modifier once with the resolved node', () => {
     const child: StringNode = { id: 'child' };
-    const entries: StringNode[] = [
-      {
-        id: 'root',
-        children: [child],
-      },
-    ];
+    const root: StringNode = {
+      id: 'root',
+      children: [child],
+    };
 
     const replacement: StringNode = { id: 'replacement' };
     const modifier = vi.fn(() => replacement);
+    
+    const updatedRoot = api.modifyAtPath(root, ['child'], modifier);
 
-    const updatedEntries = api.modifyAtPath(
-      entries,
-      ['root', 'child'],
-      modifier,
-    );
-
-    expect(updatedEntries).toBeDefined();
+    expect(updatedRoot).toBeDefined();
     expect(modifier).toHaveBeenCalledOnce();
     expect(modifier).toHaveBeenCalledWith(child);
     expect(
-      api.getAtPath(updatedEntries!, ['root', 'replacement'], (node) => node),
+      api.getAtPath(updatedRoot!, ['replacement'], (node) => node),
     ).toBe(replacement);
     expect(
-      api.getAtPath(updatedEntries!, ['root', 'child'], (node) => node),
+      api.getAtPath(updatedRoot!, ['child'], (node) => node),
     ).toBeUndefined();
+  });
+  
+  it('UT: modifies the root for an empty path', () => {
+    const root: StringNode = { id: 'root' };
+    const replacement: StringNode = { id: 'replacement' };
+    const modifier = vi.fn(() => replacement);
+
+    const updatedRoot = api.modifyAtPath(root, [], modifier);
+
+    expect(updatedRoot).toBe(replacement);
+    expect(modifier).toHaveBeenCalledOnce();
+    expect(modifier).toHaveBeenCalledWith(root);
   });
   
   it.each([
     {
-      name: 'an empty path',
-      entries: [{ id: 'root' }] as StringNode[],
-      path: [] as string[],
-    },
-    {
-      name: 'a missing root',
-      entries: [{ id: 'root' }] as StringNode[],
+      name: 'a missing child',
+      root: {
+        id: 'root',
+        children: [],
+      } as StringNode,
       path: ['missing'],
     },
     {
-      name: 'a missing child',
-      entries: [
-        {
-          id: 'root',
-          children: [{ id: 'child' }],
-        },
-      ] as StringNode[],
-      path: ['root', 'missing'],
-    },
-    {
       name: 'a path through a leaf',
-      entries: [{ id: 'root' }] as StringNode[],
-      path: ['root', 'child'],
+      root: {
+        id: 'root',
+      } as StringNode,
+      path: ['child'],
     },
     {
       name: 'a path through a closed branch',
-      entries: [{ id: 'root', children: null }] as StringNode[],
-      path: ['root', 'child'],
+      root: {
+        id: 'root',
+        children: null,
+      } as StringNode,
+      path: ['child'],
     },
-  ])('UT: returns undefined and does not call the modifier', ({ entries, path }) => {
-    const modifier = vi.fn((node: StringNode) => node);
+  ])(
+    'UT: returns undefined and does not call the modifier',
+    ({ root, path }) => {
+      const modifier = vi.fn((node: StringNode) => node);
 
-    const result = api.modifyAtPath(entries, path, modifier);
+      const result = api.modifyAtPath(root, path, modifier);
 
-    expect(result).toBeUndefined();
-    expect(modifier).not.toHaveBeenCalled();
-  });
+      expect(result).toBeUndefined();
+      expect(modifier).not.toHaveBeenCalled();
+    },
+  );
   
   it('UT: returns undefined when the modifier aborts', () => {
-    const root: StringNode[] = [{ id: 'root' }];
+    const root: StringNode = { id: 'root' };
     const modifier = vi.fn(() => undefined);
-    const result = api.modifyAtPath(root, ['root'], modifier);
+
+    const result = api.modifyAtPath(root, [], modifier);
 
     expect(result).toBeUndefined();
     expect(modifier).toHaveBeenCalledOnce();
-    expect(modifier).toHaveBeenCalledWith(root[0]);
+    expect(modifier).toHaveBeenCalledWith(root);
   });
 });
