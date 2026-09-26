@@ -17,7 +17,9 @@
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "format": "prettier . --write",
-    "update-global": "npm install --global @mak-98/dirvi-cli@latest"
+    "update-global": "npm install --global @mak-98/dirvi-cli@latest",
+    "debug": "node --inspect=9229 --import=tsx src/index.tsx 2>/tmp/dirvi-debug.log",
+    "debug:watch": "tail -f /tmp/dirvi-debug.log"
   },
   "dependencies": {
     "commander": "^13.0.0",
