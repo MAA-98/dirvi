@@ -1,9 +1,10 @@
 import { z } from 'zod';
 import { UnixPath, UnixPathSchema } from './unix-path.js';
 import {
+  BranchTreeNode,
   createCursorApi,
   createCursorSchema,
-  createFoldNodeSchemas,
+  createFoldNodeSchemas, createFoldNodeService,
   createNavNodeApi,
   createStateApi,
   createStateSchema,
@@ -70,11 +71,15 @@ export const PosixTreeNodeSchema: z.ZodType<PosixTreeNode> = z.lazy(() => {
   ]);
 });
 
-export const PosixStateRootSchema = z.object({
-  kind: z.literal('directory'),
-  id: PosixNameSchema,
-  children: z.array(PosixTreeNodeSchema),
-});
+export const PosixBranchTreeNodeSchema: z.ZodType<
+  PosixTreeNode & BranchTreeNode<PosixName, PosixTreeNode>
+> = PosixTreeNodeSchema.refine(
+  (node): node is PosixTreeNode & BranchTreeNode<PosixName, PosixTreeNode> =>
+    'children' in node,
+  {
+    message: 'The state root must be a branch node.',
+  },
+);
 
 // Authoritative Type
 export type PosixTreeNode =
@@ -105,32 +110,27 @@ export const PosixTreeNodeApi = createTreeNodeApi<PosixName, PosixTreeNode>();
 
 // Schema
 const foldNodeSchema = createFoldNodeSchemas<PosixName>(PosixNameSchema);
-
 export const PosixFoldNodeSchema: z.ZodType<PosixFoldNode> = foldNodeSchema;
-
 // Type
 export type PosixFoldNode = FoldNode<PosixName>;
-
 // API
 export const PosixFoldNodeApi = createTreeNodeApi<PosixName, FoldNode<PosixName>>();
+// Service
+export const PosixFoldNodeService = createFoldNodeService<PosixName>(PosixFoldNodeApi)
 
 // --- PosixCursor ---
 
 // Schema
 export const PosixCursorSchema: z.ZodType<PosixCursor> =
   createCursorSchema(PosixNameSchema);
-
 // Type
 export type PosixCursor = Cursor<PosixName>;
-
 export const PosixCursorApi = createCursorApi<PosixName>();
-
 // --- PosixNavNode ---
 export type PosixNavNode = NavNode<PosixName>;
-
 export const PosixNavApi = createNavNodeApi<PosixName, PosixTreeNode>(
   PosixTreeNodeApi,
-  PosixFoldNodeApi,
+  PosixFoldNodeService,
   PosixCursorApi,
 );
 
@@ -138,7 +138,7 @@ export const PosixNavApi = createNavNodeApi<PosixName, PosixTreeNode>(
 
 // Schema
 export const PosixStateSchema: z.ZodType<PosixState> = createStateSchema(
-  PosixStateRootSchema,
+  PosixBranchTreeNodeSchema,
   PosixFoldNodeSchema,
   PosixCursorSchema,
 );

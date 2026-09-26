@@ -7,11 +7,12 @@ import envPaths from 'env-paths';
 import { createFileViewApi, StateCodec } from './create-file-view-api.js';
 import { createHash } from 'node:crypto';
 import {
+  PosixBranchTreeNodeSchema,
   PosixCursorSchema,
   PosixFoldNode,
   PosixName,
   PosixNameSchema,
-  PosixState, PosixStateRootSchema,
+  PosixState,
   PosixTreeNode,
   PosixTreeNodeSchema,
 } from '../domain/posix-tree-node.js';
@@ -35,20 +36,20 @@ function encodeKey(key: UnixAbsolutePath): string {
 export type StoredPosixFoldNode = {
   id: PosixName;
   children: StoredPosixFoldNode[];
-  folds: PosixName[];
+  foldedChildren: StoredPosixFoldNode[];
 };
 
 const StoredPosixFoldNodeSchema: z.ZodType<StoredPosixFoldNode> = z.lazy(() =>
   z.object({
     id: PosixNameSchema,
     children: z.array(StoredPosixFoldNodeSchema),
-    folds: z.array(PosixNameSchema),
+    foldedChildren: z.array(StoredPosixFoldNodeSchema),
   }),
 );
 
 const StoredPosixStateSchema: z.ZodType<StoredPosixState> = z
   .object({
-    root: PosixStateRootSchema,
+    root: PosixBranchTreeNodeSchema,
     foldRoot: StoredPosixFoldNodeSchema,
     cursor: PosixCursorSchema,
   })
@@ -66,7 +67,7 @@ function encodePosixFoldNode(node: PosixFoldNode): StoredPosixFoldNode {
   return {
     id: node.id,
     children: node.children.map(encodePosixFoldNode),
-    folds: [...node.folds],
+    foldedChildren: [...node.foldedChildren],
   };
 }
 
@@ -74,7 +75,7 @@ function decodePosixFoldNode(node: StoredPosixFoldNode): PosixFoldNode {
   return {
     id: node.id,
     children: node.children.map(decodePosixFoldNode),
-    folds: new Set(node.folds),
+    foldedChildren: node.foldedChildren.map(decodePosixFoldNode),
   };
 }
 
@@ -110,25 +111,24 @@ export function loadPosixAppApi(
 ): AppApi<PosixName, PosixTreeNode, UnixAbsolutePath> {
   const unixAbsPath = getUnixAbsPath(directory ?? process.cwd());
   const rootId = PosixNameSchema.parse(basename(unixAbsPath));
-  const apis = createAppApis<PosixName, PosixTreeNode>(rootId);
+  const apis = createAppApis<PosixName, PosixTreeNode>();
 
   return {
     appId: 'posix',
     name: unixAbsPath,
+    rootId,
     emptyRootMessage: 'The directory is empty.',
 
     loadBranches: (path) => {
       const address = join(unixAbsPath, ...path);
       return getDirEntries(address);
     },
+    
     createRoot: async () => {
-      const address = join(unixAbsPath);
-      const children = await getDirEntries(address);
-      
       return {
         id: rootId,
         kind: 'directory',
-        children
+        children: null
       }
     },
 

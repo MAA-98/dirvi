@@ -1,4 +1,5 @@
 import {
+  BranchTreeNode,
   createCursorApi,
   createFoldNodeService,
   createNavNodeApi,
@@ -11,7 +12,7 @@ import {
   NavNodeApi,
   SerializableKey,
   State,
-  StateApi, StateRoot,
+  StateApi,
   TreeNode,
   TreeNodeApi,
 } from 'dirvi-lib';
@@ -31,6 +32,8 @@ export type AppApi<
    * Name to distinguish app instance.
    */
   name: string;
+  
+  rootId: Id;
 
   /**
    * Message displayed when there are no root children.
@@ -43,7 +46,7 @@ export type AppApi<
    * The empty path represents the root branch.
    */
   loadBranches: (path: Id[]) => Promise<Node[]>;
-  createRoot: () => Promise<StateRoot<Id, Node>>;
+  createRoot: () => Promise<Node & BranchTreeNode<Id, Node>>;
 
   /**
    * Subscribes to external data changes that require the tree state
@@ -79,9 +82,7 @@ export type AppApi<
 export function createAppApis<
   Id extends SerializableKey,
   BufferNode extends TreeNode<Id, BufferNode>,
->(
-  rootId: Id
-): {
+>(): {
   treeNodeApi: TreeNodeApi<Id, BufferNode>;
   foldNodeApi: FoldNodeApi<Id>;
   foldNodeService: FoldNodeService<Id>;
@@ -91,19 +92,13 @@ export function createAppApis<
 } {
   const treeNodeApi = createTreeNodeApi<Id, BufferNode>();
   const foldNodeApi = createTreeNodeApi<Id, FoldNode<Id>>();
-  
-  const foldNodeService = createFoldNodeService(rootId, foldNodeApi, (id: Id) => ({
-      id,
-      children: [],
-      folds: new Set<Id>(),
-    }),
-  );
+  const foldNodeService = createFoldNodeService(foldNodeApi);
 
   const cursorApi = createCursorApi<Id>();
 
   const navNodeApi = createNavNodeApi<Id, BufferNode>(
     treeNodeApi,
-    foldNodeApi,
+    foldNodeService,
     cursorApi,
   );
 

@@ -12,7 +12,7 @@ export function createFoldNodeSchemas<Id extends SerializableKey>(
 
       children: z.array(foldNodeSchema),
 
-      folds: z.array(idSchema).transform((ids) => new Set(ids)),
+      foldedChildren: z.array(foldNodeSchema),
     }),
   );
   

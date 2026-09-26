@@ -6,14 +6,14 @@ export function ViewRowComponent({ row }: { row: ViewRow }) {
     case 'leaf':
       return (
         <Box paddingLeft={row.indent * 2}>
-          <Text inverse={row.selected}>{row.content}</Text>
+          <Text inverse={row.cursor}>{row.content}</Text>
         </Box>
       );
 
     case 'branch':
       return (
         <Box paddingLeft={row.indent * 2}>
-          <Text inverse={row.selected} color="blue">
+          <Text inverse={row.cursor} color="blue">
             {row.content}
           </Text>
 

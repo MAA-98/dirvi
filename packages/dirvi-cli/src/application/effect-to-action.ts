@@ -4,14 +4,14 @@ import {
   TreeNode,
   TreeNodeApi,
 } from 'dirvi-lib/dist/tree-surfer/tree-node/tree-node.types.js';
-import { CursorApi, EffectAction, NavNode, NavNodeApi, State } from 'dirvi-lib';
+import { CursorApi, EffectAction, NavBranch, NavNode, NavNodeApi, State } from 'dirvi-lib';
 
 export type EffectToAction<
   Id extends SerializableKey,
   Node extends TreeNode<Id, Node>,
 > = (
   effectAction: EffectAction<Id, Node>,
-  navigation: NavNode<Id>,
+  navigation: NavBranch<Id>,
   state: State<Id, Node>,
 ) => ReducerAction<Id, Node> | undefined;
 
@@ -25,9 +25,10 @@ export function createEffectToAction<
 ): EffectToAction<Id, Node> {
   function effectToAction(
     effectAction: EffectAction<Id, Node>,
-    navigation: NavNode<Id>,
+    navigation: NavBranch<Id>,
     state: State<Id, Node>,
   ): ReducerAction<Id, Node> | undefined {
+    
     switch (effectAction.effectActionType) {
       case 'nextEntry': {
         const cursor = navNodeApi.nextCursor(navigation, state.cursor);
@@ -59,7 +60,13 @@ export function createEffectToAction<
         };
 
       case 'navigateToParent': {
-        const cursor = navNodeApi.parentCursor(navigation, state.cursor);
+        const navNode = navigation.children;
+        
+        if (navNode === null) {
+          return undefined
+        }
+        
+        const cursor = navNodeApi.parentCursor(navNode, state.cursor);
 
         return cursor === undefined
           ? undefined
@@ -89,10 +96,15 @@ export function createEffectToAction<
 
       case 'unfold': {
         const currentPath = cursorApi.getPath(state.cursor);
+        const navNode = navigation.children;
 
-        const node = navNodeApi.getNodeAtPath(navigation, currentPath);
+        if (navNode === null) {
+          return undefined;
+        }
+        
+        const node = navNodeApi.getNodeAtPath(navNode, currentPath);
 
-        if (node === undefined || node.foldedEntries.length === 0) {
+        if (node === undefined || node.folded?.entries.length === 0) {
           return undefined;
         }
         

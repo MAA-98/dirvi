@@ -33,8 +33,7 @@ export type SerializableKey = string | number;
  *
  * @remarks
  *
- * A node's `id` identifies it among its siblings and is used when resolving
- * paths through the tree.
+ * A node's `id` identifies it among its siblings.
  *
  * Nodes are discriminated by the shape of their `children` property:
  *

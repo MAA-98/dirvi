@@ -1,8 +1,8 @@
-import { SerializableKey, TreeNode, TreeNodeApi } from '../tree-node/tree-node.types.js';
+import { BranchTreeNode, SerializableKey, TreeNode, TreeNodeApi } from '../tree-node/tree-node.types.js';
 import { FoldNode, FoldNodeApi } from '../fold-node/fold-node.types.js';
 import { Cursor, CursorApi } from '../cursor.js';
 import { NavNodeApi } from '../nav-node/nav-node.types.js';
-import { StateApi, State, StateRoot } from './state.types.js';
+import { StateApi, State } from './state.types.js';
 
 export function createStateApi<
   Id extends SerializableKey,
@@ -17,23 +17,33 @@ export function createStateApi<
    * Create a new root and fold root.
    *
    * Works on fold root and descendant fold nodes using the generic.
+   *
+   * TODO: Later: Filter the fold node
    */
   async function reload(
-    oldRoot: StateRoot<Id, Node>,
+    oldRoot: Node & BranchTreeNode<Id, Node>,
     oldFoldNode: FoldNode<Id> | undefined,
     parentPath: Id[],
     loadBranches: (path: Id[]) => Promise<Node[]>,
   ): Promise<{
-    root: StateRoot<Id, Node>;
+    root: Node & BranchTreeNode<Id, Node>;
     foldRoot: FoldNode<Id> | undefined;
   }> {
+    // Do not load a branch that was already closed.
+    if (!treeNodeApi.isOpenBranch(oldRoot)) {
+      return {
+        root: oldRoot,
+        foldRoot: oldFoldNode,
+      };
+    }
+
     const newChildren = await loadBranches(parentPath);
-    let newRoot: StateRoot<Id, Node> = {
+    let newRoot: Node & BranchTreeNode<Id, Node> = {
       ...oldRoot,
       children: newChildren,
     };
     let newFoldNode = oldFoldNode; // Start with assumption of no changes
-    
+
     for (const oldEntry of oldRoot.children) {
       if (
         !treeNodeApi.isBranch(oldEntry) ||
@@ -75,7 +85,7 @@ export function createStateApi<
         newRoot = updatedRoot;
       }
     }
-    
+
     return {
       root: newRoot,
       foldRoot: newFoldNode,

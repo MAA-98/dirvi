@@ -1,5 +1,5 @@
-import { CursorApi, SerializableKey, TreeNode } from 'dirvi-lib';
-import { Cursor, isNavBranch, NavEntry, NavNode } from 'dirvi-lib';
+import { CursorApi, NavBranch, NavNodeApi, SerializableKey, TreeNode } from 'dirvi-lib';
+import { Cursor, NavEntry, NavNode } from 'dirvi-lib';
 
 type ViewRowBase = {
   id: string;
@@ -25,26 +25,44 @@ export type View = {
 export const View = {
   createRows<
     Id extends SerializableKey,
-    BufferNode extends TreeNode<Id, BufferNode>,
+    Node extends TreeNode<Id, Node>
   >(
-    navigation: NavNode<Id>,
+    rootNode: NavBranch<Id>,
+    navNodeApi: NavNodeApi<Id, Node>,
     cursor: Cursor<Id>,
     cursorApi: CursorApi<Id>,
   ): ViewRow[] {
-    return viewRowsAtNode(navigation, [], cursor, cursorApi);
+    const rootCursor: Cursor<Id> = [];
+
+    const rootRow = viewRowForEntry(
+      rootNode,
+      null,
+      cursorApi.equal(cursor, rootCursor),
+      navNodeApi,
+    );
+
+    if (rootNode.children === null) {
+      return [rootRow];
+    }
+
+    return [
+      rootRow,
+      ...viewRowsAtNode(rootNode.children, [], navNodeApi, cursor, cursorApi),
+    ];
   },
 
   create<
     Id extends SerializableKey,
-    BufferNode extends TreeNode<Id, BufferNode>,
+    Node extends TreeNode<Id, Node>
   >(
-    navigation: NavNode<Id>,
+    rootNode: NavBranch<Id>,
+    navNodeApi: NavNodeApi<Id, Node>,
     cursor: Cursor<Id>,
     cursorApi: CursorApi<Id>,
     viewportHeight: number,
     viewportStart: number,
   ): View {
-    const rows = View.createRows(navigation, cursor, cursorApi);
+    const rows = View.createRows(rootNode, navNodeApi, cursor, cursorApi);
 
     return {
       rows: rows.slice(viewportStart, viewportStart + viewportHeight),
@@ -65,26 +83,23 @@ export const View = {
  */
 function viewRowsAtNode<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
+  Node extends TreeNode<Id, Node>
 >(
   node: NavNode<Id>,
   parentPath: Id[],
+  navNodeApi: NavNodeApi<Id, Node>,
   cursor: Cursor<Id>,
   cursorApi: CursorApi<Id>,
 ): ViewRow[] {
   const rows: ViewRow[] = [];
-
-  /*
-   * `node.entries` contains only the entries currently visible in this directory.
-   */
+  
   for (const entry of node.entries) {
     const entryCursor: Cursor<Id> = [...parentPath, entry.id]
-
     const isCursor = cursorApi.equal(cursor, entryCursor);
-    rows.push(viewRowForEntry(entry, parentPath, isCursor));
+    rows.push(viewRowForEntry(entry, parentPath, isCursor, navNodeApi));
 
     // Case where there's no branches
-    if (!isNavBranch(entry) || entry.children === null) {
+    if (!navNodeApi.entryIsBranch(entry) || entry.children === null) {
       continue;
     }
 
@@ -92,6 +107,7 @@ function viewRowsAtNode<
       ...viewRowsAtNode(
         entry.children,
         [...parentPath, entry.id],
+        navNodeApi,
         cursor,
         cursorApi,
       ),
@@ -103,16 +119,27 @@ function viewRowsAtNode<
 
 function viewRowForEntry<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
->(entry: NavEntry<Id>, parentPath: Id[], cursor: boolean): ViewRow {
-  if (isNavBranch(entry)) {
+  Node extends TreeNode<Id, Node>
+>(
+  entry: NavEntry<Id>,
+  parentPath: Id[] | null,
+  cursor: boolean,
+  navNodeApi: NavNodeApi<Id, Node>
+): ViewRow {
+  const id = entryId(parentPath ?? [], entry.id);
+  const indent = parentPath ? parentPath.length + 1 : 0;
+  const selected = false;
+  
+  if (navNodeApi.entryIsBranch(entry)) {
     const foldedCount =
-      entry.children === null ? 0 : entry.children.foldedEntries.length;
+      entry.children === null || entry.children.folded === null
+        ? 0
+        : entry.children.folded.entries.length;
 
     return {
-      id: entryId(parentPath, entry.id),
-      indent: parentPath.length,
-      selected: cursor,
+      id,
+      indent,
+      selected,
       cursor,
       content: `${String(entry.id)}/`,
       type: 'branch',
@@ -121,9 +148,9 @@ function viewRowForEntry<
   }
 
   return {
-    id: entryId(parentPath, entry.id),
-    indent: parentPath.length,
-    selected: cursor,
+    id,
+    indent,
+    selected,
     cursor,
     content: String(entry.id),
     type: 'leaf',

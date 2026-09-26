@@ -1,12 +1,11 @@
-import {
+import type {
   SerializableKey,
   TreeNode,
   TreeNodeApi,
 } from '../tree-node/tree-node.types.js';
-import { FoldNode, FoldNodeApi } from '../fold-node/fold-node.types.js';
-import { Cursor, CursorApi } from '../cursor.js';
-import {
-  isNavBranch,
+import type { FoldNode, FoldNodeService } from '../fold-node/fold-node.types.js';
+import type { Cursor, CursorApi } from '../cursor.js';
+import type {
   NavBranch,
   NavEntry,
   NavNode,
@@ -18,51 +17,122 @@ export function createNavNodeApi<
   Node extends TreeNode<Id, Node>,
 >(
   treeNodeApi: TreeNodeApi<Id, Node>,
-  foldNodeApi: FoldNodeApi<Id>,
+  foldNodeService: FoldNodeService<Id>,
   cursorApi: CursorApi<Id>,
 ): NavNodeApi<Id, Node> {
-  const navNodeApi: NavNodeApi<Id, Node> = {
-    // Return a nav node from the BufferNode tree and FoldNode tree.
-    from(root, foldNode) {
-      const visibleEntriesSoFar: NavEntry<Id>[] = [];
-      const foldedEntriesSoFar: NavEntry<Id>[] = [];
+  function entryIsBranch(entry: NavEntry<Id>): entry is NavBranch<Id> {
+    return 'children' in entry;
+  }
+  
+  function createNavNode(
+    entries: Node[],
+    foldRoot: FoldNode<Id> | undefined,
+    parentPath: readonly Id[],
+  ): NavNode<Id> {
+    const visibleEntries: NavEntry<Id>[] = [];
+    const foldedEntries: NavEntry<Id>[] = [];
 
-      for (const entry of root.children) {
-        // Find the node
-        let navigationEntry: NavEntry<Id>;
+    const foldedEntryIds =
+      foldRoot === undefined
+        ? undefined
+        : foldNodeService.foldedEntriesAtPath(foldRoot, parentPath);
 
-        if (treeNodeApi.isBranch(entry)) {
-          // If fold node does not have children (recursively no folds),
-          // then just use empty.
-          const childFoldNode =
-            foldNodeApi.getChildById(foldNode, entry.id) ??
-            createEmptyFoldNode<Id>(entry.id);
+    for (const entry of entries) {
+      const entryPath = [...parentPath, entry.id];
 
-          navigationEntry = {
-            ...entry,
-            children:
-              entry.children === null
-                ? null
-                : navNodeApi.from(entry, childFoldNode),
-          } as NavBranch<Id>;
-        } else if (treeNodeApi.isLeaf(entry)) {
-          navigationEntry = entry;
-        } else {
-          // This should be unreachable if BufferNode correctly extends TreeNode.
-          throw new Error('Unsupported tree node');
-        }
+      const isFolded =
+        foldRoot !== undefined &&
+        foldNodeService.getIfEntryFoldedAtPath(foldRoot, parentPath, entry.id);
 
-        if (foldNode.folds.has(entry.id)) {
-          foldedEntriesSoFar.push(navigationEntry);
-        } else {
-          visibleEntriesSoFar.push(navigationEntry);
-        }
+      const navigationEntry = createNavEntry(entry, foldRoot, entryPath);
+
+      if (isFolded) {
+        foldedEntries.push(navigationEntry);
+      } else {
+        visibleEntries.push(navigationEntry);
+      }
+    }
+
+    return {
+      entries: visibleEntries,
+      folded:
+        foldedEntryIds === undefined || foldedEntryIds.length === 0
+          ? null
+          : {
+              entries: foldedEntries,
+            },
+    };
+  }
+  
+  function createNavEntry(
+    entry: Node,
+    foldRoot: FoldNode<Id> | undefined,
+    entryPath: readonly Id[],
+  ): NavEntry<Id> {
+    if (treeNodeApi.isLeaf(entry)) {
+      return {
+        id: entry.id,
+      };
+    }
+
+    return createNavBranch(entry, foldRoot, entryPath);
+  }
+  
+  function createNavBranch(
+    entry: Node,
+    foldRoot: FoldNode<Id> | undefined,
+    entryPath: readonly Id[],
+  ): NavBranch<Id> {
+    if (!treeNodeApi.isBranch(entry)) {
+      throw new Error('Navigation root must be a branch');
+    }
+
+    return {
+      id: entry.id,
+      children:
+        entry.children === null
+          ? null
+          : createNavNode(entry.children, foldRoot, entryPath),
+    };
+  }
+  
+  function rootCursors(
+    rootNode: NavBranch<Id>,
+  ): Cursor<Id>[] {
+    if (rootNode.children === null) {
+      return [[]];
+    }
+
+    return [[], ...cursorsInNode(rootNode.children, [])];
+  }
+
+  function cursorsInNode(
+    node: NavNode<Id>,
+    parentPath: readonly Id[],
+  ): Cursor<Id>[] {
+    const cursors: Cursor<Id>[] = [];
+
+    for (const entry of node.entries) {
+      const entryPath = [...parentPath, entry.id];
+
+      cursors.push(entryPath);
+
+      if (!entryIsBranch(entry) || entry.children === null) {
+        continue;
       }
 
-      return {
-        entries: visibleEntriesSoFar,
-        foldedEntries: foldedEntriesSoFar,
-      };
+      cursors.push(...cursorsInNode(entry.children, entryPath));
+    }
+
+    return cursors;
+  }
+  
+  const navNodeApi: NavNodeApi<Id, Node> = {
+    entryIsBranch,
+    
+    // Return a nav node from the TreeNode and FoldNode trees.
+    from(root, foldRoot) {
+      return createNavBranch(root, foldRoot, []);
     },
 
     getNodeAtPath(
@@ -75,8 +145,8 @@ export function createNavNodeApi<
       if (currentId === undefined) {
         return navigation;
       }
-
-      const entry = [...navigation.entries, ...navigation.foldedEntries].find(
+      
+      const entry = navigation.entries.find(
         (candidate) => candidate.id === currentId,
       );
 
@@ -84,7 +154,7 @@ export function createNavNodeApi<
         return undefined;
       }
 
-      if (!isNavBranch(entry)) {
+      if (!entryIsBranch(entry)) {
         return undefined;
       }
 
@@ -98,15 +168,15 @@ export function createNavNodeApi<
 
     getEntryAtPath(
       navigation: NavNode<Id>,
-      path: Id[],
+      path: readonly Id[],
     ): NavEntry<Id> | undefined {
       const [currentId, ...remainingPath] = path;
 
       if (currentId === undefined) {
         return undefined;
       }
-
-      const entry = [...navigation.entries, ...navigation.foldedEntries].find(
+      
+      const entry = navigation.entries.find(
         (candidate) => candidate.id === currentId,
       );
 
@@ -118,7 +188,7 @@ export function createNavNodeApi<
         return entry;
       }
 
-      if (!isNavBranch(entry) || entry.children === null) {
+      if (!entryIsBranch(entry) || entry.children === null) {
         return undefined;
       }
 
@@ -126,10 +196,10 @@ export function createNavNodeApi<
     },
 
     nextCursor(
-      rootNode: NavNode<Id>,
+      rootNode: NavBranch<Id>,
       cursor: Cursor<Id>,
     ): Cursor<Id> | undefined {
-      const cursors = cursorsInNode(rootNode, []);
+      const cursors = rootCursors(rootNode);
 
       const currentIndex = cursors.findIndex((candidate) =>
         cursorApi.equal(candidate, cursor),
@@ -143,10 +213,10 @@ export function createNavNodeApi<
     },
 
     previousCursor(
-      rootNode: NavNode<Id>,
+      rootNode: NavBranch<Id>,
       cursor: Cursor<Id>,
     ): Cursor<Id> | undefined {
-      const cursors = cursorsInNode(rootNode, []);
+      const cursors = rootCursors(rootNode);
 
       const currentIndex = cursors.findIndex((candidate) =>
         cursorApi.equal(candidate, cursor),
@@ -160,14 +230,14 @@ export function createNavNodeApi<
     },
 
     cursorAfterFold(
-      rootNode: NavNode<Id>,
+      rootNode: NavBranch<Id>,
       cursor: Cursor<Id>,
     ): Cursor<Id> | undefined {
       if (cursor.length === 0) {
         return undefined;
       }
 
-      const cursors = cursorsInNode(rootNode, []);
+      const cursors = rootCursors(rootNode);
       const currentIndex = cursors.findIndex((candidate) =>
         cursorApi.equal(candidate, cursor),
       );
@@ -206,16 +276,13 @@ export function createNavNodeApi<
       return cursorsInNode(navigation, parentPath);
     },
 
-    visibleLeavesPaths(
-      navigation: NavNode<Id>,
-      parentPath: Id[] = [],
-    ): Id[][] {
+    visibleLeavesPaths(navigation: NavNode<Id>, parentPath: Id[] = []): Id[][] {
       const paths: Id[][] = [];
 
       for (const entry of navigation.entries) {
         const entryPath = [...parentPath, entry.id];
 
-        if (isNavBranch(entry)) {
+        if (entryIsBranch(entry)) {
           // A null children value means that the directory has not been
           // loaded/opened, so there are no visible descendant files.
           if (entry.children !== null) {
@@ -235,38 +302,4 @@ export function createNavNodeApi<
   };
 
   return navNodeApi;
-}
-
-function createEmptyFoldNode<Id extends SerializableKey>(id: Id): FoldNode<Id> {
-  return {
-    id: id,
-    children: [],
-    folds: new Set<Id>(),
-  };
-}
-
-function cursorsInNode<Id extends SerializableKey>(
-  node: NavNode<Id>,
-  parentPath: readonly Id[],
-): Cursor<Id>[] {
-  const cursors: Cursor<Id>[] = [];
-
-  // The root navigation node is represented by [].
-  if (parentPath.length === 0) {
-    cursors.push([]);
-  }
-
-  for (const entry of node.entries) {
-    const entryPath = [...parentPath, entry.id];
-
-    cursors.push(entryPath);
-
-    if (!isNavBranch(entry) || entry.children === null) {
-      continue;
-    }
-
-    cursors.push(...cursorsInNode(entry.children, entryPath));
-  }
-
-  return cursors;
 }

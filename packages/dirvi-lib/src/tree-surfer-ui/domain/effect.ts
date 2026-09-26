@@ -1,13 +1,13 @@
-import type { InputState } from './input-state.js';
+import type { InputModeState } from './input-mode-state.js';
 import { SerializableKey, TreeNode } from '../../tree-surfer/index.js';
 
 export type Effect<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
+  Node extends TreeNode<Id, Node>,
 > =
   | {
       effectType: 'dispatchEffectAction';
-      action: EffectAction<Id, BufferNode>;
+      action: EffectAction<Id, Node>;
     }
   | {
       effectType: 'loadBranchEntries';
@@ -35,13 +35,13 @@ export type Effect<
     }
   | {
       effectType: 'setInputState';
-      inputState: InputState;
+      inputState: InputModeState;
     };
 
-// Actions for reducer, still at effects-level though.
+// Actions for reducer to change state.
 export type EffectAction<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
+  Node extends TreeNode<Id, Node>,
 > =
   | {
       effectActionType: 'nextEntry';
@@ -52,7 +52,7 @@ export type EffectAction<
   | {
       effectActionType: 'setBranchEntries';
       path: Id[];
-      entries: BufferNode[] | null;
+      entries: Node[] | null;
     }
   | {
       effectActionType: 'navigateToParent';

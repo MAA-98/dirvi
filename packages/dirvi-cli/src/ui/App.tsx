@@ -3,8 +3,8 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import {
   Effect,
-  InputState,
-  IntentToEffect,
+  InputModeState,
+  IntentToEffect, NavBranch,
   SerializableKey,
   State,
   TreeNode,
@@ -40,7 +40,7 @@ type AppProps<
 
 export function App<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
+  Node extends TreeNode<Id, Node>,
   ViewKey = string,
 >({
   appApi,
@@ -51,28 +51,33 @@ export function App<
   stdout,
   clipboard,
   onError,
-}: AppProps<Id, BufferNode, ViewKey>) {
+}: AppProps<Id, Node, ViewKey>) {
   const [state, dispatch] = useReducer(reducer, initialState);
   // Give `subscribeToResync` callback a way to see current state:
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  const navigation = useMemo(
+  const navEntry: NavBranch<Id> = useMemo(
     () => appApi.navNodeApi.from(state.root, state.foldRoot),
     [appApi.navNodeApi, state.root, state.foldRoot],
   );
 
-  const [inputState, setInputState] = useState<InputState>({
+  const [inputState, setInputState] = useState<InputModeState>({
     inputMode: 'normal',
     normalBuffer: '',
   });
 
   const { rows: terminalRows } = useWindowSize();
-  const view = useView(navigation, state, appApi.cursorApi, terminalRows);
+  const view = useView(
+    navEntry,
+    state,
+    appApi.navNodeApi,
+    appApi.cursorApi,
+    terminalRows,
+  );
   const [exitStatus, setExitStatus] = useState<string | undefined>();
 
-  // Subscribe to directory watcher, do not
-  // resubscribe on every state change.
+  // Subscribe to directory watcher, do not resubscribe on every state change.
   useEffect(() => {
     let active = true;
 
@@ -106,14 +111,14 @@ export function App<
     };
   }, [appApi, onError]);
 
-  function executeEffect(effect: Effect<Id, BufferNode> | undefined): void {
+  function executeEffect(effect: Effect<Id, Node> | undefined): void {
     if (effect === undefined) {
       return;
     }
 
     switch (effect.effectType) {
       case 'dispatchEffectAction':
-        const action = effectToAction(effect.action, navigation, state);
+        const action = effectToAction(effect.action, navEntry, state);
         if (action === undefined) {
           return;
         }
@@ -154,6 +159,12 @@ export function App<
         return
         
       case 'emitVisibleLeavesPaths':
+        const navigation = navEntry.children;
+
+        if (navigation === null) {
+          return;
+        }
+        
         const visibleLeavesPaths =
           appApi.navNodeApi.visibleLeavesPaths(navigation);
         stdout?.(

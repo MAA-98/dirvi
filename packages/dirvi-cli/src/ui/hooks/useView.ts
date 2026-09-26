@@ -1,6 +1,6 @@
 import {
-  CursorApi,
-  NavNode,
+  CursorApi, NavBranch, NavEntry,
+  NavNode, NavNodeApi,
   SerializableKey,
   State,
   TreeNode,
@@ -9,31 +9,27 @@ import { View, ViewRow } from '../view.js';
 import { useRef } from 'react';
 import { STATUS_BAR_HEIGHT } from '../components/StatusBar.js';
 
-export type UseView = <
-  Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
->(
-  navigation: NavNode<Id>,
-  state: State<Id, BufferNode>,
-  terminalRows: number,
-) => View;
-
 // Hooks that keeps Ref of the viewport's start, and returns View sliced to
 // only the rows that should be visible.
 export function useView<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
+  Node extends TreeNode<Id, Node>,
 >(
-  navigation: NavNode<Id>,
-  state: State<Id, BufferNode>,
+  navNode: NavBranch<Id>,
+  state: State<Id, Node>,
+  navNodeApi: NavNodeApi<Id, Node>,
   cursorApi: CursorApi<Id>,
   terminalRows: number,
 ): View {
   const viewportStartRef = useRef(0);
-
   const viewportHeight = Math.max(1, terminalRows - STATUS_BAR_HEIGHT);
-
-  const rows = View.createRows(navigation, state.cursor, cursorApi);
+  
+  const rows = View.createRows(
+    navNode,
+    navNodeApi,
+    state.cursor,
+    cursorApi,
+  );
 
   viewportStartRef.current = viewportStart(
     rows,
@@ -42,7 +38,8 @@ export function useView<
   );
 
   return View.create(
-    navigation,
+    navNode,
+    navNodeApi,
     state.cursor,
     cursorApi,
     viewportHeight,

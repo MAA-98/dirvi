@@ -1,25 +1,16 @@
 import type { Cursor } from '../cursor.js';
 import {
-  OpenBranchTreeNode,
+  BranchTreeNode,
   SerializableKey,
   TreeNode,
 } from '../tree-node/tree-node.types.js';
 import type { FoldNode } from '../fold-node/fold-node.types.js';
 
-/**
- * The state root is always open because its direct children are loaded during
- * state synchronization.
- */
-export type StateRoot<
-  Id extends SerializableKey,
-  Node extends TreeNode<Id, Node>,
-> = Node & OpenBranchTreeNode<Id, Node>;
-
 export type State<
   Id extends SerializableKey,
   Node extends TreeNode<Id, Node>
 > = {
-  root: StateRoot<Id, Node>;
+  root: Node & BranchTreeNode<Id, Node>;
   foldRoot: FoldNode<Id>;
   cursor: Cursor<Id>;
 };

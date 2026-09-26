@@ -24,26 +24,6 @@ type LoadingAppProps<
   onError?: (error: Error) => void;
 };
 
-function createInitialState<
-  Id extends SerializableKey,
-  Node extends TreeNode<Id, Node>,
->(
-  root: State<Id, Node>['root'],
-  createEmptyFoldRoot: () => State<Id, Node>['foldRoot'],
-): State<Id, Node> {
-  if (root.children.length === 0) {
-    throw new Error(
-      'createInitialState cannot create a state for an empty root',
-    );
-  }
-
-  return {
-    root,
-    foldRoot: createEmptyFoldRoot(),
-    cursor: [],
-  };
-}
-
 export function LoadingApp<
   Id extends SerializableKey,
   BufferNode extends TreeNode<Id, BufferNode>,
@@ -68,17 +48,12 @@ export function LoadingApp<
         if (!mounted) {
           return;
         }
-
-        if (root.children.length === 0) {
-          setEmpty(true);
-          return;
-        }
         
-        setInitialState(
-          createInitialState(root, () =>
-            appApi.foldNodeService.createEmptyRoot(),
-          ),
-        );
+        setInitialState({
+          root,
+          foldRoot: appApi.foldNodeService.createEmptyNode(appApi.rootId),
+          cursor: [],
+        });
       })
       .catch((cause: unknown) => {
         const nextError =
