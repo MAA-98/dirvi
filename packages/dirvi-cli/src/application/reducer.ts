@@ -75,7 +75,7 @@ export function createReducer<
         }
 
         const parentPath = action.path.slice(0, -1);
-        
+
         const foldRoot = foldNodeService.addFoldedEntryAtPath(
           state.foldRoot,
           parentPath,

@@ -4,7 +4,8 @@ import {
   BranchTreeNode,
   createCursorApi,
   createCursorSchema,
-  createFoldNodeSchemas, createFoldNodeService,
+  createFoldNodeSchemas,
+  createFoldNodeService,
   createNavNodeApi,
   createStateApi,
   createStateSchema,
@@ -114,9 +115,13 @@ export const PosixFoldNodeSchema: z.ZodType<PosixFoldNode> = foldNodeSchema;
 // Type
 export type PosixFoldNode = FoldNode<PosixName>;
 // API
-export const PosixFoldNodeApi = createTreeNodeApi<PosixName, FoldNode<PosixName>>();
+export const PosixFoldNodeApi = createTreeNodeApi<
+  PosixName,
+  FoldNode<PosixName>
+>();
 // Service
-export const PosixFoldNodeService = createFoldNodeService<PosixName>(PosixFoldNodeApi)
+export const PosixFoldNodeService =
+  createFoldNodeService<PosixName>(PosixFoldNodeApi);
 
 // --- PosixCursor ---
 

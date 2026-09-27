@@ -1,6 +1,5 @@
 import { basename, join } from 'node:path';
 import { watch, type FSWatcher } from 'node:fs';
-import { AppApi, createAppApis } from '../domain/app-api.js';
 import { getUnixAbsPath } from './get-unix-abs-path.js';
 import { getDirEntries } from './get-dir-entries.js';
 import envPaths from 'env-paths';
@@ -14,10 +13,10 @@ import {
   PosixNameSchema,
   PosixState,
   PosixTreeNode,
-  PosixTreeNodeSchema,
 } from '../domain/posix-tree-node.js';
 import { UnixAbsolutePath } from '../domain/unix-path.js';
 import { z } from 'zod';
+import { AppApi, createAppApis } from 'dirvi-lib';
 
 // ---*--- App Data ---*---
 
@@ -106,12 +105,17 @@ const posixStateCodec: StateCodec<PosixState, StoredPosixState> = {
  *
  * @param directory - optional directory path for loading the app not at the cwd.
  */
-export function loadPosixAppApi(
+export function loadNodePosixAppApi(
   directory?: string,
 ): AppApi<PosixName, PosixTreeNode, UnixAbsolutePath> {
   const unixAbsPath = getUnixAbsPath(directory ?? process.cwd());
   const rootId = PosixNameSchema.parse(basename(unixAbsPath));
   const apis = createAppApis<PosixName, PosixTreeNode>();
+
+  function loadBranches(path: PosixName[]) {
+    const address = join(unixAbsPath, ...path);
+    return getDirEntries(address);
+  }
 
   return {
     appId: 'posix',
@@ -119,17 +123,17 @@ export function loadPosixAppApi(
     rootId,
     emptyRootMessage: 'The directory is empty.',
 
-    loadBranches: (path) => {
-      const address = join(unixAbsPath, ...path);
-      return getDirEntries(address);
-    },
-    
+    loadBranches,
+
     createRoot: async () => {
+      // Start with root branches already loaded
+      const rootBranches = await loadBranches([]);
+
       return {
         id: rootId,
         kind: 'directory',
-        children: null
-      }
+        children: rootBranches,
+      };
     },
 
     subscribeToResync: createFsResyncSubscription(join(unixAbsPath)),

@@ -1,22 +1,14 @@
-import {
-  BranchTreeNode,
-  createCursorApi,
-  createFoldNodeService,
-  createNavNodeApi,
-  createStateApi,
-  createTreeNodeApi,
-  CursorApi,
-  FoldNode,
+import type { ViewApi } from './view-api.js';
+import type {
+  BranchTreeNode, CursorApi, FoldNode,
   FoldNodeApi,
-  FoldNodeService,
-  NavNodeApi,
-  SerializableKey,
-  State,
-  StateApi,
+  FoldNodeService, NavNodeApi,
+  SerializableKey, State, StateApi,
   TreeNode,
   TreeNodeApi,
-} from 'dirvi-lib';
-import { ViewApi } from './view-api.js';
+} from '../tree-surfer/index.js';
+import { createCursorApi, createFoldNodeService, createNavNodeApi,
+  createStateApi, createTreeNodeApi } from '../tree-surfer/index.js';
 
 export type AppApi<
   Id extends SerializableKey,
@@ -32,19 +24,12 @@ export type AppApi<
    * Name to distinguish app instance.
    */
   name: string;
-  
   rootId: Id;
 
   /**
    * Message displayed when there are no root children.
    */
   emptyRootMessage: string;
-
-  /**
-   * Loads the children of the branch at `path`.
-   *
-   * The empty path represents the root branch.
-   */
   loadBranches: (path: Id[]) => Promise<Node[]>;
   createRoot: () => Promise<Node & BranchTreeNode<Id, Node>>;
 
@@ -57,22 +42,10 @@ export type AppApi<
   subscribeToResync: (listener: () => void) => () => void;
 
   treeNodeApi: TreeNodeApi<Id, Node>;
-
-  /**
-   * Structural fold-tree traversal and immutable path updates.
-   */
   foldNodeApi: FoldNodeApi<Id>;
-
-  /**
-   * Semantic fold operations, including creating an empty fold root and
-   * adding, removing, or clearing folded entry names.
-   */
   foldNodeService: FoldNodeService<Id>;
-
   cursorApi: CursorApi<Id>;
-
   stateApi: StateApi<Id, Node>;
-
   navNodeApi: NavNodeApi<Id, Node>;
 
   viewKey: ViewKey;

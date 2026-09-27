@@ -4,7 +4,14 @@ import {
   TreeNode,
   TreeNodeApi,
 } from 'dirvi-lib/dist/tree-surfer/tree-node/tree-node.types.js';
-import { CursorApi, EffectAction, NavBranch, NavNode, NavNodeApi, State } from 'dirvi-lib';
+import {
+  CursorApi,
+  EffectAction,
+  NavBranch,
+  NavNode,
+  NavNodeApi,
+  State,
+} from 'dirvi-lib';
 
 export type EffectToAction<
   Id extends SerializableKey,
@@ -28,7 +35,6 @@ export function createEffectToAction<
     navigation: NavBranch<Id>,
     state: State<Id, Node>,
   ): ReducerAction<Id, Node> | undefined {
-    
     switch (effectAction.effectActionType) {
       case 'nextEntry': {
         const cursor = navNodeApi.nextCursor(navigation, state.cursor);
@@ -61,11 +67,11 @@ export function createEffectToAction<
 
       case 'navigateToParent': {
         const navNode = navigation.children;
-        
+
         if (navNode === null) {
-          return undefined
+          return undefined;
         }
-        
+
         const cursor = navNodeApi.parentCursor(navNode, state.cursor);
 
         return cursor === undefined
@@ -80,9 +86,9 @@ export function createEffectToAction<
         if (state.cursor.length === 0) {
           return undefined;
         }
-        
+
         const cursor = navNodeApi.cursorAfterFold(navigation, state.cursor);
-        
+
         if (cursor === undefined) {
           return undefined;
         }
@@ -101,13 +107,13 @@ export function createEffectToAction<
         if (navNode === null) {
           return undefined;
         }
-        
+
         const node = navNodeApi.getNodeAtPath(navNode, currentPath);
 
         if (node === undefined || node.folded?.entries.length === 0) {
           return undefined;
         }
-        
+
         return {
           kind: 'unfold',
           path: currentPath,

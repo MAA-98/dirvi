@@ -10,9 +10,14 @@ import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { z } from 'zod';
 
-import type { ViewApi, ViewSummary } from '../domain/view-api.js';
 import { viewNameSchema } from './view-name-schema.js';
-import { SerializableKey, State, TreeNode } from 'dirvi-lib';
+import type {
+  SerializableKey,
+  State,
+  TreeNode,
+  ViewApi,
+  ViewSummary,
+} from 'dirvi-lib';
 
 export type StateCodec<RuntimeState, StoredState> = {
   schema: z.ZodType<StoredState>;

@@ -4,6 +4,8 @@ import { Command } from 'commander';
 import { render } from 'ink';
 
 import { AppShell } from './ui/AppShell.js';
+import { loadNodeConfigApi } from './infrastructure/load-node-config-api.js';
+import { loadNodePosixAppApi } from './infrastructure/load-node-posix-app-api.js';
 
 const program = new Command();
 
@@ -81,6 +83,8 @@ program
     try {
       const app = render(
         <AppShell
+          loadConfigApi={loadNodeConfigApi}
+          loadPosixAppApi={loadNodePosixAppApi}
           {...(options.directory === undefined
             ? {}
             : { directory: options.directory })}

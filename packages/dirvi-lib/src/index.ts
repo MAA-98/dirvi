@@ -1,3 +1,5 @@
+export * from './tree-surfer-app/index.js';
+
 export * from './tree-surfer-ui/application/user-input-to-intent.js';
 export * from './tree-surfer-ui/application/intent-to-effect.js';
 

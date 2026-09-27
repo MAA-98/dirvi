@@ -2,23 +2,25 @@ import { Text } from 'ink';
 import { useEffect, useMemo, useState } from 'react';
 
 import {
-  createIntentToEffect,
+  AppApi,
   SerializableKey,
   State,
   TreeNode,
+  createIntentToEffect,
 } from 'dirvi-lib';
 
 import { App } from './App.js';
-import { AppApi } from '../domain/app-api.js';
 import { createReducer } from '../application/reducer.js';
 import { createEffectToAction } from '../application/effect-to-action.js';
+import { ConfigApi } from '../application/config-api.js';
 
 type LoadingAppProps<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
+  Node extends TreeNode<Id, Node>,
   ViewKey = string,
 > = {
-  appApi: AppApi<Id, BufferNode, ViewKey>;
+  appApi: AppApi<Id, Node, ViewKey>;
+  configApi: ConfigApi;
   stdout?: (message: string) => void;
   clipboard?: (value: string) => void;
   onError?: (error: Error) => void;
@@ -26,15 +28,10 @@ type LoadingAppProps<
 
 export function LoadingApp<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
+  Node extends TreeNode<Id, Node>,
   ViewKey = string,
->({
-  appApi,
-  stdout,
-  clipboard,
-  onError,
-}: LoadingAppProps<Id, BufferNode, ViewKey>) {
-  const [initialState, setInitialState] = useState<State<Id, BufferNode>>();
+>({ appApi, stdout, clipboard, onError }: LoadingAppProps<Id, Node, ViewKey>) {
+  const [initialState, setInitialState] = useState<State<Id, Node>>();
   const [empty, setEmpty] = useState(false);
   const [error, setError] = useState<Error>();
 
@@ -48,7 +45,7 @@ export function LoadingApp<
         if (!mounted) {
           return;
         }
-        
+
         setInitialState({
           root,
           foldRoot: appApi.foldNodeService.createEmptyNode(appApi.rootId),

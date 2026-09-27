@@ -1,4 +1,10 @@
-import { CursorApi, NavBranch, NavNodeApi, SerializableKey, TreeNode } from 'dirvi-lib';
+import {
+  CursorApi,
+  NavBranch,
+  NavNodeApi,
+  SerializableKey,
+  TreeNode,
+} from 'dirvi-lib';
 import { Cursor, NavEntry, NavNode } from 'dirvi-lib';
 
 type ViewRowBase = {
@@ -23,10 +29,7 @@ export type View = {
 };
 
 export const View = {
-  createRows<
-    Id extends SerializableKey,
-    Node extends TreeNode<Id, Node>
-  >(
+  createRows<Id extends SerializableKey, Node extends TreeNode<Id, Node>>(
     rootNode: NavBranch<Id>,
     navNodeApi: NavNodeApi<Id, Node>,
     cursor: Cursor<Id>,
@@ -51,10 +54,7 @@ export const View = {
     ];
   },
 
-  create<
-    Id extends SerializableKey,
-    Node extends TreeNode<Id, Node>
-  >(
+  create<Id extends SerializableKey, Node extends TreeNode<Id, Node>>(
     rootNode: NavBranch<Id>,
     navNodeApi: NavNodeApi<Id, Node>,
     cursor: Cursor<Id>,
@@ -83,7 +83,7 @@ export const View = {
  */
 function viewRowsAtNode<
   Id extends SerializableKey,
-  Node extends TreeNode<Id, Node>
+  Node extends TreeNode<Id, Node>,
 >(
   node: NavNode<Id>,
   parentPath: Id[],
@@ -92,9 +92,9 @@ function viewRowsAtNode<
   cursorApi: CursorApi<Id>,
 ): ViewRow[] {
   const rows: ViewRow[] = [];
-  
+
   for (const entry of node.entries) {
-    const entryCursor: Cursor<Id> = [...parentPath, entry.id]
+    const entryCursor: Cursor<Id> = [...parentPath, entry.id];
     const isCursor = cursorApi.equal(cursor, entryCursor);
     rows.push(viewRowForEntry(entry, parentPath, isCursor, navNodeApi));
 
@@ -119,17 +119,17 @@ function viewRowsAtNode<
 
 function viewRowForEntry<
   Id extends SerializableKey,
-  Node extends TreeNode<Id, Node>
+  Node extends TreeNode<Id, Node>,
 >(
   entry: NavEntry<Id>,
   parentPath: Id[] | null,
   cursor: boolean,
-  navNodeApi: NavNodeApi<Id, Node>
+  navNodeApi: NavNodeApi<Id, Node>,
 ): ViewRow {
   const id = entryId(parentPath ?? [], entry.id);
   const indent = parentPath ? parentPath.length + 1 : 0;
   const selected = false;
-  
+
   if (navNodeApi.entryIsBranch(entry)) {
     const foldedCount =
       entry.children === null || entry.children.folded === null

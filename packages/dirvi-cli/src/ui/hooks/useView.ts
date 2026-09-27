@@ -1,6 +1,9 @@
 import {
-  CursorApi, NavBranch, NavEntry,
-  NavNode, NavNodeApi,
+  CursorApi,
+  NavBranch,
+  NavEntry,
+  NavNode,
+  NavNodeApi,
   SerializableKey,
   State,
   TreeNode,
@@ -23,13 +26,8 @@ export function useView<
 ): View {
   const viewportStartRef = useRef(0);
   const viewportHeight = Math.max(1, terminalRows - STATUS_BAR_HEIGHT);
-  
-  const rows = View.createRows(
-    navNode,
-    navNodeApi,
-    state.cursor,
-    cursorApi,
-  );
+
+  const rows = View.createRows(navNode, navNodeApi, state.cursor, cursorApi);
 
   viewportStartRef.current = viewportStart(
     rows,

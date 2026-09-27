@@ -2,9 +2,11 @@ import { Box, Text, useApp, useInput, useWindowSize } from 'ink';
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import {
+  AppApi,
   Effect,
   InputModeState,
-  IntentToEffect, NavBranch,
+  IntentToEffect,
+  NavBranch,
   SerializableKey,
   State,
   TreeNode,
@@ -15,7 +17,6 @@ import { ViewRowComponent } from './components/ViewRowComponent.js';
 import { EffectToAction } from '../application/effect-to-action.js';
 import { StatusBar } from './components/StatusBar.js';
 import { inkInputToUserInput } from '../infrastructure/ink-input-to-user-input.js';
-import { AppApi } from '../domain/app-api.js';
 import { Reducer } from '../application/reducer.js';
 import { useView } from './hooks/useView.js';
 
@@ -156,15 +157,15 @@ export function App<
 
       case 'peekFold':
         // TODO: Need a peek state to know what to display
-        return
-        
+        return;
+
       case 'emitVisibleLeavesPaths':
         const navigation = navEntry.children;
 
         if (navigation === null) {
           return;
         }
-        
+
         const visibleLeavesPaths =
           appApi.navNodeApi.visibleLeavesPaths(navigation);
         stdout?.(
