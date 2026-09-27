@@ -33,7 +33,7 @@ directory/ ... 1 folded
 Because vertical space is easily squandered in displaying the tree, the second method is preferable,
 putting the fold information horizontally inline with the branch node.
 
-The first versions of the app used the first method because the related controls are easier to design
+Until 0.8 version, `dirvi` used the first method because the related controls are easier to design
 (simply `zo` while cursor is over the fold row.) The controls with the "branch inline folding" are less 
 clear.
 

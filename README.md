@@ -78,7 +78,6 @@ Normal mode is the default mode when `dirvi` starts.
 | ------------ | -------------------------------- |
 | `zc`         | Fold the current entry           |
 | `zo`         | Unfold the current fold          |
-| `za`         | Fold or unfold the current entry |
 
 ### Command-line mode
 
@@ -190,10 +189,6 @@ A fold can contain any direct entry in a directory:
 - Open and closed directories
 
 Folding an open directory does not close it. Its descendants remain in the buffer and retain their own open, closed, and folded state.
-
-The fold row is displayed after all visible entries and descendants of that directory. It is not part of the directory's normal entry ordering.
-
-The fold row represents all folded direct entries in that directory. When the cursor is on the fold row, `zo` unfolds the folded entries. The cursor moves to the first unfolded entry.
 
 Folding state is independent of the materialized directory buffer:
 
