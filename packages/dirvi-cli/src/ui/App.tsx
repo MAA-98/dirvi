@@ -20,7 +20,6 @@ import { inkInputToUserInput } from '../infrastructure/ink-input-to-user-input.j
 import { Reducer } from '../application/reducer.js';
 import { useView } from './hooks/useView.js';
 import { Config } from '../domain/config.js';
-import { config } from 'zod';
 
 function toError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));

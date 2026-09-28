@@ -1,20 +1,20 @@
 import { Box, Text } from 'ink';
-import { InputModeState } from 'dirvi-lib';
+import type { Config } from '../../domain/config.js';
+
+import type { InputModeState } from 'dirvi-lib';
+import { colorConfigToInkColor } from '../color-resolver.js';
 
 export const STATUS_BAR_HEIGHT = 1;
 
-export type StatusBarConfig = {
-  statusBarBgColor: string;
-};
-
 type StatusBarProps = {
   inputState: InputModeState;
-  config: StatusBarConfig;
+  config: Config;
 };
 
 export function StatusBar({ inputState, config }: StatusBarProps) {
   const inputMode = inputState.inputMode;
-
+  const statusBarBgColor = colorConfigToInkColor(config.statusBarBgColor);
+  
   return (
     <Box
       width="100%"
@@ -22,7 +22,7 @@ export function StatusBar({ inputState, config }: StatusBarProps) {
       flexDirection="row"
       justifyContent="space-between"
       flexShrink={0}
-      backgroundColor={config.statusBarBgColor}
+      backgroundColor={statusBarBgColor}
     >
       <Box flexShrink={1}>
         <Text color="black" wrap="truncate-end">
