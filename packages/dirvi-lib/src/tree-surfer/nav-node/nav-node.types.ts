@@ -13,7 +13,7 @@ export type NavNode<Id extends SerializableKey> = {
    * It is absent when this directory has no folded children.
    */
   folded: NavFoldEntry<Id> | null;
-  
+
   /**
    * Loaded entries that are not folded at this directory, corresponding to
    * navigable rows. Entries retain the order from the TreeNode.
@@ -41,7 +41,10 @@ export type NavBranch<Id extends SerializableKey> = {
   children: NavNode<Id> | null;
 };
 
-export type NavNodeApi<Id extends SerializableKey, Node extends TreeNode<Id, Node>> = {
+export type NavNodeApi<
+  Id extends SerializableKey,
+  Node extends TreeNode<Id, Node>,
+> = {
   /**
    * Tests whether a navigation entry represents a branch.
    *
@@ -71,7 +74,7 @@ export type NavNodeApi<Id extends SerializableKey, Node extends TreeNode<Id, Nod
    */
   from(
     root: Node & BranchTreeNode<Id, Node>,
-    foldRoot: FoldNode<Id> | undefined
+    foldRoot: FoldNode<Id> | undefined,
   ): NavBranch<Id>;
 
   getNodeAtPath(

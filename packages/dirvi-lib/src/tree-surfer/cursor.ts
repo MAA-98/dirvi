@@ -105,19 +105,16 @@ function idPathEqual<Id>(left: readonly Id[], right: readonly Id[]): boolean {
  * Equal paths are included. An empty prefix is therefore a prefix of every
  * path.
  */
-function isPathPrefix<Id>(
-  prefix: readonly Id[],
-  path: readonly Id[],
-): boolean {
+function isPathPrefix<Id>(prefix: readonly Id[], path: readonly Id[]): boolean {
   if (prefix.length > path.length) {
     return false;
   }
-  
+
   for (let index = 0; index < prefix.length; index += 1) {
     if (prefix[index] !== path[index]) {
       return false;
     }
   }
-  
+
   return true;
 }

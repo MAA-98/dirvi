@@ -1,14 +1,24 @@
 import type { ViewApi } from './view-api.js';
 import type {
-  BranchTreeNode, CursorApi, FoldNode,
+  BranchTreeNode,
+  CursorApi,
+  FoldNode,
   FoldNodeApi,
-  FoldNodeService, NavNodeApi,
-  SerializableKey, State, StateApi,
+  FoldNodeService,
+  NavNodeApi,
+  SerializableKey,
+  State,
+  StateApi,
   TreeNode,
   TreeNodeApi,
 } from '../tree-surfer/index.js';
-import { createCursorApi, createFoldNodeService, createNavNodeApi,
-  createStateApi, createTreeNodeApi } from '../tree-surfer/index.js';
+import {
+  createCursorApi,
+  createFoldNodeService,
+  createNavNodeApi,
+  createStateApi,
+  createTreeNodeApi,
+} from '../tree-surfer/index.js';
 
 export type AppApi<
   Id extends SerializableKey,
@@ -26,10 +36,6 @@ export type AppApi<
   name: string;
   rootId: Id;
 
-  /**
-   * Message displayed when there are no root children.
-   */
-  emptyRootMessage: string;
   loadBranches: (path: Id[]) => Promise<Node[]>;
   createRoot: () => Promise<Node & BranchTreeNode<Id, Node>>;
 

@@ -12,9 +12,7 @@ type TestNodeId = string;
 /**
  * Characters used by readable generated node IDs.
  */
-const smallLetterCharacters = Array.from(
-  'abcdefghijklmnopqrstuvwxyz',
-);
+const smallLetterCharacters = Array.from('abcdefghijklmnopqrstuvwxyz');
 
 /**
  * Generates valid string IDs for test nodes. Note that the API just does
@@ -49,7 +47,9 @@ type NodeWithReachableNodes = {
  * @param id - The ID assigned to the leaf.
  * @returns The leaf and the path that resolves to it.
  */
-const generatedLeafNodeWithReachableNodes = (id: TestNodeId): NodeWithReachableNodes => {
+const generatedLeafNodeWithReachableNodes = (
+  id: TestNodeId,
+): NodeWithReachableNodes => {
   const node: StringNode = { id };
 
   return {
@@ -74,7 +74,7 @@ const generatedClosedBranchWithReachableNodes = (
     id,
     children: null,
   };
-  
+
   return {
     node,
     reachableNodes: [{ path: [], node }],
@@ -96,14 +96,14 @@ const generatedOpenBranchWithReachableNodes = (
     id,
     children: children.map(({ node }) => node),
   };
-  
+
   const descendantNodes = children.flatMap(({ node: child, reachableNodes }) =>
     reachableNodes.map(({ path, node }) => ({
       path: [child.id, ...path],
       node,
     })),
   );
-  
+
   return {
     node,
     reachableNodes: [{ path: [], node }, ...descendantNodes],
@@ -254,8 +254,8 @@ export const nodesArrayAndBranchPathArb = nodeAndPathsArb
  * The generated nodes have unique IDs, making the result suitable for use as
  * the children of an open branch.
  */
-export const newBranchesArb = generatedNodesArrayArb.map(
-  (generatedNodes) => generatedNodes.map(({ node }) => node),
+export const newBranchesArb = generatedNodesArrayArb.map((generatedNodes) =>
+  generatedNodes.map(({ node }) => node),
 );
 
 /**
@@ -264,7 +264,4 @@ export const newBranchesArb = generatedNodesArrayArb.map(
  * An array represents an open branch, including an open branch with no
  * children. `null` represents a closed branch.
  */
-export const newBranchesOrNullArb = fc.oneof(
-  newBranchesArb,
-  fc.constant(null),
-);
+export const newBranchesOrNullArb = fc.oneof(newBranchesArb, fc.constant(null));

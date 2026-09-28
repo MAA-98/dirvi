@@ -19,6 +19,8 @@ import { StatusBar } from './components/StatusBar.js';
 import { inkInputToUserInput } from '../infrastructure/ink-input-to-user-input.js';
 import { Reducer } from '../application/reducer.js';
 import { useView } from './hooks/useView.js';
+import { Config } from '../domain/config.js';
+import { config } from 'zod';
 
 function toError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
@@ -30,6 +32,7 @@ type AppProps<
   ViewKey = string,
 > = {
   appApi: AppApi<Id, BufferNode, ViewKey>;
+  config: Config;
   initialState: State<Id, BufferNode>;
   reducer: Reducer<Id, BufferNode>;
   intentToEffect: IntentToEffect<Id, BufferNode>;
@@ -45,6 +48,7 @@ export function App<
   ViewKey = string,
 >({
   appApi,
+  config,
   initialState,
   reducer,
   intentToEffect,
@@ -236,7 +240,7 @@ export function App<
     }
   }
 
-  // --- Input Hook ---
+  // --- Ink Input Hook ---
   useInput((input, key) => {
     const userInput = inkInputToUserInput(input, key);
     if (userInput === undefined) {
@@ -285,7 +289,7 @@ export function App<
         )}
       </Box>
 
-      <StatusBar inputState={inputState} />
+      <StatusBar inputState={inputState} config={config} />
     </Box>
   );
 }

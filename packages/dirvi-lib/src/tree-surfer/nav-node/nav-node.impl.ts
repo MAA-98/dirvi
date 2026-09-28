@@ -3,7 +3,10 @@ import type {
   TreeNode,
   TreeNodeApi,
 } from '../tree-node/tree-node.types.js';
-import type { FoldNode, FoldNodeService } from '../fold-node/fold-node.types.js';
+import type {
+  FoldNode,
+  FoldNodeService,
+} from '../fold-node/fold-node.types.js';
 import type { Cursor, CursorApi } from '../cursor.js';
 import type {
   NavBranch,
@@ -23,7 +26,7 @@ export function createNavNodeApi<
   function entryIsBranch(entry: NavEntry<Id>): entry is NavBranch<Id> {
     return 'children' in entry;
   }
-  
+
   function createNavNode(
     entries: Node[],
     foldRoot: FoldNode<Id> | undefined,
@@ -63,7 +66,7 @@ export function createNavNodeApi<
             },
     };
   }
-  
+
   function createNavEntry(
     entry: Node,
     foldRoot: FoldNode<Id> | undefined,
@@ -77,7 +80,7 @@ export function createNavNodeApi<
 
     return createNavBranch(entry, foldRoot, entryPath);
   }
-  
+
   function createNavBranch(
     entry: Node,
     foldRoot: FoldNode<Id> | undefined,
@@ -95,10 +98,8 @@ export function createNavNodeApi<
           : createNavNode(entry.children, foldRoot, entryPath),
     };
   }
-  
-  function rootCursors(
-    rootNode: NavBranch<Id>,
-  ): Cursor<Id>[] {
+
+  function rootCursors(rootNode: NavBranch<Id>): Cursor<Id>[] {
     if (rootNode.children === null) {
       return [[]];
     }
@@ -126,10 +127,10 @@ export function createNavNodeApi<
 
     return cursors;
   }
-  
+
   const navNodeApi: NavNodeApi<Id, Node> = {
     entryIsBranch,
-    
+
     // Return a nav node from the TreeNode and FoldNode trees.
     from(root, foldRoot) {
       return createNavBranch(root, foldRoot, []);
@@ -145,7 +146,7 @@ export function createNavNodeApi<
       if (currentId === undefined) {
         return navigation;
       }
-      
+
       const entry = navigation.entries.find(
         (candidate) => candidate.id === currentId,
       );
@@ -175,7 +176,7 @@ export function createNavNodeApi<
       if (currentId === undefined) {
         return undefined;
       }
-      
+
       const entry = navigation.entries.find(
         (candidate) => candidate.id === currentId,
       );

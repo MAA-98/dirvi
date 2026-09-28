@@ -15,6 +15,6 @@ export function createFoldNodeSchemas<Id extends SerializableKey>(
       foldedChildren: z.array(foldNodeSchema),
     }),
   );
-  
+
   return foldNodeSchema;
 }

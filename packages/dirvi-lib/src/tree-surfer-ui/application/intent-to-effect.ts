@@ -14,10 +14,7 @@ import { parseCommand } from './parse-command.js';
 export type IntentToEffect<
   Id extends SerializableKey,
   Node extends TreeNode<Id, Node>,
-> = (
-  intent: Intent,
-  state: State<Id, Node>,
-) => Effect<Id, Node> | undefined;
+> = (intent: Intent, state: State<Id, Node>) => Effect<Id, Node> | undefined;
 
 export function createIntentToEffect<
   Id extends SerializableKey,
@@ -27,7 +24,6 @@ export function createIntentToEffect<
   cursorApi: CursorApi<Id>,
   treeNodeApi: TreeNodeApi<Id, Node>,
 ): IntentToEffect<Id, Node> {
-  
   return (intent, state) => {
     switch (intent.intentType) {
       case 'setNormalBuffer':

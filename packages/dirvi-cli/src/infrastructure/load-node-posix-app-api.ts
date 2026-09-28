@@ -121,10 +121,8 @@ export function loadNodePosixAppApi(
     appId: 'posix',
     name: unixAbsPath,
     rootId,
-    emptyRootMessage: 'The directory is empty.',
 
     loadBranches,
-
     createRoot: async () => {
       // Start with root branches already loaded
       const rootBranches = await loadBranches([]);

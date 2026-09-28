@@ -13,6 +13,7 @@ import { App } from './App.js';
 import { createReducer } from '../application/reducer.js';
 import { createEffectToAction } from '../application/effect-to-action.js';
 import { ConfigApi } from '../application/config-api.js';
+import { Config } from '../domain/config.js';
 
 type LoadingAppProps<
   Id extends SerializableKey,
@@ -30,10 +31,58 @@ export function LoadingApp<
   Id extends SerializableKey,
   Node extends TreeNode<Id, Node>,
   ViewKey = string,
->({ appApi, stdout, clipboard, onError }: LoadingAppProps<Id, Node, ViewKey>) {
+>({
+  appApi,
+  configApi,
+  stdout,
+  clipboard,
+  onError,
+}: LoadingAppProps<Id, Node, ViewKey>) {
   const [initialState, setInitialState] = useState<State<Id, Node>>();
-  const [empty, setEmpty] = useState(false);
+  const [config, setConfig] = useState<Config>();
   const [error, setError] = useState<Error>();
+
+  // Load the initial configuration and keep it synchronized with changes made
+  // by another process or another running direx instance.
+  useEffect(() => {
+    let mounted = true;
+    let latestLoad = 0;
+
+    const loadConfig = (): void => {
+      const loadNumber = ++latestLoad;
+
+      void configApi
+        .load()
+        .then((nextConfig) => {
+          // Ignore a stale read if a newer config read has begun meanwhile.
+          if (!mounted || loadNumber !== latestLoad) {
+            return;
+          }
+
+          setConfig(nextConfig);
+        })
+        .catch((cause: unknown) => {
+          if (!mounted || loadNumber !== latestLoad) {
+            return;
+          }
+
+          const nextError =
+            cause instanceof Error ? cause : new Error(String(cause));
+
+          setError(nextError);
+          onError?.(nextError);
+        });
+    };
+
+    // Subscribe before the first load so a change during startup is not missed.
+    const unsubscribe = configApi.subscribeToResync(loadConfig);
+    loadConfig();
+
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, [configApi, onError]);
 
   // Loading and setting initial state.
   useEffect(() => {
@@ -102,17 +151,14 @@ export function LoadingApp<
     return <Text color="red">{error.message}</Text>;
   }
 
-  if (empty) {
-    return <Text dimColor>{appApi.emptyRootMessage}</Text>;
-  }
-
-  if (initialState === undefined) {
+  if (initialState === undefined || config === undefined) {
     return <Text dimColor>Loading.</Text>;
   }
 
   return (
     <App
       appApi={appApi}
+      config={config}
       initialState={initialState}
       reducer={reducer}
       intentToEffect={intentToEffect}

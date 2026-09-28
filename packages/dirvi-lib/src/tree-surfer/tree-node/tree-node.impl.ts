@@ -76,7 +76,7 @@ export function createTreeNodeApi<
       return modifyChildAtPath(root, path, modifier);
     },
   };
-  
+
   function modifyChildAtPath(
     node: Node,
     path: readonly Id[],

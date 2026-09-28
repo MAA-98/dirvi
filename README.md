@@ -74,10 +74,10 @@ Normal mode is the default mode when `dirvi` starts.
 
 #### Multi-key
 
-| Key sequence | Action                           |
-| ------------ | -------------------------------- |
-| `zc`         | Fold the current entry           |
-| `zo`         | Unfold the current fold          |
+| Key sequence | Action                  |
+| ------------ | ----------------------- |
+| `zc`         | Fold the current entry  |
+| `zo`         | Unfold the current fold |
 
 ### Command-line mode
 

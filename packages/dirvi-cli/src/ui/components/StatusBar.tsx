@@ -3,11 +3,16 @@ import { InputModeState } from 'dirvi-lib';
 
 export const STATUS_BAR_HEIGHT = 1;
 
-type StatusBarProps = {
-  inputState: InputModeState;
+export type StatusBarConfig = {
+  statusBarBgColor: string;
 };
 
-export function StatusBar({ inputState }: StatusBarProps) {
+type StatusBarProps = {
+  inputState: InputModeState;
+  config: StatusBarConfig;
+};
+
+export function StatusBar({ inputState, config }: StatusBarProps) {
   const inputMode = inputState.inputMode;
 
   return (
@@ -17,7 +22,7 @@ export function StatusBar({ inputState }: StatusBarProps) {
       flexDirection="row"
       justifyContent="space-between"
       flexShrink={0}
-      backgroundColor={'gray'}
+      backgroundColor={config.statusBarBgColor}
     >
       <Box flexShrink={1}>
         <Text color="black" wrap="truncate-end">

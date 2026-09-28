@@ -80,7 +80,10 @@ export type FoldNode<Id extends SerializableKey> = {
  *
  * @typeParam Id - The type of IDs in the actual tree nodes.
  */
-export type FoldNodeApi<Id extends SerializableKey> = TreeNodeApi<Id, FoldNode<Id>>;
+export type FoldNodeApi<Id extends SerializableKey> = TreeNodeApi<
+  Id,
+  FoldNode<Id>
+>;
 
 /**
  * Semantic operations for managing fold state.

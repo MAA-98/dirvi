@@ -29,7 +29,7 @@ export function createFoldNodeService<Id extends SerializableKey>(
       foldedChildren: [],
     };
   }
-  
+
   return {
     createEmptyNode,
 
@@ -132,7 +132,7 @@ export function createFoldNodeService<Id extends SerializableKey>(
       foldedChildren,
     };
   }
-  
+
   function clearFoldedEntries(node: FoldNode<Id>): FoldNode<Id> {
     if (node.foldedChildren.length === 0) {
       return node;
@@ -186,7 +186,7 @@ export function createFoldNodeService<Id extends SerializableKey>(
       children,
     };
   }
-  
+
   function ensureChildPath(
     parent: FoldNode<Id>,
     path: readonly Id[],
@@ -205,7 +205,8 @@ export function createFoldNodeService<Id extends SerializableKey>(
     const children = parent.children;
     const childIndex = children.findIndex((child) => child.id === id);
 
-    const child = childIndex === -1 ? createEmptyNode(id) : children[childIndex]!;
+    const child =
+      childIndex === -1 ? createEmptyNode(id) : children[childIndex]!;
 
     let updatedChild = child;
 
