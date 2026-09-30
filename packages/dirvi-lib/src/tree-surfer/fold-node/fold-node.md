@@ -2,32 +2,20 @@
 
 ## Motivation
 
-The fold-state tree keeps track of folded buffer entries independently of the
-currently loaded buffer tree.
-
-The buffer tree is the source of truth for:
-
-- buffer entries;
-- entry order;
-- buffer-specific properties;
-- which branches are loaded; and
-- the current contents of the application.
-
-The fold-state tree is the source of truth only for folding. This separation
-allows fold state to survive buffer reloads and lazy loading.
+The fold tree keeps track of folded entries independently of the
+currently loaded tree.
 
 ## Sparse Projection
 
-A fold-state tree is a sparse projection of a buffer tree. It does not contain
-every buffer entry.
+A fold-state tree is a sparse projection of a node tree. It does not contain
+every node entry.
 
-A fold-state node is included when:
+A fold node is included when:
 
-- the corresponding buffer entry is folded; or
-- there is fold state somewhere below the corresponding buffer entry.
+- the corresponding entry is folded; or
+- an entry is folded somewhere below the corresponding entry.
 
-A buffer entry with no fold state at or below it is omitted from the
-fold-state tree.
+An entry with no fold state at or below it is omitted from the fold tree.
 
 For example, given this buffer tree:
 
@@ -39,7 +27,7 @@ root
 └── test
 ```
 
-if only `src/lib` is folded, the fold-state tree may contain:
+if only `src/lib` is folded, the fold tree may contain:
 
 ```text
 root
@@ -47,10 +35,10 @@ root
     └── foldedChildren: [lib]
 ```
 
-`main.ts` and `test` do not need to appear in the fold-state tree because they
+`main.ts` and `test` do not need to appear in the fold tree because they
 have no fold state.
 
-The root is always retained, even when it has no fold state.
+The root is always retained, even when it has no folds.
 
 ## Node Collections
 
@@ -229,14 +217,14 @@ Unrelated nodes and arrays retain their existing object identity.
 This allows fold-state updates to work with reducer-based application state and
 makes it possible to detect unchanged updates by reference identity.
 
-## Relationship to the Buffer Tree
+## Relationship to the Node Tree
 
-The fold-state tree does not validate the existence of buffer entries by
+The fold-state tree does not validate the existence of entries by
 itself. A buffer entry ID in `children` or `foldedChildren` is expected to
-correspond to a direct child in the buffer tree, but the fold-state tree does
+correspond to a direct child in the node tree, but the fold tree does
 not contain the buffer entry's properties.
 
-The buffer tree remains authoritative for:
+The node tree remains authoritative for:
 
 - whether an entry exists;
 - whether an entry is a leaf or branch;
@@ -244,7 +232,7 @@ The buffer tree remains authoritative for:
 - the loaded or unloaded state of a branch; and
 - application-specific node data.
 
-The fold-state tree remains authoritative for:
+The fold tree remains authoritative for:
 
 - whether a direct entry is folded; and
 - preserved fold state below folded entries.

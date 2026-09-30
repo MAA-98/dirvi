@@ -3,7 +3,7 @@ import {
   SerializableKey,
   TreeNode,
   TreeNodeApi,
-} from 'dirvi-lib/dist/tree-surfer/tree-node/tree-node.types.js';
+} from 'packages/dirvi-lib/src/tree-surfer/tree-node/deprecated/tree-node.types.js';
 import {
   CursorApi,
   EffectAction,

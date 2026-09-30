@@ -31,7 +31,7 @@ export function createReducer<
         };
 
       case 'updateBranch':
-        const root = treeNodeApi.modifyAtPath(
+        const root = treeNodeApi.updateAtPath(
           state.root,
           action.path,
           (node) => {

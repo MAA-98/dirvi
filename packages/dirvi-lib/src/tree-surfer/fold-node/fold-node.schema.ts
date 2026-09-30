@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
+import type { SerializableKey } from '../tree-node/tree-node.model.js';
 import type { FoldNode } from './fold-node.types.js';
-import { SerializableKey } from '../tree-node/tree-node.types.js';
 
 export function createFoldNodeSchemas<Id extends SerializableKey>(
   idSchema: z.ZodType<Id>,

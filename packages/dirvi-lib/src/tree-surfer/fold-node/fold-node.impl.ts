@@ -3,54 +3,129 @@ import type {
   FoldNodeApi,
   FoldNodeService,
 } from './fold-node.types.js';
-import type { SerializableKey } from '../tree-node/tree-node.types.js';
+import type { SerializableKey } from '../tree-node/tree-node.model.js';
 
-function getFoldedChildById<Id extends SerializableKey>(
-  node: FoldNode<Id>,
-  id: Id,
-): FoldNode<Id> | undefined {
-  return node.foldedChildren.find((child) => child.id === id);
-}
-
-function hasFoldedChildWithId<Id extends SerializableKey>(
-  node: FoldNode<Id>,
-  id: Id,
-): boolean {
-  return getFoldedChildById(node, id) !== undefined;
-}
-
+/**
+ * Creates semantic operations for a fold-state tree.
+ *
+ * Structural children are owned by `FoldNodeApi`; folded children are
+ * application-owned FoldNode values stored in `FoldNodeValue`.
+ */
 export function createFoldNodeService<Id extends SerializableKey>(
   foldNodeApi: FoldNodeApi<Id>,
 ): FoldNodeService<Id> {
   function createEmptyNode(id: Id): FoldNode<Id> {
-    return {
-      id,
-      children: [],
-      foldedChildren: [],
-    };
+    const node = foldNodeApi.createLoadedBranch(id, { foldedChildren: [] }, []);
+
+    /*
+     * An empty child collection cannot contain duplicate sibling IDs, so this
+     * would indicate a broken TreeNodeApi implementation or changed contract.
+     */
+    if (node === undefined) {
+      throw new Error('Could not create an empty fold node');
+    }
+
+    return node;
+  }
+
+  /**
+   * Returns an array snapshot of loaded structural children.
+   *
+   * Fold nodes are intended always to be open branches. `undefined` therefore
+   * signals an invalid FoldNode supplied to this service, for example one made
+   * with `asLeaf` or `asClosedBranch` through the lower-level tree API.
+   */
+  function getStructuralChildren(
+    node: FoldNode<Id>,
+  ): FoldNode<Id>[] | undefined {
+    const children = foldNodeApi.getLoadedChildren(node);
+
+    return children === undefined ? undefined : [...children];
+  }
+
+  function getFoldedChildren(node: FoldNode<Id>): readonly FoldNode<Id>[] {
+    return foldNodeApi.value(node).foldedChildren;
+  }
+
+  function getFoldedChildById(
+    node: FoldNode<Id>,
+    id: Id,
+  ): FoldNode<Id> | undefined {
+    return getFoldedChildren(node).find(
+      (child) => foldNodeApi.id(child) === id,
+    );
+  }
+
+  function hasFoldedChildWithId(node: FoldNode<Id>, id: Id): boolean {
+    return getFoldedChildById(node, id) !== undefined;
+  }
+
+  /**
+   * Replaces only fold-domain data, retaining the node's ID and structural
+   * child state.
+   */
+  function withFoldedChildren(
+    node: FoldNode<Id>,
+    foldedChildren: readonly FoldNode<Id>[],
+  ): FoldNode<Id> {
+    return foldNodeApi.withValue(node, {
+      ...foldNodeApi.value(node),
+      foldedChildren,
+    });
+  }
+
+  /**
+   * Replaces structural children while requiring that the source node is
+   * already an open branch.
+   *
+   * `withChildren` could convert any tree node into an open branch. That is
+   * useful in the generic API, but FoldNodeService wants to preserve its
+   * invariant that every FoldNode is already an open branch.
+   */
+  function withStructuralChildren(
+    node: FoldNode<Id>,
+    children: Iterable<FoldNode<Id>>,
+  ): FoldNode<Id> | undefined {
+    if (foldNodeApi.getLoadedChildren(node) === undefined) {
+      return undefined;
+    }
+
+    return foldNodeApi.withLoadedChildren(node, children);
+  }
+
+  /**
+   * Returns whether a fold-state node carries state below itself.
+   *
+   * A folded node has nested state when it has either:
+   *
+   * - structural child fold nodes; or
+   * - folded direct children.
+   */
+  function hasNestedFoldState(node: FoldNode<Id>): boolean | undefined {
+    const structuralChildren = getStructuralChildren(node);
+
+    if (structuralChildren === undefined) {
+      return undefined;
+    }
+
+    return structuralChildren.length > 0 || getFoldedChildren(node).length > 0;
   }
 
   return {
     createEmptyNode,
 
     getIfEntryFoldedAtPath(rootNode, path, entryId) {
-      const node = foldNodeApi.getAtPath(
-        rootNode,
-        path,
-        (candidate) => candidate,
+      return (
+        foldNodeApi.selectAtPath(rootNode, path, (node) =>
+          hasFoldedChildWithId(node, entryId),
+        ) ?? false
       );
-
-      return node !== undefined && hasFoldedChildWithId(node, entryId);
     },
 
     foldedEntriesAtPath(rootNode, path) {
-      const node = foldNodeApi.getAtPath(
-        rootNode,
-        path,
-        (candidate) => candidate,
+      return foldNodeApi.selectAtPath(rootNode, path, (node) =>
+        getFoldedChildren(node).map(foldNodeApi.id),
       );
-
-      return node?.foldedChildren.map((child) => child.id);
     },
 
     addFoldedEntryAtPath(rootNode, path, entryId) {
@@ -60,182 +135,244 @@ export function createFoldNodeService<Id extends SerializableKey>(
         return undefined;
       }
 
-      return foldNodeApi.modifyAtPath(rootWithPath, path, (node) =>
+      return foldNodeApi.updateAtPath(rootWithPath, path, (node) =>
         addFoldedEntry(node, entryId),
       );
     },
 
     removeFoldedEntryAtPath(rootNode, path, entryId) {
-      return foldNodeApi.modifyAtPath(rootNode, path, (node) =>
+      return foldNodeApi.updateAtPath(rootNode, path, (node) =>
         removeFoldedEntry(node, entryId),
       );
     },
 
     clearFoldedEntriesAtPath(rootNode, path) {
-      return foldNodeApi.modifyAtPath(rootNode, path, (node) =>
-        clearFoldedEntries(node),
-      );
+      return foldNodeApi.updateAtPath(rootNode, path, clearFoldedEntries);
     },
   };
 
-  // Node-local operations.
-  //
-  // These functions update only the selected node. Path traversal and immutable
-  // ancestor updates are handled by FoldNodeApi.
-  function addFoldedEntry(node: FoldNode<Id>, entryId: Id): FoldNode<Id> {
-    const existingFoldedChild = getFoldedChildById(node, entryId);
-
-    if (existingFoldedChild !== undefined) {
+  /**
+   * Folds a direct child at one node.
+   *
+   * If the child already exists as a structural child, it moves to
+   * `foldedChildren`, preserving any fold state beneath it. If it does not
+   * exist in either collection, a new empty fold node is created.
+   */
+  function addFoldedEntry(
+    node: FoldNode<Id>,
+    entryId: Id,
+  ): FoldNode<Id> | undefined {
+    if (hasFoldedChildWithId(node, entryId)) {
       return node;
     }
 
-    const childIndex = node.children.findIndex((child) => child.id === entryId);
+    const children = getStructuralChildren(node);
 
-    const child =
-      childIndex === -1 ? createEmptyNode(entryId) : node.children[childIndex]!;
+    if (children === undefined) {
+      return undefined;
+    }
 
-    const children =
+    const childIndex = children.findIndex(
+      (child) => foldNodeApi.id(child) === entryId,
+    );
+
+    const foldedChild =
+      childIndex === -1 ? createEmptyNode(entryId) : children[childIndex];
+
+    if (foldedChild === undefined) {
+      return undefined;
+    }
+
+    const remainingChildren =
       childIndex === -1
-        ? node.children
-        : node.children.filter((_, index) => index !== childIndex);
+        ? children
+        : [...children.slice(0, childIndex), ...children.slice(childIndex + 1)];
 
-    return {
-      ...node,
-      children,
-      foldedChildren: [...node.foldedChildren, child],
-    };
+    const nodeWithoutStructuralChild = withStructuralChildren(
+      node,
+      remainingChildren,
+    );
+
+    if (nodeWithoutStructuralChild === undefined) {
+      return undefined;
+    }
+
+    return withFoldedChildren(nodeWithoutStructuralChild, [
+      ...getFoldedChildren(nodeWithoutStructuralChild),
+      foldedChild,
+    ]);
   }
 
-  function removeFoldedEntry(node: FoldNode<Id>, entryId: Id): FoldNode<Id> {
-    const foldedChildIndex = node.foldedChildren.findIndex(
-      (child) => child.id === entryId,
+  /**
+   * Unfolds a direct child at one node.
+   *
+   * A folded child that has nested fold state is moved into structural
+   * children. A folded child without nested state is omitted entirely.
+   */
+  function removeFoldedEntry(
+    node: FoldNode<Id>,
+    entryId: Id,
+  ): FoldNode<Id> | undefined {
+    const foldedChildren = getFoldedChildren(node);
+
+    const foldedChildIndex = foldedChildren.findIndex(
+      (child) => foldNodeApi.id(child) === entryId,
     );
 
     if (foldedChildIndex === -1) {
       return node;
     }
 
-    const foldedChild = node.foldedChildren[foldedChildIndex]!;
+    const foldedChild = foldedChildren[foldedChildIndex];
 
-    const foldedChildren = node.foldedChildren.filter(
-      (_, index) => index !== foldedChildIndex,
+    if (foldedChild === undefined) {
+      return undefined;
+    }
+
+    const hasNestedState = hasNestedFoldState(foldedChild);
+
+    if (hasNestedState === undefined) {
+      return undefined;
+    }
+
+    const remainingFoldedChildren = [
+      ...foldedChildren.slice(0, foldedChildIndex),
+      ...foldedChildren.slice(foldedChildIndex + 1),
+    ];
+
+    const nodeWithoutFoldedChild = withFoldedChildren(
+      node,
+      remainingFoldedChildren,
     );
 
-    const hasNestedFoldState =
-      foldedChild.children.length > 0 || foldedChild.foldedChildren.length > 0;
-
-    return {
-      ...node,
-      children: hasNestedFoldState
-        ? [...node.children, foldedChild]
-        : node.children,
-      foldedChildren,
-    };
-  }
-
-  function clearFoldedEntries(node: FoldNode<Id>): FoldNode<Id> {
-    if (node.foldedChildren.length === 0) {
-      return node;
+    if (!hasNestedState) {
+      return nodeWithoutFoldedChild;
     }
 
-    const children = [...node.children];
-
-    for (const foldedChild of node.foldedChildren) {
-      const hasNestedFoldState =
-        foldedChild.children.length > 0 ||
-        foldedChild.foldedChildren.length > 0;
-
-      if (hasNestedFoldState) {
-        children.push(foldedChild);
-      }
-    }
-
-    return {
-      ...node,
-      children,
-      foldedChildren: [],
-    };
-  }
-
-  /**
-   * Ensures that the requested path exists in the fold-state tree.
-   *
-   * The path is relative to `rootNode`; an empty path selects the root.
-   * This creates fold nodes only and does not modify the buffer tree.
-   */
-  function ensurePath(
-    rootNode: FoldNode<Id>,
-    path: readonly Id[],
-  ): FoldNode<Id> | undefined {
-    if (path.length === 0) {
-      return rootNode;
-    }
-
-    const children = ensureChildPath(rootNode, path, 0);
+    const children = getStructuralChildren(nodeWithoutFoldedChild);
 
     if (children === undefined) {
       return undefined;
     }
 
-    if (children === rootNode.children) {
-      return rootNode;
-    }
-
-    return {
-      ...rootNode,
-      children,
-    };
+    return withStructuralChildren(nodeWithoutFoldedChild, [
+      ...children,
+      foldedChild,
+    ]);
   }
 
-  function ensureChildPath(
-    parent: FoldNode<Id>,
-    path: readonly Id[],
-    pathIndex: number,
-  ): FoldNode<Id>[] | undefined {
-    const id = path[pathIndex];
+  /**
+   * Unfolds all directly folded children at one node.
+   *
+   * Folded children that contain nested state become structural children;
+   * empty folded children are omitted.
+   */
+  function clearFoldedEntries(node: FoldNode<Id>): FoldNode<Id> | undefined {
+    const foldedChildren = getFoldedChildren(node);
 
-    if (id === undefined) {
-      return parent.children;
+    if (foldedChildren.length === 0) {
+      return node;
     }
 
-    if (hasFoldedChildWithId(parent, id)) {
+    const children = getStructuralChildren(node);
+
+    if (children === undefined) {
       return undefined;
     }
 
-    const children = parent.children;
-    const childIndex = children.findIndex((child) => child.id === id);
+    const retainedFoldedChildren: FoldNode<Id>[] = [];
 
-    const child =
-      childIndex === -1 ? createEmptyNode(id) : children[childIndex]!;
+    for (const foldedChild of foldedChildren) {
+      const nestedState = hasNestedFoldState(foldedChild);
 
-    let updatedChild = child;
-
-    if (pathIndex < path.length - 1) {
-      const updatedChildren = ensureChildPath(child, path, pathIndex + 1);
-
-      if (updatedChildren === undefined) {
+      if (nestedState === undefined) {
         return undefined;
       }
 
-      if (updatedChildren !== child.children) {
-        updatedChild = {
-          ...child,
-          children: updatedChildren,
-        };
+      if (nestedState) {
+        retainedFoldedChildren.push(foldedChild);
       }
     }
 
+    const nodeWithoutFoldedChildren = withFoldedChildren(node, []);
+
+    return withStructuralChildren(nodeWithoutFoldedChildren, [
+      ...children,
+      ...retainedFoldedChildren,
+    ]);
+  }
+
+  /**
+   * Ensures the path exists as structural fold nodes.
+   *
+   * A path may not pass through a folded child: folded children represent
+   * entries whose contents are collapsed, so they cannot simultaneously be
+   * part of the visible structural fold-state path.
+   */
+  function ensurePath(
+    rootNode: FoldNode<Id>,
+    path: readonly Id[],
+  ): FoldNode<Id> | undefined {
+    return ensurePathAtIndex(rootNode, path, 0);
+  }
+
+  function ensurePathAtIndex(
+    node: FoldNode<Id>,
+    path: readonly Id[],
+    pathIndex: number,
+  ): FoldNode<Id> | undefined {
+    if (pathIndex === path.length) {
+      return node;
+    }
+
+    const childId = path[pathIndex];
+
+    if (childId === undefined) {
+      return undefined;
+    }
+
+    /*
+     * A folded child is intentionally absent from the structural child tree.
+     * Do not create a duplicate FoldNode with the same ID in `children`.
+     */
+    if (hasFoldedChildWithId(node, childId)) {
+      return undefined;
+    }
+
+    const children = getStructuralChildren(node);
+
+    if (children === undefined) {
+      return undefined;
+    }
+
+    const childIndex = children.findIndex(
+      (child) => foldNodeApi.id(child) === childId,
+    );
+
+    const child =
+      childIndex === -1 ? createEmptyNode(childId) : children[childIndex];
+
+    if (child === undefined) {
+      return undefined;
+    }
+
+    const updatedChild = ensurePathAtIndex(child, path, pathIndex + 1);
+
+    if (updatedChild === undefined) {
+      return undefined;
+    }
+
     if (childIndex === -1) {
-      return [...children, updatedChild];
+      return withStructuralChildren(node, [...children, updatedChild]);
     }
 
     if (updatedChild === child) {
-      return children;
+      return node;
     }
 
-    const result = [...children];
-    result[childIndex] = updatedChild;
+    const updatedChildren = [...children];
+    updatedChildren[childIndex] = updatedChild;
 
-    return result;
+    return withStructuralChildren(node, updatedChildren);
   }
 }

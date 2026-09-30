@@ -1,117 +1,174 @@
-import {
-  BranchTreeNode,
-  SerializableKey,
-  TreeNode,
-  TreeNodeApi,
-} from '../tree-node/tree-node.types.js';
-import { FoldNode, FoldNodeApi } from '../fold-node/fold-node.types.js';
-import { Cursor, CursorApi } from '../cursor.js';
-import { NavNodeApi } from '../nav-node/nav-node.types.js';
-import { StateApi, State } from './state.types.js';
+import type { TreeNode, TreeNodeApi } from '../tree-node/tree-node.types.js';
+import type { SerializableKey } from '../tree-node/tree-node.model.js';
+import type { FoldNode } from '../fold-node/fold-node.types.js';
+import type { Cursor, CursorApi } from '../cursor.js';
+import type { StateApi, State } from './state.types.js';
 
-export function createStateApi<
-  Id extends SerializableKey,
-  Node extends TreeNode<Id, Node>,
->(
-  treeNodeApi: TreeNodeApi<Id, Node>,
-  foldNodeApi: FoldNodeApi<Id>,
+type ReloadResult<Id extends SerializableKey, Value> = Readonly<{
+  root: TreeNode<Id, Value>;
+}>;
+
+/**
+ * Creates operations for navigating and resynchronizing tree-surfer state.
+ */
+export function createStateApi<Id extends SerializableKey, Value>(
+  treeNodeApi: TreeNodeApi<Id, Value>,
   cursorApi: CursorApi<Id>,
-  navNodeApi: NavNodeApi<Id, Node>,
-): StateApi<Id, Node> {
+): StateApi<Id, Value> {
   /**
-   * Create a new root and fold root.
+   * Reloads one node's direct children and recursively reloads descendant
+   * branches that were open in the old state.
    *
-   * Works on fold root and descendant fold nodes using the generic.
+   * The node itself retains its existing application value. The supplied
+   * loader refreshes only its direct child collection.
    *
-   * TODO: Later: Filter the fold node
+   * A branch that was previously closed remains closed: its children were not
+   * loaded in the old state, so there is no descendant loading state to
+   * preserve or refresh.
    */
   async function reload(
-    oldRoot: Node & BranchTreeNode<Id, Node>,
-    oldFoldNode: FoldNode<Id> | undefined,
-    parentPath: Id[],
-    loadBranches: (path: Id[]) => Promise<Node[]>,
-  ): Promise<{
-    root: Node & BranchTreeNode<Id, Node>;
-    foldRoot: FoldNode<Id> | undefined;
-  }> {
-    // Do not load a branch that was already closed.
-    if (!treeNodeApi.isOpenBranch(oldRoot)) {
-      return {
-        root: oldRoot,
-        foldRoot: oldFoldNode,
-      };
+    oldRoot: TreeNode<Id, Value>,
+    parentPath: readonly Id[],
+    loadBranches: (
+      path: readonly Id[],
+    ) => Promise<readonly TreeNode<Id, Value>[]>,
+  ): Promise<ReloadResult<Id, Value>> {
+    const oldChildren = treeNodeApi.getLoadedChildren(oldRoot);
+
+    /*
+     * The old node was either a leaf or a closed branch. In either case, it
+     * had no loaded child collection to resynchronize.
+     */
+    if (oldChildren === undefined) {
+      return { root: oldRoot };
     }
 
-    const newChildren = await loadBranches(parentPath);
-    let newRoot: Node & BranchTreeNode<Id, Node> = {
-      ...oldRoot,
-      children: newChildren,
-    };
-    let newFoldNode = oldFoldNode; // Start with assumption of no changes
+    const loadedChildren = await loadBranches(parentPath);
 
-    for (const oldEntry of oldRoot.children) {
-      if (
-        !treeNodeApi.isBranch(oldEntry) ||
-        !treeNodeApi.isOpenBranch(oldEntry)
-      ) {
+    /*
+     * `withChildren` retains oldRoot's ID and application value, replacing
+     * only its structural child collection.
+     *
+     * Failure means the loader supplied duplicate sibling IDs, violating the
+     * TreeNodeApi contract. This is a loader/data-integrity error rather than
+     * an ordinary missing-path condition.
+     */
+    let newRoot = treeNodeApi.withLoadedChildren(oldRoot, loadedChildren);
+
+    if (newRoot === undefined) {
+      throw new Error(
+        'Cannot resync tree: loaded branch contains duplicate sibling IDs',
+      );
+    }
+
+    /*
+     * Recurse only into entries that were open in the old state and which
+     * still exist in the freshly loaded child collection.
+     *
+     * This preserves fresh values from loaded children while restoring their
+     * previously loaded descendant collections.
+     */
+    for (const oldEntry of oldChildren) {
+      const oldEntryChildren = treeNodeApi.getLoadedChildren(oldEntry);
+
+      /*
+       * A leaf or closed branch did not have loaded descendants in old state.
+       */
+      if (oldEntryChildren === undefined) {
         continue;
       }
 
-      const oldChildFoldNode =
-        oldFoldNode === undefined
-          ? undefined
-          : foldNodeApi.getChildById(oldFoldNode, oldEntry.id);
+      const oldEntryId = treeNodeApi.id(oldEntry);
+      const currentChildren = treeNodeApi.getLoadedChildren(newRoot);
 
-      const entryPath = [...parentPath, oldEntry.id];
+      if (currentChildren === undefined) {
+        throw new Error(
+          'Cannot resync tree: replacement root unexpectedly has no children',
+        );
+      }
+
+      const currentChildrenArray = [...currentChildren];
+
+      const currentChildIndex = currentChildrenArray.findIndex(
+        (child) => treeNodeApi.id(child) === oldEntryId,
+      );
+
+      if (currentChildIndex === -1) {
+        continue;
+      }
+
+      const currentChild = currentChildrenArray[currentChildIndex];
+
+      if (currentChild === undefined) {
+        continue;
+      }
+
+      if (treeNodeApi.kind(currentChild) === 'leaf') {
+        continue;
+      }
 
       const reloadedChild = await reload(
         oldEntry,
-        oldChildFoldNode,
-        entryPath,
+        [...parentPath, oldEntryId],
         loadBranches,
       );
 
-      const updatedRoot = treeNodeApi.modifyAtPath(
-        newRoot,
-        [oldEntry.id],
-        (entry) => {
-          if (!treeNodeApi.isBranch(entry)) {
-            return undefined;
-          }
+      const reloadedGrandchildren = treeNodeApi.getLoadedChildren(reloadedChild.root);
 
-          return {
-            ...entry,
-            children: reloadedChild.root.children,
-          } as Node;
-        },
+      if (reloadedGrandchildren === undefined) {
+        throw new Error(
+          'Cannot resync tree: reloaded open branch has no children',
+        );
+      }
+
+      const updatedCurrentChild = treeNodeApi.withLoadedChildren(
+        currentChild,
+        reloadedGrandchildren,
       );
 
-      if (updatedRoot !== undefined && treeNodeApi.isOpenBranch(updatedRoot)) {
-        newRoot = updatedRoot;
+      if (updatedCurrentChild === undefined) {
+        throw new Error(
+          'Cannot resync tree: reloaded descendants contain duplicate sibling IDs',
+        );
       }
+
+      const updatedChildren = [...currentChildrenArray];
+      updatedChildren[currentChildIndex] = updatedCurrentChild;
+
+      const updatedRoot = treeNodeApi.withLoadedChildren(newRoot, updatedChildren);
+
+      if (updatedRoot === undefined) {
+        throw new Error(
+          'Cannot resync tree: updated branch contains duplicate sibling IDs',
+        );
+      }
+
+      newRoot = updatedRoot;
     }
 
     return {
       root: newRoot,
-      foldRoot: newFoldNode,
     };
   }
 
   /**
-   * Currently the cursor just goes to root.
+   * Determines the cursor after resynchronization.
    *
-   * TODO: Cursor policy:
-   * 1. Keep the exact cursor if it survives,
-   * 2. Otherwise, choose the deepest surviving ancestor entry,
-   * 3. Otherwise, choose the nearest preceding old cursor that still survives,
-   * 4. Otherwise, choose the first new cursor.
-   * 5. If no cursor exists, use the root fold cursor.
+   * Current policy: return the root cursor.
+   *
+   * Future policy:
+   *
+   * 1. Keep the exact cursor if it survives.
+   * 2. Otherwise choose the deepest surviving ancestor.
+   * 3. Otherwise choose the nearest preceding surviving cursor.
+   * 4. Otherwise choose the first valid cursor.
+   * 5. If no entry cursor exists, use the root cursor.
    */
   function resyncCursor(
-    oldState: State<Id, Node>,
-    newRoot: Node,
-    newFoldNode: FoldNode<Id>,
-  ): Cursor<Id> | undefined {
+    _oldState: State<Id, Value>,
+    _newRoot: TreeNode<Id, Value>,
+    _newFoldRoot: FoldNode<Id>,
+  ): Cursor<Id> {
     return [];
   }
 
@@ -119,33 +176,24 @@ export function createStateApi<
     getNodeAtCursor(state) {
       const path = cursorApi.getPath(state.cursor);
 
-      return treeNodeApi.getAtPath(state.root, path, (node) => node);
+      return treeNodeApi.selectAtPath(state.root, path, (node) => node);
     },
 
-    async resync(oldState, loadChildren) {
-      const reloaded = await reload(
-        oldState.root,
-        oldState.foldRoot,
-        [],
-        loadChildren,
-      );
+    async resync(oldState, loadBranches) {
+      const reloaded = await reload(oldState.root, [], loadBranches);
 
       /*
-       * `oldState.foldNode` is always present. At the root reload starts with
-       * that node, so `reloaded.foldNode` should also always be present.
-       *
-       * The fallback expresses the State invariant while satisfying the
-       * optional return type needed by recursive child reloads.
+       * Fold-state resynchronization is not implemented yet. Keep the old
+       * fold root, as the previous implementation also did in practice.
        */
-      const foldRoot = reloaded.foldRoot ?? oldState.foldRoot;
-      const cursor = resyncCursor(oldState, reloaded.root, foldRoot) ?? [];
+      const foldRoot = oldState.foldRoot;
       const root = reloaded.root;
 
       return {
         ...oldState,
         root,
         foldRoot,
-        cursor,
+        cursor: resyncCursor(oldState, root, foldRoot),
       };
     },
   };

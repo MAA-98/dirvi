@@ -1,10 +1,7 @@
-import {
-  BranchTreeNode,
-  SerializableKey,
-  TreeNode,
-} from '../tree-node/tree-node.types.js';
-import { Cursor } from '../cursor.js';
-import { FoldNode } from '../fold-node/fold-node.types.js';
+import type { SerializableKey } from '../tree-node/tree-node.model.js';
+import type { TreeNode } from '../tree-node/tree-node.types.js';
+import type { Cursor } from '../cursor.js';
+import type { FoldNode } from '../fold-node/fold-node.types.js';
 
 export type NavNode<Id extends SerializableKey> = {
   /**
@@ -16,7 +13,9 @@ export type NavNode<Id extends SerializableKey> = {
 
   /**
    * Loaded entries that are not folded at this directory, corresponding to
-   * navigable rows. Entries retain the order from the TreeNode.
+   * navigable rows.
+   *
+   * Their order is the sibling iteration order supplied by the TreeNode API.
    */
   entries: NavEntry<Id>[];
 };
@@ -38,50 +37,76 @@ export type NavLeaf<Id extends SerializableKey> = {
 
 export type NavBranch<Id extends SerializableKey> = {
   id: Id;
+
+  /**
+   * `null` means this branch's children have not been loaded or opened.
+   */
   children: NavNode<Id> | null;
 };
 
-export type NavNodeApi<
-  Id extends SerializableKey,
-  Node extends TreeNode<Id, Node>,
-> = {
+/**
+ * Operations for creating and navigating a UI-oriented projection of a tree.
+ *
+ * @typeParam Id - The type identifying a node among its direct siblings.
+ * @typeParam Value - Application-owned data stored in each source TreeNode.
+ */
+export type NavNodeApi<Id extends SerializableKey, Value> = {
   /**
    * Tests whether a navigation entry represents a branch.
    *
    * A branch is an entry with a `children` property. Its `children` value is
-   * `null` when the corresponding tree branch has not been loaded or opened.
+   * `null` when the corresponding source-tree branch has not been loaded or
+   * opened.
    */
   entryIsBranch(entry: NavEntry<Id>): entry is NavBranch<Id>;
 
   /**
-   * Creates a navigation projection of the tree node root.
+   * Creates a navigation projection rooted at `root`.
    *
-   * The root must be a branch node because navigation is rooted at a
-   * directory-like node. The returned navigation entry is always a `NavBranch`.
+   * The source TreeNode is authoritative for:
    *
-   * The TreeNode is authoritative for:
-   *
-   * - entry identity and order;
-   * - whether the entry is a leaf or branch;
-   * - whether branch children are loaded; and
-   * - the loaded child entries.
+   * - entry identity;
+   * - whether an entry is a leaf, closed branch, or open branch;
+   * - the loaded direct child entries; and
+   * - sibling iteration order, where guaranteed by TreeNodeApi.
    *
    * The optional FoldNode is authoritative for folding. When `foldRoot` is
    * undefined, the projection contains no folded entries.
    *
    * A folded entry is omitted from its parent's navigable entries and is
    * represented by that parent's synthetic `folded` entry instead.
+   *
+   * The root must be a branch node. Since TreeNode is opaque, callers cannot
+   * express that fact statically. This method returns `undefined` if `root`
+   * is a leaf.
+   *
+   * A closed root branch produces a NavBranch whose `children` is `null`.
+   *
+   * @param root - Source tree node from which to create navigation.
+   * @param foldRoot - Optional fold-state tree corresponding to `root`.
+   * @returns The projected root branch, or `undefined` when `root` is a leaf.
    */
   from(
-    root: Node & BranchTreeNode<Id, Node>,
+    root: TreeNode<Id, Value>,
     foldRoot: FoldNode<Id> | undefined,
-  ): NavBranch<Id>;
+  ): NavBranch<Id> | undefined;
 
+  /**
+   * Finds the navigation node represented by a path relative to `navigation`.
+   *
+   * An empty path selects `navigation` itself. Paths cannot pass through leaf
+   * entries or branches whose children are currently `null`.
+   */
   getNodeAtPath(
     navigation: NavNode<Id>,
     path: readonly Id[],
   ): NavNode<Id> | undefined;
 
+  /**
+   * Finds the navigation entry represented by a path relative to `navigation`.
+   *
+   * An empty path does not identify an entry and returns `undefined`.
+   */
   getEntryAtPath(
     navigation: NavNode<Id>,
     path: readonly Id[],
@@ -107,7 +132,7 @@ export type NavNodeApi<
     cursor: Cursor<Id>,
   ): Cursor<Id> | undefined;
 
-  cursors(navigation: NavNode<Id>, parentPath?: Id[]): Cursor<Id>[];
+  cursors(navigation: NavNode<Id>, parentPath?: readonly Id[]): Cursor<Id>[];
 
   visibleLeavesPaths(
     navigation: NavNode<Id>,

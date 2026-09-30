@@ -1,88 +1,33 @@
-import { SerializableKey, TreeNodeApi } from '../tree-node/tree-node.types.js';
+import type { TreeNode, TreeNodeApi } from '../tree-node/tree-node.types.js';
+import type { SerializableKey } from '../tree-node/tree-node.model.js';
 
 /**
- * A node in the fold-state tree.
+ * Application-specific state stored in each fold-tree node.
  *
- * @remarks
- *
- * A fold-state tree is a sparse projection of a buffer tree. Apart from its
- * root, it stores only nodes that are folded or that have fold information
- * somewhere below them. It does not contain buffer entries or buffer-specific
- * properties.
- *
- * The `id` identifies the corresponding buffer entry among its siblings.
- *
- * `children` contains fold-state nodes for direct buffer entries that are not
- * folded at this node but have fold information below them.
- *
- * `foldedChildren` contains fold-state nodes for direct buffer entries whose contents
- * are folded at this node. Each folded entry is represented by a complete
- * `FoldNode`, allowing fold state within a folded entry to be preserved
- * recursively.
- *
- * A direct buffer entry with no fold state at or below it is omitted from both
- * collections. Consequently, the union of `children` and `foldedChildren` does not
- * need to contain every direct buffer child.
- *
- * The following invariant holds for every fold-state node:
- *
- *  - no ID occurs more than once in `children`;
- *  - no ID occurs more than once in `foldedChildren`;
- *  - no ID occurs in both collections;
- *  - every ID in either collection identifies a direct child in the
- *    corresponding buffer-tree node.
- *
- * Every fold node is an open branch from the perspective of `TreeNodeApi`.
- * Missing paths may nevertheless be created lazily by `FoldNodeService`.
- *
- * @typeParam Id - The type of IDs in the actual tree nodes.
- *
- * @example
- *
- * ```ts
- * type FileId = string;
- * type FileFoldNode = FoldNode<FileId>;
- *
- * const root: FileFoldNode = {
- *   id: '/',
- *   children: [],
- *   foldedChildren: [],
- * };
- * ```
+ * Structural children are owned by TreeNode. `foldedChildren` are semantic
+ * fold-state children: direct buffer entries whose contents are folded.
  */
-export type FoldNode<Id extends SerializableKey> = {
-  id: Id;
-  children: FoldNode<Id>[];
-  foldedChildren: FoldNode<Id>[];
-};
+export type FoldNodeValue<Id extends SerializableKey> = Readonly<{
+  foldedChildren: readonly FoldNode<Id>[];
+}>;
 
 /**
- * Operations for inspecting and immutably updating a fold-state tree.
+ * A fold-state node.
  *
- * @remarks
- *
- * This API is `TreeNodeApi` specialized for `FoldNode`. It provides structural
- * tree operations such as node lookup and immutable path updates.
- *
- * Paths are relative to the supplied root node:
- *
- *  - `[]` identifies the root;
- *  - `['child']` identifies a direct child of the root;
- *  - `['child', 'grandchild']` identifies a descendant.
- *
- * Path operations are strict. They operate only on nodes that already exist
- * in the fold-state tree. Use `FoldNodeService` when missing fold-state nodes
- * should be automatically created.
- *
- * The API does not interpret the `foldedChildren` collection. It only navigates and
- * updates the structural `children` tree. The semantic operations for adding
- * and removing foldedChildren belong to `FoldNodeService`.
- *
- * @typeParam Id - The type of IDs in the actual tree nodes.
+ * The structural child tree is represented by the opaque TreeNode. The value
+ * holds only fold-specific state.
+ */
+export type FoldNode<Id extends SerializableKey> = TreeNode<
+  Id,
+  FoldNodeValue<Id>
+>;
+
+/**
+ * Generic structural operations specialized to a fold-state tree.
  */
 export type FoldNodeApi<Id extends SerializableKey> = TreeNodeApi<
   Id,
-  FoldNode<Id>
+  FoldNodeValue<Id>
 >;
 
 /**
@@ -213,10 +158,6 @@ export type FoldNodeService<Id extends SerializableKey> = {
    * @returns A new root without the folds at the resolved node, or
    * `undefined` when the path does not exist.
    */
-  clearFoldedEntriesAtPath(
-    rootNode: FoldNode<Id>,
-    path: readonly Id[],
-  ): FoldNode<Id> | undefined;
   clearFoldedEntriesAtPath(
     rootNode: FoldNode<Id>,
     path: readonly Id[],

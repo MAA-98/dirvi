@@ -1,16 +1,36 @@
 import * as fc from 'fast-check';
 
 import type { TreeNode } from './tree-node.types.js';
+import { TreeNodeModel } from './tree-node.model.js';
 
 /**
- * The ID type used by the generated test trees.
+ * The ID and Values types used for the generated test trees.
  *
- * Short strings keep generated counterexamples readable.
+ * Short strings keep generated counterexamples readable. Values just have to
+ * be something easily checked for equality.
  */
 type TestNodeId = string;
+type TestValue = number;
+
+type TestNode = TreeNode<TestNodeId, TestValue>;
+type TestNodeModel = TreeNodeModel<TestNodeId, TestValue>;
+
+type ModelAndPath = {
+  path: TestNodeId[];
+  model: TestNodeModel;
+};
+
+type ModelWithReachableModels = {
+  model: TestNodeModel;
+  /**
+   * Includes this model at `[]` and every descendant reachable through loaded
+   * branches. Descendants behind unloaded branches are intentionally absent.
+   */
+  reachableModels: ModelAndPath[];
+};
 
 /**
- * Characters used by readable generated node IDs.
+ * Characters used for readable generated node IDs.
  */
 const smallLetterCharacters = Array.from('abcdefghijklmnopqrstuvwxyz');
 
@@ -25,129 +45,119 @@ export const testIdArb = fc.string({
 });
 
 /**
- * Tree node whose IDs are strings, without additional domain properties.
+ * Generates serializable application values for test nodes.
  */
-// @ts-expect-error Recursive type aliases are not fully inferred here.
-export type StringNode = TreeNode<TestNodeId, StringNode>;
-type Path = TestNodeId[];
+export const testValueArb = fc.integer({
+  min: -10_000,
+  max: 10_000,
+});
 
-type NodeAtPath = {
-  path: Path;
-  node: StringNode;
-};
-
-type NodeWithReachableNodes = {
-  node: StringNode;
-  reachableNodes: NodeAtPath[];
-};
-
-/**
- * Generates the metadata for a leaf node.
- *
- * @param id - The ID assigned to the leaf.
- * @returns The leaf and the path that resolves to it.
- */
-const generatedLeafNodeWithReachableNodes = (
+const generatedLeafModel = (
   id: TestNodeId,
-): NodeWithReachableNodes => {
-  const node: StringNode = { id };
+  value: TestValue,
+): ModelWithReachableModels => {
+  const model: TestNodeModel = {
+    id,
+    value,
+  };
 
   return {
-    node,
-    reachableNodes: [{ path: [], node }],
+    model,
+    reachableModels: [{ path: [], model }],
   };
 };
 
-/**
- * Generates the metadata for a closed branch.
- *
- * A closed branch contributes no descendant paths because its children are not
- * loaded.
- *
- * @param id - The ID assigned to the branch.
- * @returns The closed branch and the path that resolves to it.
- */
-const generatedClosedBranchWithReachableNodes = (
+function generatedUnloadedBranchModel(
   id: TestNodeId,
-): NodeWithReachableNodes => {
-  const node: StringNode = {
+  value: TestValue,
+): ModelWithReachableModels {
+  const model: TestNodeModel = {
     id,
+    value,
     children: null,
   };
 
   return {
-    node,
-    reachableNodes: [{ path: [], node }],
+    model,
+    reachableModels: [{ path: [], model }],
   };
-};
+}
 
 /**
- * Generates the metadata for an open branch and its descendants.
+ * Creates the metadata for a loaded branch and all descendants reachable
+ * through its loaded child collection.
  *
- * @param id - The ID assigned to the branch.
- * @param children - The generated children of the branch.
- * @returns The open branch and paths to the branch and all its descendants.
+ * Child-array order is not semantically meaningful to the tree API. The
+ * generator happens to use an array because `TreeNodeModel` is serializable.
  */
-const generatedOpenBranchWithReachableNodes = (
+function generatedLoadedBranchModel(
   id: TestNodeId,
-  children: NodeWithReachableNodes[],
-): NodeWithReachableNodes => {
-  const node: StringNode = {
+  value: TestValue,
+  children: readonly ModelWithReachableModels[],
+): ModelWithReachableModels {
+  const model: TestNodeModel = {
     id,
-    children: children.map(({ node }) => node),
+    value,
+    children: children.map(({ model: child }) => child),
   };
+  
+  const reachableDescendants = children.flatMap(
+    ({ model: childModel, reachableModels }) =>
+      reachableModels.map(({ path, model: reachableModel }) => ({
+        path: [childModel.id, ...path],
+        model: reachableModel,
+      })),
+  );
+  
+  return {
+    model,
+    reachableModels: [
+      { path: [], model },
+      ...reachableDescendants,
+    ],
+  };
+}
 
-  const descendantNodes = children.flatMap(({ node: child, reachableNodes }) =>
-    reachableNodes.map(({ path, node }) => ({
-      path: [child.id, ...path],
-      node,
-    })),
+/**
+ * Generates a leaf model.
+ */
+export const generatedLeafModelArb: fc.Arbitrary<ModelWithReachableModels> =
+  fc
+    .tuple(testIdArb, testValueArb)
+    .map(([id, value]) => generatedLeafModel(id, value));
+
+/**
+ * Generates an unloaded-branch model.
+ */
+export const generatedUnloadedBranchModelArb: fc.Arbitrary<ModelWithReachableModels> =
+  fc
+    .tuple(testIdArb, testValueArb)
+    .map(([id, value]) => generatedUnloadedBranchModel(id, value));
+
+/**
+ * Generates either kind of terminal model.
+ *
+ * Both leaves and unloaded branches terminate path traversal.
+ */
+const generatedTerminalModelArb: fc.Arbitrary<ModelWithReachableModels> =
+  fc.oneof(
+    generatedLeafModelArb,
+    generatedUnloadedBranchModelArb,
   );
 
-  return {
-    node,
-    reachableNodes: [{ path: [], node }, ...descendantNodes],
-  };
-};
-
 /**
- * Generates a leaf node.
- */
-export const generatedLeafNodeArb = testIdArb.map(
-  generatedLeafNodeWithReachableNodes,
-);
-
-/**
- * Generates a closed branch.
- */
-export const generatedClosedBranchNodeArb = testIdArb.map(
-  generatedClosedBranchWithReachableNodes,
-);
-
-/**
- * Generates a leaf or a closed branch.
+ * Generates a leaf, an unloaded branch, or a loaded branch.
  *
- * These node types terminate a generated path because they have no reachable
- * descendants.
- */
-const generatedTerminalNodeArb = fc.oneof(
-  generatedLeafNodeArb,
-  generatedClosedBranchNodeArb,
-);
-
-/**
- * Generates a leaf, an open branch, or a closed branch.
- *
- * Open branches have unique child IDs. Root IDs are made unique separately
+ * Loaded branches have unique child IDs. Root IDs are made unique separately
  * when generating a forest.
  *
  * The weighted choice gives recursive open branches a geometric dropoff.
  */
-export const generatedNodeArb: fc.Arbitrary<NodeWithReachableNodes> = fc.letrec(
+export const generatedNodeArb: fc.Arbitrary<ModelWithReachableModels> = fc.letrec(
   (tie) => {
-    const generatedChildNodeArb = tie(
+    const generatedChildModelArb = tie(
       'node',
-    ) as fc.Arbitrary<NodeWithReachableNodes>;
+    ) as fc.Arbitrary<ModelWithReachableModels>;
 
     /**
      * Generates the loaded children of an open branch.
@@ -155,21 +165,19 @@ export const generatedNodeArb: fc.Arbitrary<NodeWithReachableNodes> = fc.letrec(
      * Sibling IDs must be unique so that child lookup is unambiguous. The
      * maximum length also limits the branching factor of recursive examples.
      */
-    const generatedOpenChildrenArb = fc.uniqueArray(generatedChildNodeArb, {
+    const generatedOpenChildrenArb = fc.uniqueArray(generatedChildModelArb, {
       minLength: 0,
       maxLength: 4,
       size: 'medium',
-      selector: ({ node }) => node.id,
+      selector: ({ model }) => model.id,
     });
 
     /**
      * Generates an open branch and its reachable descendants.
      */
-    const generatedOpenBranchNodeArb = fc
-      .tuple(testIdArb, generatedOpenChildrenArb)
-      .map(([id, children]) =>
-        generatedOpenBranchWithReachableNodes(id, children),
-      );
+    const generatedLoadedBranchModelArb = fc
+      .tuple(testIdArb, testValueArb, generatedOpenChildrenArb)
+      .map(([id, value, children]) => generatedLoadedBranchModel(id, value, children));
 
     return {
       node: fc
@@ -180,8 +188,8 @@ export const generatedNodeArb: fc.Arbitrary<NodeWithReachableNodes> = fc.letrec(
         .chain((choice) =>
           // 5046 works for getAtPath tests, but too heavy for modifyAtPath tests
           choice >= 5050
-            ? generatedOpenBranchNodeArb
-            : generatedTerminalNodeArb,
+            ? generatedLoadedBranchModelArb
+            : generatedTerminalModelArb,
         ),
     };
   },
@@ -195,7 +203,7 @@ export const generatedNodeArb: fc.Arbitrary<NodeWithReachableNodes> = fc.letrec(
 export const generatedNodesArrayArb = fc.uniqueArray(generatedNodeArb, {
   minLength: 0,
   size: 'small',
-  selector: (generated) => generated.node.id,
+  selector: (generated) => generated.model.id,
 });
 
 /**
@@ -206,9 +214,9 @@ export const generatedNodesArrayArb = fc.uniqueArray(generatedNodeArb, {
  * descendants are not loaded.
  */
 export const nodeAndPathsArb = generatedNodeArb.map(
-  ({ node: root, reachableNodes }) => ({
+  ({ model: root, reachableModels }) => ({
     root,
-    pathEntries: reachableNodes,
+    pathEntries: reachableModels,
   }),
 );
 
@@ -221,10 +229,10 @@ export const nodeAndPathsArb = generatedNodeArb.map(
 export const nodeAndPathAndExpectedArb = nodeAndPathsArb
   .filter(({ pathEntries }) => pathEntries.length > 0)
   .chain(({ root, pathEntries }) =>
-    fc.constantFrom(...pathEntries).map(({ path, node }) => ({
+    fc.constantFrom(...pathEntries).map(({ path, model }) => ({
       root,
       path,
-      expected: node,
+      expected: model,
     })),
   );
 
@@ -237,14 +245,14 @@ export const nodeAndPathAndExpectedArb = nodeAndPathsArb
 export const nodesArrayAndBranchPathArb = nodeAndPathsArb
   .map(({ root, pathEntries }) => ({
     root,
-    branchPathEntries: pathEntries.filter(({ node }) => 'children' in node),
+    branchPathEntries: pathEntries.filter(({ model }) => 'children' in model),
   }))
   .filter(({ branchPathEntries }) => branchPathEntries.length > 0)
   .chain(({ root, branchPathEntries }) =>
-    fc.constantFrom(...branchPathEntries).map(({ path, node }) => ({
+    fc.constantFrom(...branchPathEntries).map(({ path, model }) => ({
       root,
       path,
-      expected: node,
+      expected: model,
     })),
   );
 
@@ -255,7 +263,7 @@ export const nodesArrayAndBranchPathArb = nodeAndPathsArb
  * the children of an open branch.
  */
 export const newBranchesArb = generatedNodesArrayArb.map((generatedNodes) =>
-  generatedNodes.map(({ node }) => node),
+  generatedNodes.map(({ model }) => model),
 );
 
 /**

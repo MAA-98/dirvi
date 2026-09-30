@@ -16,7 +16,7 @@ import {
 } from '../domain/posix-tree-node.js';
 import { UnixAbsolutePath } from '../domain/unix-path.js';
 import { z } from 'zod';
-import { AppApi, createAppApis } from 'dirvi-lib';
+import { AppApi, createAppStateApis } from 'dirvi-lib';
 
 // ---*--- App Data ---*---
 
@@ -30,74 +30,6 @@ function encodeKey(key: UnixAbsolutePath): string {
   return createHash('sha256').update(key).digest('hex');
 }
 
-// ---*--- Stored State Types and Schemas ---*---
-
-export type StoredPosixFoldNode = {
-  id: PosixName;
-  children: StoredPosixFoldNode[];
-  foldedChildren: StoredPosixFoldNode[];
-};
-
-const StoredPosixFoldNodeSchema: z.ZodType<StoredPosixFoldNode> = z.lazy(() =>
-  z.object({
-    id: PosixNameSchema,
-    children: z.array(StoredPosixFoldNodeSchema),
-    foldedChildren: z.array(StoredPosixFoldNodeSchema),
-  }),
-);
-
-const StoredPosixStateSchema: z.ZodType<StoredPosixState> = z
-  .object({
-    root: PosixBranchTreeNodeSchema,
-    foldRoot: StoredPosixFoldNodeSchema,
-    cursor: PosixCursorSchema,
-  })
-  .refine((state) => state.root.id !== state.foldRoot.id, {
-    message: 'The fold root ID must match the tree root ID.',
-  });
-
-export type StoredPosixState = Omit<PosixState, 'foldRoot'> & {
-  foldRoot: StoredPosixFoldNode;
-};
-
-// ---*--- Codec ---*---
-
-function encodePosixFoldNode(node: PosixFoldNode): StoredPosixFoldNode {
-  return {
-    id: node.id,
-    children: node.children.map(encodePosixFoldNode),
-    foldedChildren: [...node.foldedChildren],
-  };
-}
-
-function decodePosixFoldNode(node: StoredPosixFoldNode): PosixFoldNode {
-  return {
-    id: node.id,
-    children: node.children.map(decodePosixFoldNode),
-    foldedChildren: node.foldedChildren.map(decodePosixFoldNode),
-  };
-}
-
-const posixStateCodec: StateCodec<PosixState, StoredPosixState> = {
-  schema: StoredPosixStateSchema,
-
-  encode(state): StoredPosixState {
-    return {
-      root: state.root,
-      foldRoot: encodePosixFoldNode(state.foldRoot),
-      cursor: state.cursor,
-    };
-  },
-
-  decode(state): PosixState {
-    return {
-      root: state.root,
-      foldRoot: decodePosixFoldNode(state.foldRoot),
-      cursor: state.cursor,
-    };
-  },
-};
-
 // --- Creating Posix App API ---
 
 /**
@@ -110,9 +42,9 @@ export function loadNodePosixAppApi(
 ): AppApi<PosixName, PosixTreeNode, UnixAbsolutePath> {
   const unixAbsPath = getUnixAbsPath(directory ?? process.cwd());
   const rootId = PosixNameSchema.parse(basename(unixAbsPath));
-  const apis = createAppApis<PosixName, PosixTreeNode>();
+  const apis = createAppStateApis<PosixName, PosixTreeNode>();
 
-  function loadBranches(path: PosixName[]) {
+  function loadBranches(path: readonly PosixName[]) {
     const address = join(unixAbsPath, ...path);
     return getDirEntries(address);
   }
@@ -231,3 +163,71 @@ function createFsResyncSubscription(
     };
   };
 }
+
+// ---*--- Stored State Types and Schemas ---*---
+
+// export type StoredPosixFoldNode = {
+//   id: PosixName;
+//   children: StoredPosixFoldNode[];
+//   foldedChildren: StoredPosixFoldNode[];
+// };
+//
+// const StoredPosixFoldNodeSchema: z.ZodType<StoredPosixFoldNode> = z.lazy(() =>
+//   z.object({
+//     id: PosixNameSchema,
+//     children: z.array(StoredPosixFoldNodeSchema),
+//     foldedChildren: z.array(StoredPosixFoldNodeSchema),
+//   }),
+// );
+//
+// const StoredPosixStateSchema: z.ZodType<StoredPosixState> = z
+//   .object({
+//     root: PosixBranchTreeNodeSchema,
+//     foldRoot: StoredPosixFoldNodeSchema,
+//     cursor: PosixCursorSchema,
+//   })
+//   .refine((state) => state.root.id !== state.foldRoot.id, {
+//     message: 'The fold root ID must match the tree root ID.',
+//   });
+//
+// export type StoredPosixState = Omit<PosixState, 'foldRoot'> & {
+//   foldRoot: StoredPosixFoldNode;
+// };
+
+// ---*--- Codec ---*---
+
+// function encodePosixFoldNode(node: PosixFoldNode): StoredPosixFoldNode {
+//   return {
+//     id: node.id,
+//     children: node.children.map(encodePosixFoldNode),
+//     foldedChildren: [...node.foldedChildren],
+//   };
+// }
+//
+// function decodePosixFoldNode(node: StoredPosixFoldNode): PosixFoldNode {
+//   return {
+//     id: node.id,
+//     children: node.children.map(decodePosixFoldNode),
+//     foldedChildren: node.foldedChildren.map(decodePosixFoldNode),
+//   };
+// }
+//
+// const posixStateCodec: StateCodec<PosixState, StoredPosixState> = {
+//   schema: StoredPosixStateSchema,
+//
+//   encode(state): StoredPosixState {
+//     return {
+//       root: state.root,
+//       foldRoot: encodePosixFoldNode(state.foldRoot),
+//       cursor: state.cursor,
+//     };
+//   },
+//
+//   decode(state): PosixState {
+//     return {
+//       root: state.root,
+//       foldRoot: decodePosixFoldNode(state.foldRoot),
+//       cursor: state.cursor,
+//     };
+//   },
+// };

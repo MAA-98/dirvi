@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SerializableKey, TreeNode } from '../tree-node/tree-node.types.js';
+import { SerializableKey, TreeNode } from '../tree-node/deprecated/tree-node.types.js';
 import { State } from './state.types.js';
 
 export function createStateSchema<
