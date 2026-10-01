@@ -33,22 +33,33 @@ declare const foldsBrand: unique symbol;
 export type FoldIndex = number;
 
 /**
- * Public descriptive metadata for a fold tree.
+ * Public user-facing metadata for a fold tree.
+ *
+ * Every fold tree has a name. `description: null` means that no description
+ * has been supplied. An empty string is distinct: it is a supplied
+ * description with no text.
  */
 export type FoldInfo = Readonly<{
+  /**
+   * Durable user-facing name of the fold tree.
+   */
   name: string;
-  description: string;
+  
+  /**
+   * User-facing description of the fold tree, or `null` when none exists.
+   */
+  description: string | null;
 }>;
 
 /**
- * Internal data stored in one Folds slot.
+ * Internal data stored in one occupied Folds slot.
  *
- * The slot index is intentionally not repeated here; the index is the
- * position of this value in FoldsData.slots.
+ * The slot index is intentionally not repeated here; it is the position of
+ * this value in `FoldsData.slots`.
  */
 type FoldSlot<Id extends SerializableKey> = Readonly<{
   name: string;
-  description: string;
+  description: string | null;
   tree: FoldTree<Id>;
 }>;
 
@@ -124,10 +135,14 @@ export type FoldsApi<Id extends SerializableKey> = Readonly<{
   indexes(folds: Folds<Id>): Iterable<FoldIndex>;
 
   /**
-   * Stores FoldData at an index.
+   * Stores an occupied fold slot at an index.
    *
-   * Replaces any previous FoldData in that slot. The supplied Folds value is
-   * not mutated.
+   * Replaces any existing slot at that index. The supplied `Folds` value is not
+   * mutated.
+   *
+   * This is a low-level operation. Most callers should use
+   * `setAdditionalFoldAtIndex`, `updateInfoAtIndex`, or the fold-state
+   * operations instead.
    */
   setAtIndex(
     folds: Folds<Id>,
@@ -138,8 +153,10 @@ export type FoldsApi<Id extends SerializableKey> = Readonly<{
   /**
    * Creates or replaces a non-primary fold tree at a slot.
    *
-   * This operation must reject index zero because the primary fold tree already
-   * exists and should not be replaced accidentally.
+   * The new fold tree initially contains no hidden entries.
+   *
+   * This operation rejects index zero because the required primary fold tree
+   * must not be replaced accidentally.
    */
   setAdditionalFoldAtIndex(
     folds: Folds<Id>,
@@ -151,10 +168,10 @@ export type FoldsApi<Id extends SerializableKey> = Readonly<{
   /**
    * Removes a non-primary fold tree from a slot.
    *
-   * Returns undefined when index is zero, because the primary fold tree may
+   * Returns `undefined` when `index` is zero because the primary fold tree may
    * not be removed.
    *
-   * Returns the original Folds reference when a non-primary slot is already
+   * Returns the original `Folds` reference when the non-primary slot is already
    * unoccupied.
    */
   removeAdditionalFoldAtIndex(
@@ -163,14 +180,19 @@ export type FoldsApi<Id extends SerializableKey> = Readonly<{
   ): Folds<Id> | undefined;
 
   /**
-   * Replaces descriptive metadata while preserving the existing fold tree.
+   * Replaces supplied user-facing metadata while preserving the fold tree.
+   *
+   * Omitted properties are left unchanged.
+   *
+   * - `description: string` sets or replaces the description.
+   * - `description: null` clears the description.
    */
   updateInfoAtIndex(
     folds: Folds<Id>,
     index: FoldIndex,
     update: Readonly<{
       name?: string;
-      description?: string;
+      description?: string | null;
     }>,
   ): Folds<Id> | undefined;
 

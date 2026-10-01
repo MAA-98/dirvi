@@ -83,14 +83,12 @@ export function createFoldNodeModelSchema<Id extends SerializableKey>(
   idSchema: z.ZodType<Id>,
 ): z.ZodType<FoldNodeModel<Id>> {
   let nodeSchema: z.ZodType<FoldNodeModel<Id>>;
-  
-  const hiddenEntryIdsSchema = z
-    .array(idSchema)
-    .refine(hasUniqueValues, {
-      message: 'Hidden entry IDs must be unique within a fold node',
-      path: ['hiddenEntryIds'],
-    });
-  
+
+  const hiddenEntryIdsSchema = z.array(idSchema).refine(hasUniqueValues, {
+    message: 'Hidden entry IDs must be unique within a fold node',
+    path: ['hiddenEntryIds'],
+  });
+
   nodeSchema = z.lazy(() =>
     z
       .object({
@@ -107,13 +105,30 @@ export function createFoldNodeModelSchema<Id extends SerializableKey>(
         },
       ),
   );
-  
+
   return nodeSchema;
 }
 
+/**
+ * Serializable metadata and fold-state tree for one occupied fold slot.
+ *
+ * `description: null` means that this fold tree has no description.
+ * An empty string is a supplied description with no text.
+ */
 export type FoldSlotModel<Id extends SerializableKey> = Readonly<{
+  /**
+   * User-facing name of this fold tree.
+   */
   name: string;
-  description: string;
+
+  /**
+   * User-facing description of this fold tree, or `null` when it has none.
+   */
+  description: string | null;
+
+  /**
+   * The fold-state tree stored in this slot.
+   */
   tree: FoldNodeModel<Id>;
 }>;
 
@@ -133,25 +148,28 @@ export type FoldsModel<Id extends SerializableKey> = Readonly<{
  * This validates:
  *
  * - there is always a primary slot at index zero;
- * - every occupied slot has valid metadata and a valid fold tree;
- * - every non-primary slot is either an occupied fold slot or null.
+ * - every occupied slot has a name, a description or `null`, and a valid
+ *   fold tree;
+ * - every non-primary slot is either an occupied fold slot or `null`.
+ *
+ * A slot's `description: null` means that its fold tree has no description.
  *
  * It does not validate fold-tree names for uniqueness. That is a domain rule
- * only if your fold service decides names must be unique.
+ * only if the fold service decides names must be unique.
  */
 export function createFoldsModelSchema<Id extends SerializableKey>(
   idSchema: z.ZodType<Id>,
 ): z.ZodType<FoldsModel<Id>> {
   const foldNodeSchema = createFoldNodeModelSchema(idSchema);
-  
+
   const foldSlotSchema: z.ZodType<FoldSlotModel<Id>> = z
     .object({
       name: z.string(),
-      description: z.string(),
+      description: z.string().nullable(),
       tree: foldNodeSchema,
     })
     .strict();
-  
+
   return z
     .object({
       slots: z
