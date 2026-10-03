@@ -12,6 +12,8 @@ pnpm-debug.log*
 dist/
 coverage/
 typedoc/
+# dependency-cruiser generated reports
+dependency-graph.*
 
 # TypeScript
 *.tsbuildinfo

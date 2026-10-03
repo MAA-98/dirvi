@@ -16,7 +16,11 @@
     "format": "prettier . --write",
     "git:add": "pnpm format && git add -A",
     "login": "npm login",
-    "publish": "pnpm build && pnpm --filter dirvi-lib publish --access public && pnpm --filter @mak-98/dirvi-cli publish --access public"
+    "publish": "pnpm build && pnpm --filter dirvi-lib publish --access public && pnpm --filter @mak-98/dirvi-cli publish --access public",
+    "deps": "depcruise packages",
+    "deps:json": "depcruise packages --output-type json --output-to dependency-graph.json",
+    "deps:graph": "depcruise packages --output-type dot --output-to dependency-graph.dot",
+    "deps:graph:svg": "pnpm deps:graph && dot -Tsvg dependency-graph.dot -o dependency-graph.svg"
   },
   "repository": {
     "type": "git",
