@@ -1,4 +1,4 @@
-import type { TreeNode, TreeNodeApi, SerializableKey } from '../tree-node/index.js';
+import type { TreeNode, TreeNodeApi, SerializableKey } from '../../tree-node/index.js';
 
 /**
  * Application-specific state stored in each fold-tree node.

@@ -1,5 +1,5 @@
 import type { InputModeState } from './input-mode-state.js';
-import type { SerializableKey, TreeNode } from '../../tree-surfer/index.js';
+import type { SerializableKey, TreeNode } from '../../trees/index.js';
 
 /**
  * An effect produced by interpreting an intent against the current state.

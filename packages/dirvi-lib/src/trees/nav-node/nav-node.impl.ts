@@ -1,9 +1,5 @@
-import type { TreeNode, TreeNodeApi } from '../tree-node/tree-node.types.js';
-import type { SerializableKey } from '../tree-node/tree-node.model.js';
-import type {
-  FoldNode,
-  FoldNodeService,
-} from '../fold-node/fold-node.types.js';
+import type { SerializableKey, TreeNode, TreeNodeApi } from '../tree-node/index.js';
+import type { Folds, FoldsApi } from '../fold-node/index.js';
 import type { Cursor, CursorApi } from '../cursor.js';
 import type {
   NavBranch,
@@ -45,7 +41,7 @@ export type CreateNavNodeApiOptions<
  */
 export function createNavNodeApi<Id extends SerializableKey, Value>(
   treeNodeApi: TreeNodeApi<Id, Value>,
-  foldNodeService: FoldNodeService<Id>,
+  foldsApi: FoldsApi<Id>,
   cursorApi: CursorApi<Id>,
   options: CreateNavNodeApiOptions<Id, Value>,
 ): NavNodeApi<Id, Value> {
@@ -77,7 +73,7 @@ export function createNavNodeApi<Id extends SerializableKey, Value>(
    */
   function createNavNode(
     entries: Iterable<TreeNode<Id, Value>>,
-    foldRoot: FoldNode<Id> | undefined,
+    foldRoot: Folds<Id>,
     parentPath: readonly Id[],
   ): NavNode<Id> {
     const visibleEntries: NavEntry<Id>[] = [];
@@ -92,10 +88,12 @@ export function createNavNodeApi<Id extends SerializableKey, Value>(
     for (const entry of orderedEntries) {
       const entryId = treeNodeApi.id(entry);
       const entryPath = [...parentPath, entryId];
-
-      const isFolded =
-        foldRoot !== undefined &&
-        foldNodeService.getIfEntryFoldedAtPath(foldRoot, parentPath, entryId);
+      
+      const isFolded = foldsApi.isEntryHiddenAtPath(
+        foldRoot,
+        parentPath,
+        entryId,
+      );
 
       const navigationEntry = createNavEntry(entry, foldRoot, entryPath);
 
@@ -124,7 +122,7 @@ export function createNavNodeApi<Id extends SerializableKey, Value>(
 
   function createNavEntry(
     entry: TreeNode<Id, Value>,
-    foldRoot: FoldNode<Id> | undefined,
+    foldRoot: Folds<Id>,
     entryPath: readonly Id[],
   ): NavEntry<Id> {
     return treeNodeApi.match(entry, {
@@ -146,7 +144,7 @@ export function createNavNodeApi<Id extends SerializableKey, Value>(
   
   function createRootNavBranch(
     root: TreeNode<Id, Value>,
-    foldRoot: FoldNode<Id> | undefined,
+    foldRoot: Folds<Id>,
   ): NavBranch<Id> | undefined {
     return treeNodeApi.match<NavBranch<Id> | undefined>(root, {
       leaf: () => undefined,

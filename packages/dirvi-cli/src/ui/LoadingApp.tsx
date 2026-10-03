@@ -1,26 +1,19 @@
 import { Text } from 'ink';
 import { useEffect, useMemo, useState } from 'react';
 
-import {
-  AppApi,
-  SerializableKey,
-  State,
-  TreeNode,
-  createIntentToEffect,
-} from 'dirvi-lib';
+import { createEffectToAction, createIntentToEffect, createReducer } from 'dirvi-lib';
+import type { AppApi, SerializableKey, State } from 'dirvi-lib';
 
 import { App } from './App.js';
-import { createReducer } from '../application/reducer.js';
-import { createEffectToAction } from '../application/effect-to-action.js';
 import { ConfigApi } from '../application/config-api.js';
 import { Config } from '../domain/config.js';
 
 type LoadingAppProps<
   Id extends SerializableKey,
-  Node extends TreeNode<Id, Node>,
+  Value,
   ViewKey = string,
 > = {
-  appApi: AppApi<Id, Node, ViewKey>;
+  appApi: AppApi<Id, Value, ViewKey>;
   configApi: ConfigApi;
   stdout?: (message: string) => void;
   clipboard?: (value: string) => void;
@@ -29,7 +22,7 @@ type LoadingAppProps<
 
 export function LoadingApp<
   Id extends SerializableKey,
-  Node extends TreeNode<Id, Node>,
+  Value,
   ViewKey = string,
 >({
   appApi,
@@ -37,8 +30,8 @@ export function LoadingApp<
   stdout,
   clipboard,
   onError,
-}: LoadingAppProps<Id, Node, ViewKey>) {
-  const [initialState, setInitialState] = useState<State<Id, Node>>();
+}: LoadingAppProps<Id, Value, ViewKey>) {
+  const [initialState, setInitialState] = useState<State<Id, Value>>();
   const [config, setConfig] = useState<Config>();
   const [error, setError] = useState<Error>();
 
@@ -94,10 +87,13 @@ export function LoadingApp<
         if (!mounted) {
           return;
         }
-
+        
         setInitialState({
           root,
-          foldRoot: appApi.foldNodeService.createEmptyNode(appApi.rootId),
+          folds: appApi.foldsApi.create(appApi.rootId, {
+            name: 'default',
+            description: null,
+          }),
           cursor: [],
         });
       })
@@ -119,12 +115,12 @@ export function LoadingApp<
   }, [appApi, onError]);
 
   // --- Pure function deps ---
-
+  
   const reducer = useMemo(
-    () => createReducer(appApi.treeNodeApi, appApi.foldNodeService),
-    [appApi.treeNodeApi, appApi.foldNodeService],
+    () => createReducer(appApi.treeNodeApi, appApi.foldsApi),
+    [appApi.treeNodeApi, appApi.foldsApi],
   );
-
+  
   const intentToEffect = useMemo(
     () =>
       createIntentToEffect(
@@ -134,15 +130,10 @@ export function LoadingApp<
       ),
     [appApi.stateApi, appApi.cursorApi, appApi.treeNodeApi],
   );
-
+  
   const effectToAction = useMemo(
-    () =>
-      createEffectToAction(
-        appApi.treeNodeApi,
-        appApi.cursorApi,
-        appApi.navNodeApi,
-      ),
-    [appApi.treeNodeApi, appApi.navNodeApi, appApi.cursorApi],
+    () => createEffectToAction(appApi.cursorApi, appApi.navNodeApi),
+    [appApi.navNodeApi, appApi.cursorApi],
   );
 
   // --- JSX ---

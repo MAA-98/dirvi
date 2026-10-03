@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { LoadingApp } from './LoadingApp.js';
 import type { ConfigApi } from '../application/config-api.js';
 import type { AppApi } from 'dirvi-lib';
-import type { PosixName, PosixTreeNode } from '../domain/posix-tree-node.js';
+import type { PosixEntry, PosixName } from '../domain/posix-tree-node.js';
 import type { UnixAbsolutePath } from '../domain/unix-path.js';
 
 /**
@@ -29,7 +29,7 @@ export type ShellAppProps = {
    */
   loadPosixAppApi: (
     directory?: string,
-  ) => AppApi<PosixName, PosixTreeNode, UnixAbsolutePath>;
+  ) => AppApi<PosixName, PosixEntry, UnixAbsolutePath>;
 
   /**
    * Optional directory to browse.

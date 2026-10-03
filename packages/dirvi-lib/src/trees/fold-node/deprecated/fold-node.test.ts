@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createTreeNodeApi } from '../tree-node/tree-node.impl.js';
+import { createTreeNodeApi } from '../../tree-node/tree-node.impl.js';
 import type { FoldNode, FoldNodeValue } from './fold-node.types.js';
 import { createFoldNodeService } from './fold-node.impl.js';
 

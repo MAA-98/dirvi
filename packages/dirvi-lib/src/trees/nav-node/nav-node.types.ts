@@ -1,7 +1,6 @@
-import type { SerializableKey } from '../tree-node/tree-node.model.js';
-import type { TreeNode } from '../tree-node/tree-node.types.js';
+import type { SerializableKey, TreeNode } from '../tree-node/index.js';
 import type { Cursor } from '../cursor.js';
-import type { FoldNode } from '../fold-node/fold-node.types.js';
+import type { Folds } from '../fold-node/index.js';
 
 export type NavNode<Id extends SerializableKey> = {
   /**
@@ -70,8 +69,9 @@ export type NavNodeApi<Id extends SerializableKey, Value> = {
    * - the loaded direct child entries; and
    * - sibling iteration order, where guaranteed by TreeNodeApi.
    *
-   * The optional FoldNode is authoritative for folding. When `foldRoot` is
-   * undefined, the projection contains no folded entries.
+   * `foldRoot` is authoritative for folding. It contains multiple independently
+   * active fold trees. An entry is folded in the projection when at least one
+   * active fold tree hides that entry at its parent path.
    *
    * A folded entry is omitted from its parent's navigable entries and is
    * represented by that parent's synthetic `folded` entry instead.
@@ -83,12 +83,14 @@ export type NavNodeApi<Id extends SerializableKey, Value> = {
    * A closed root branch produces a NavBranch whose `children` is `null`.
    *
    * @param root - Source tree node from which to create navigation.
-   * @param foldRoot - Optional fold-state tree corresponding to `root`.
+   * @param folds - Fold definitions corresponding to `root`. All active fold
+   * trees contribute to whether a source entry is represented by its parent’s
+   * synthetic `folded` entry.
    * @returns The projected root branch, or `undefined` when `root` is a leaf.
    */
   from(
     root: TreeNode<Id, Value>,
-    foldRoot: FoldNode<Id> | undefined,
+    folds: Folds<Id>,
   ): NavBranch<Id> | undefined;
 
   /**

@@ -1,6 +1,5 @@
-import type { TreeNode, TreeNodeApi } from '../tree-node/tree-node.types.js';
-import type { SerializableKey } from '../tree-node/tree-node.model.js';
-import type { FoldNode } from '../fold-node/fold-node.types.js';
+import type { SerializableKey, TreeNode, TreeNodeApi } from '../tree-node/index.js';
+import type { Folds } from '../fold-node/index.js';
 import type { Cursor, CursorApi } from '../cursor.js';
 import type { StateApi, State } from './state.types.js';
 
@@ -167,7 +166,7 @@ export function createStateApi<Id extends SerializableKey, Value>(
   function resyncCursor(
     _oldState: State<Id, Value>,
     _newRoot: TreeNode<Id, Value>,
-    _newFoldRoot: FoldNode<Id>,
+    _newFolds: Folds<Id>,
   ): Cursor<Id> {
     return [];
   }
@@ -181,19 +180,19 @@ export function createStateApi<Id extends SerializableKey, Value>(
 
     async resync(oldState, loadBranches) {
       const reloaded = await reload(oldState.root, [], loadBranches);
-
+      
       /*
-       * Fold-state resynchronization is not implemented yet. Keep the old
-       * fold root, as the previous implementation also did in practice.
+       * Fold-state resynchronization is not implemented yet. Keep the existing
+       * fold definitions while the source tree is reloaded.
        */
-      const foldRoot = oldState.foldRoot;
+      const folds = oldState.folds;
       const root = reloaded.root;
-
+      
       return {
         ...oldState,
         root,
-        foldRoot,
-        cursor: resyncCursor(oldState, root, foldRoot),
+        folds,
+        cursor: resyncCursor(oldState, root, folds),
       };
     },
   };

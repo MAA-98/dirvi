@@ -3,7 +3,7 @@ import type {
   FoldNodeApi,
   FoldNodeService,
 } from './fold-node.types.js';
-import type { SerializableKey } from '../tree-node/index.js';
+import type { SerializableKey } from '../../tree-node/index.js';
 
 /**
  * Creates semantic operations for a fold-state tree.

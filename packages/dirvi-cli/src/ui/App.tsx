@@ -1,23 +1,22 @@
 import { Box, Text, useApp, useInput, useWindowSize } from 'ink';
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
-import {
+import { userInputToIntent } from 'dirvi-lib';
+import type {
   AppApi,
   Effect,
+  EffectToAction,
   InputModeState,
   IntentToEffect,
   NavBranch,
+  Reducer,
   SerializableKey,
   State,
-  TreeNode,
-  userInputToIntent,
 } from 'dirvi-lib';
 
 import { ViewRowComponent } from './components/ViewRowComponent.js';
-import { EffectToAction } from '../application/effect-to-action.js';
 import { StatusBar } from './components/StatusBar.js';
 import { inkInputToUserInput } from '../infrastructure/ink-input-to-user-input.js';
-import { Reducer } from '../application/reducer.js';
 import { useView } from './hooks/useView.js';
 import { Config } from '../domain/config.js';
 
@@ -25,27 +24,19 @@ function toError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }
 
-type AppProps<
-  Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
-  ViewKey = string,
-> = {
-  appApi: AppApi<Id, BufferNode, ViewKey>;
+type AppProps<Id extends SerializableKey, Value, ViewKey = string> = {
+  appApi: AppApi<Id, Value, ViewKey>;
   config: Config;
-  initialState: State<Id, BufferNode>;
-  reducer: Reducer<Id, BufferNode>;
-  intentToEffect: IntentToEffect<Id, BufferNode>;
-  effectToAction: EffectToAction<Id, BufferNode>;
+  initialState: State<Id, Value>;
+  reducer: Reducer<Id, Value>;
+  intentToEffect: IntentToEffect<Id, Value>;
+  effectToAction: EffectToAction<Id, Value>;
   stdout?: (message: string) => void;
   clipboard?: (value: string) => void;
   onError?: (error: Error) => void;
 };
 
-export function App<
-  Id extends SerializableKey,
-  Node extends TreeNode<Id, Node>,
-  ViewKey = string,
->({
+export function App<Id extends SerializableKey, Value, ViewKey = string>({
   appApi,
   config,
   initialState,
@@ -55,16 +46,25 @@ export function App<
   stdout,
   clipboard,
   onError,
-}: AppProps<Id, Node, ViewKey>) {
+}: AppProps<Id, Value, ViewKey>) {
   const [state, dispatch] = useReducer(reducer, initialState);
   // Give `subscribeToResync` callback a way to see current state:
   const stateRef = useRef(state);
   stateRef.current = state;
+  
+  const navEntry: NavBranch<Id> = useMemo(() => {
+    const navigation = appApi.navNodeApi.from(state.root, state.folds);
 
-  const navEntry: NavBranch<Id> = useMemo(
-    () => appApi.navNodeApi.from(state.root, state.foldRoot),
-    [appApi.navNodeApi, state.root, state.foldRoot],
-  );
+    /*
+     * State's root invariant requires an open branch. A missing navigation
+     * root therefore means an invalid State was constructed or decoded.
+     */
+    if (navigation === undefined) {
+      throw new Error('Tree-surfer state root must be a loaded branch.');
+    }
+
+    return navigation;
+  }, [appApi.navNodeApi, state.root, state.folds]);
 
   const [inputState, setInputState] = useState<InputModeState>({
     inputMode: 'normal',
@@ -115,7 +115,7 @@ export function App<
     };
   }, [appApi, onError]);
 
-  function executeEffect(effect: Effect<Id, Node> | undefined): void {
+  function executeEffect(effect: Effect<Id, Value> | undefined): void {
     if (effect === undefined) {
       return;
     }

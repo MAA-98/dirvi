@@ -14,16 +14,33 @@ import { viewNameSchema } from './view-name-schema.js';
 import type {
   SerializableKey,
   State,
-  TreeNode,
+  StateModel,
   ViewApi,
   ViewSummary,
 } from 'dirvi-lib';
 
-export type StateCodec<RuntimeState, StoredState> = {
+/**
+ * Application-specific conversion between opaque runtime state and its public
+ * serializable model.
+ *
+ * `schema` validates the persisted DTO. `decode` must then restore opaque
+ * TreeNode and Folds values through the application's specialized APIs.
+ */
+export type StateCodec<
+  Id extends SerializableKey,
+  Value,
+  StoredState extends StateModel<Id, Value>,
+> = Readonly<{
   schema: z.ZodType<StoredState>;
-  encode: (state: RuntimeState) => StoredState;
-  decode: (state: StoredState) => RuntimeState;
-};
+  encode: (state: State<Id, Value>) => StoredState;
+  
+  /*
+   * A validated model can still violate runtime-only invariants, for example
+   * duplicate TreeNode sibling IDs. The domain decoder reports that case with
+   * undefined; this adapter treats it as a corrupt/incompatible saved view.
+   */
+  decode: (state: StoredState) => State<Id, Value> | undefined;
+}>;
 
 type StoredView<StoredState> = {
   version: 1;
@@ -68,8 +85,8 @@ function isNodeErrorWithCode(
  */
 export function createFileViewApi<
   Id extends SerializableKey,
-  BufferNode extends TreeNode<Id, BufferNode>,
-  StoredState,
+  Value,
+  StoredState extends StateModel<Id, Value>,
   Key,
 >({
   directory,
@@ -78,8 +95,8 @@ export function createFileViewApi<
 }: {
   directory: string;
   encodeKey: (key: Key) => string;
-  stateCodec: StateCodec<State<Id, BufferNode>, StoredState>;
-}): ViewApi<State<Id, BufferNode>, Key> {
+  stateCodec: StateCodec<Id, Value, StoredState>;
+}): ViewApi<State<Id, Value>, Key> {
   const storedViewSchema = createStoredViewSchema(stateCodec.schema);
 
   /**
@@ -120,7 +137,7 @@ export function createFileViewApi<
   async function save(
     key: Key,
     name: string,
-    state: State<Id, BufferNode>,
+    state: State<Id, Value>,
   ): Promise<void> {
     const dir = keyDirectory(key);
 
@@ -152,13 +169,21 @@ export function createFileViewApi<
   async function load(
     key: Key,
     name: string,
-  ): Promise<State<Id, BufferNode> | undefined> {
+  ): Promise<State<Id, Value> | undefined> {
     try {
       const contents = await readFile(viewFile(key, name), 'utf8');
       const parsed: unknown = JSON.parse(contents);
       const value = storedViewSchema.parse(parsed);
+      
+      const state = stateCodec.decode(value.state);
 
-      return stateCodec.decode(value.state);
+      if (state === undefined) {
+        throw new Error(
+          'Stored view state violates application runtime invariants.',
+        );
+      }
+
+      return state;
     } catch (error: unknown) {
       if (isNodeErrorWithCode(error, 'ENOENT')) {
         return undefined;

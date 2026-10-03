@@ -1,18 +1,17 @@
 import type { ViewApi } from './view-api.js';
 import type {
-  CursorApi,
-  FoldNodeService,
+  CursorApi, FoldsApi, NavNodeApi,
   SerializableKey,
   State,
   StateApi,
   TreeNode,
   TreeNodeApi,
-} from '../tree-surfer/index.js';
+} from '../trees/index.js';
 import {
   createCursorApi,
   createStateApi,
   createTreeNodeApi,
-} from '../tree-surfer/index.js';
+} from '../trees/index.js';
 
 /**
  * Application-specific tree dependencies and operations.
@@ -25,13 +24,9 @@ import {
  * @typeParam Value - Application-owned data stored in each tree node.
  * @typeParam ViewKey - The key used to identify view implementations.
  */
-export type AppApi<
-  Id extends SerializableKey,
-  Value,
-  ViewKey = string,
-> = Readonly<{
+export type AppApi<Id extends SerializableKey, Value, ViewKey = string> = Readonly<{
   /**
-   * Name used to distinguish the application, for example `"posix"` for a
+   * Name used to distinguish the application, for example `posix` for a
    * POSIX-directory application.
    */
   appId: string;
@@ -82,11 +77,16 @@ export type AppApi<
    *
    * This remains temporarily available while FoldNode itself is migrated.
    */
-  foldNodeService: FoldNodeService<Id>;
+  foldsApi: FoldsApi<Id>;
 
   cursorApi: CursorApi<Id>;
 
   stateApi: StateApi<Id, Value>;
+
+  /**
+   * UI navigation projection and cursor-navigation operations.
+   */
+  navNodeApi: NavNodeApi<Id, Value>;
 
   viewKey: ViewKey;
 

@@ -1,14 +1,24 @@
 import { z } from 'zod';
-import { UnixPath, UnixPathSchema } from './unix-path.js';
 import {
   serializableKeySchema,
   createNavNodeApi,
   createStateApi,
-  createStateSchema,
   NavNode,
   SerializableKey,
-  State, TreeNode, createTreeNodeApi, TreeNodeModel, FoldNode, createFoldNodeService,
+  State,
+  TreeNode,
+  createTreeNodeApi,
+  TreeNodeModel,
+  Folds,
+  createFoldsApi,
+  FoldsModel,
+  createFoldsModelSchema,
+  createCursorSchema,
+  Cursor,
+  createCursorApi, createStateModelSchema, StateModel,
 } from 'dirvi-lib';
+
+import { UnixPath, UnixPathSchema } from './unix-path.js';
 
 // -----------------------------------------------------------------------------
 // Utility
@@ -78,11 +88,7 @@ const PosixDirectoryEntrySchema = z
 
 export const PosixEntrySchema: z.ZodType<PosixEntry> = z.discriminatedUnion(
   'kind',
-  [
-    PosixFileEntrySchema,
-    PosixSymlinkEntrySchema,
-    PosixDirectoryEntrySchema,
-  ],
+  [PosixFileEntrySchema, PosixSymlinkEntrySchema, PosixDirectoryEntrySchema],
 );
 
 // -----------------------------------------------------------------------------
@@ -107,20 +113,20 @@ export const PosixTreeNode = {
       kind: 'file',
     });
   },
-  
+
   symlink(name: PosixName, target: UnixPath): PosixTreeNode {
     return PosixTreeNodeApi.createLeaf(name, {
       kind: 'symlink',
       target,
     });
   },
-  
+
   unloadedDirectory(name: PosixName): PosixTreeNode {
     return PosixTreeNodeApi.createUnloadedBranch(name, {
       kind: 'directory',
     });
   },
-  
+
   loadedDirectory(
     name: PosixName,
     children: Iterable<PosixTreeNode>,
@@ -131,7 +137,7 @@ export const PosixTreeNode = {
       children,
     );
   },
-  
+
   /**
    * Runtime domain invariant check.
    *
@@ -141,20 +147,17 @@ export const PosixTreeNode = {
   isValid(node: PosixTreeNode): boolean {
     const entry = PosixTreeNodeApi.value(node);
     const treeKind = PosixTreeNodeApi.kind(node);
-    
+
     switch (entry.kind) {
       case 'file':
       case 'symlink':
         return treeKind === 'leaf';
-      
+
       case 'directory':
-        return (
-          treeKind === 'unloaded-branch' ||
-          treeKind === 'loaded-branch'
-        );
+        return treeKind === 'unloaded-branch' || treeKind === 'loaded-branch';
     }
   },
-  
+
   /**
    * Adds or replaces the loaded children of a directory.
    *
@@ -169,22 +172,20 @@ export const PosixTreeNode = {
     if (PosixTreeNodeApi.value(node).kind !== 'directory') {
       return undefined;
     }
-    
+
     return PosixTreeNodeApi.withLoadedChildren(node, children);
   },
-  
+
   /**
    * Converts a directory to an unloaded directory.
    *
    * Files and symlinks cannot be converted to branches through this POSIX API.
    */
-  toUnloadedDirectory(
-    node: PosixTreeNode,
-  ): PosixTreeNode | undefined {
+  toUnloadedDirectory(node: PosixTreeNode): PosixTreeNode | undefined {
     if (PosixTreeNodeApi.value(node).kind !== 'directory') {
       return undefined;
     }
-    
+
     return PosixTreeNodeApi.toUnloadedBranch(node);
   },
 } as const;
@@ -218,7 +219,7 @@ export const PosixTreeNodeModelSchema: z.ZodType<PosixTreeNodeModel> = z.lazy(
           value: PosixFileEntrySchema,
         })
         .strict(),
-      
+
       // Leaf: symlink
       z
         .object({
@@ -226,7 +227,7 @@ export const PosixTreeNodeModelSchema: z.ZodType<PosixTreeNodeModel> = z.lazy(
           value: PosixSymlinkEntrySchema,
         })
         .strict(),
-      
+
       // Unloaded branch: directory
       z
         .object({
@@ -235,7 +236,7 @@ export const PosixTreeNodeModelSchema: z.ZodType<PosixTreeNodeModel> = z.lazy(
           children: z.null(),
         })
         .strict(),
-      
+
       // Loaded branch: directory
       z
         .object({
@@ -253,53 +254,51 @@ export const PosixTreeNodeModelSchema: z.ZodType<PosixTreeNodeModel> = z.lazy(
  * `fromModel` additionally checks sibling-name uniqueness. That validation is
  * separate from Zod's object-shape validation.
  */
-export function decodePosixTreeNode(
-  input: unknown,
-): PosixTreeNode | undefined {
+export function decodePosixTreeNode(input: unknown): PosixTreeNode | undefined {
   const model = PosixTreeNodeModelSchema.safeParse(input);
-  
+
   if (!model.success) {
     return undefined;
   }
-  
+
   const node = PosixTreeNodeApi.fromModel(model.data);
-  
+
   if (node === undefined) {
     return undefined;
   }
-  
+
   return PosixTreeNode.isValid(node) ? node : undefined;
 }
 
-export function encodePosixTreeNode(
-  node: PosixTreeNode,
-): PosixTreeNodeModel {
+export function encodePosixTreeNode(node: PosixTreeNode): PosixTreeNodeModel {
   return PosixTreeNodeApi.toModel(node);
 }
 
 // -----------------------------------------------------------------------------
-// PosixFoldNode
+// PosixFolds
 // -----------------------------------------------------------------------------
 
-const foldNodeSchema = createFoldNodeSchemas<PosixName>(PosixNameSchema);
-
-export const PosixFoldNodeSchema: z.ZodType<PosixFoldNode> = foldNodeSchema;
-
-export type PosixFoldNode = FoldNode<PosixName>;
+/**
+ * Fold definitions for one POSIX directory tree.
+ */
+export type PosixFolds = Folds<PosixName>;
 
 /**
- * This works only if FoldNode<Id> is now the *value* stored in an opaque tree.
- *
- * See the note below: I would probably rename this to PosixFoldTree and rename
- * FoldNode to FoldValue/FoldEntry in the library.
+ * Folds internally store sparse trees whose values are direct child IDs hidden
+ * at that tree position. This implementation detail remains private to the
+ * POSIX domain module.
  */
-export const PosixFoldNodeApi = createTreeNodeApi<
+const PosixFoldTreeNodeApi = createTreeNodeApi<
   PosixName,
-  FoldNode<PosixName>
+  readonly PosixName[]
 >();
 
-export const PosixFoldNodeService =
-  createFoldNodeService<PosixName>(PosixFoldNodeApi);
+export const PosixFoldsApi = createFoldsApi(PosixFoldTreeNodeApi);
+
+export type PosixFoldsModel = FoldsModel<PosixName>;
+
+export const PosixFoldsModelSchema: z.ZodType<PosixFoldsModel> =
+  createFoldsModelSchema(PosixNameSchema);
 
 // -----------------------------------------------------------------------------
 // PosixCursor
@@ -320,12 +319,17 @@ export const PosixCursorApi = createCursorApi<PosixName>();
  * NavNode should now be parameterized by node value, not the recursive
  * application node shape.
  */
-export type PosixNavNode = NavNode<PosixName, PosixEntry>;
+export type PosixNavNode = NavNode<PosixName>;
 
-export const PosixNavApi = createNavNodeApi<PosixName, PosixEntry>(
+export const PosixNavApi = createNavNodeApi(
   PosixTreeNodeApi,
-  PosixFoldNodeService,
+  PosixFoldsApi,
   PosixCursorApi,
+  {
+    compareEntries(left, right) {
+      return left.id.localeCompare(right.id);
+    },
+  },
 );
 
 // -----------------------------------------------------------------------------
@@ -338,20 +342,17 @@ export const PosixNavApi = createNavNodeApi<PosixName, PosixEntry>(
  */
 export type PosixState = State<PosixName, PosixEntry>;
 
+export const PosixStateApi = createStateApi(PosixTreeNodeApi, PosixCursorApi);
+
+export type PosixStateModel = StateModel<PosixName, PosixEntry>;
+
 /**
  * The state schema should operate on a serializable tree *model*, then decode
  * it to opaque nodes. Do not try to make Zod construct TreeNode directly.
  */
-export const PosixStateSchema: z.ZodType<PosixState> = createStateSchema(
-  PosixTreeNodeModelSchema,
-  PosixFoldNodeSchema,
-  PosixCursorSchema,
-  PosixTreeNodeApi,
-);
-
-export const PosixStateApi = createStateApi<PosixName, PosixEntry>(
-  PosixTreeNodeApi,
-  PosixFoldNodeApi,
-  PosixCursorApi,
-  PosixNavApi,
-);
+export const PosixStateModelSchema: z.ZodType<PosixStateModel> =
+  createStateModelSchema(
+    PosixTreeNodeModelSchema,
+    PosixFoldsModelSchema,
+    PosixCursorSchema,
+  );

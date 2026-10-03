@@ -127,6 +127,14 @@ export type FoldSlotModel<Id extends SerializableKey> = Readonly<{
   description: string | null;
 
   /**
+   * Whether this fold tree currently contributes to hiding entries.
+   *
+   * An inactive fold tree retains its fold definition but does not affect the
+   * visible navigation projection.
+   */
+  active: boolean;
+
+  /**
    * The fold-state tree stored in this slot.
    */
   tree: FoldNodeModel<Id>;
@@ -148,8 +156,8 @@ export type FoldsModel<Id extends SerializableKey> = Readonly<{
  * This validates:
  *
  * - there is always a primary slot at index zero;
- * - every occupied slot has a name, a description or `null`, and a valid
- *   fold tree;
+ * - every occupied slot has a name, a description or `null`, active state,
+ *   and a valid fold tree;
  * - every non-primary slot is either an occupied fold slot or `null`.
  *
  * A slot's `description: null` means that its fold tree has no description.
@@ -166,6 +174,7 @@ export function createFoldsModelSchema<Id extends SerializableKey>(
     .object({
       name: z.string(),
       description: z.string().nullable(),
+      active: z.boolean(),
       tree: foldNodeSchema,
     })
     .strict();

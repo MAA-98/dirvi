@@ -1,12 +1,12 @@
+import { TreeNode, TreeNodeApi } from 'dirvi-lib';
+import { PosixEntry, PosixName, PosixNameSchema, PosixTreeNode } from '../domain/posix-tree-node.js';
+import { UnixAbsolutePath, UnixPathSchema } from '../domain/unix-path.js';
 import { readdir, readlink } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { UnixAbsolutePath, UnixPathSchema } from '../domain/unix-path.js';
-import { PosixNameSchema, PosixTreeNode } from '../domain/posix-tree-node.js';
-
 export async function getDirEntries(
   address: UnixAbsolutePath,
-): Promise<PosixTreeNode[]> {
+): Promise<TreeNode<PosixName, PosixEntry>[]> {
   const directoryEntries = await readdir(address, {
     withFileTypes: true,
   });
@@ -19,27 +19,16 @@ export async function getDirEntries(
         const target = UnixPathSchema.parse(
           await readlink(join(address, directoryEntry.name)),
         );
-
-        return {
-          kind: 'symlink',
-          id,
-          target,
-        };
+        
+        return PosixTreeNode.symlink(id, target);
       }
-
+      
       if (directoryEntry.isDirectory()) {
-        return {
-          kind: 'directory',
-          id: id,
-          children: null, // Directory not expanded.
-        };
+        return PosixTreeNode.unloadedDirectory(id);
       }
 
       if (directoryEntry.isFile()) {
-        return {
-          kind: 'file',
-          id: id,
-        };
+        return PosixTreeNode.file(id);
       }
 
       throw new Error(

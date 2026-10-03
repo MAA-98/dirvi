@@ -1,7 +1,6 @@
 import type { Cursor } from '../cursor.js';
-import type { TreeNode } from '../tree-node/tree-node.types.js';
-import type { FoldNode } from '../fold-node/fold-node.types.js';
-import type { SerializableKey } from '../tree-node/tree-node.model.js';
+import type { Folds } from '../fold-node/index.js';
+import type { SerializableKey, TreeNode } from '../tree-node/index.js';
 
 /**
  * State for navigating a tree and its associated fold-state tree.
@@ -17,7 +16,7 @@ import type { SerializableKey } from '../tree-node/tree-node.model.js';
  */
 export type State<Id extends SerializableKey, Value> = Readonly<{
   root: TreeNode<Id, Value>;
-  foldRoot: FoldNode<Id>;
+  folds: Folds<Id>;
   cursor: Cursor<Id>;
 }>;
 

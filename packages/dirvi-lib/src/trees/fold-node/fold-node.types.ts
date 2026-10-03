@@ -1,23 +1,5 @@
-import type { SerializableKey, TreeNode } from '../tree-node/index.js';
-import type { FoldsModel } from './fold-node.model.js';
-
-/**
- * IDs of direct source-tree entries hidden at one source-tree branch.
- *
- * This is the value stored in each internal fold-tree node.
- */
-type HiddenEntryIds<Id extends SerializableKey> = readonly Id[];
-
-/**
- * Sparse fold-state projection of a source TreeNode tree.
- *
- * A fold-tree node corresponds to a branch in the source tree. Its value is
- * the IDs of direct source-tree entries hidden at that branch.
- *
- * This alias is intentionally not exported. Consumers may receive the tree
- * through FoldData, but only as an opaque TreeNode value.
- */
-type FoldTree<Id extends SerializableKey> = TreeNode<Id, HiddenEntryIds<Id>>;
+import type { SerializableKey } from '../tree-node/index.js';
+import type { FoldSlotModel, FoldsModel } from './fold-node.model.js';
 
 declare const foldsBrand: unique symbol;
 
@@ -44,45 +26,11 @@ export type FoldInfo = Readonly<{
    * Durable user-facing name of the fold tree.
    */
   name: string;
-  
+
   /**
    * User-facing description of the fold tree, or `null` when none exists.
    */
   description: string | null;
-}>;
-
-/**
- * Internal data stored in one occupied Folds slot.
- *
- * The slot index is intentionally not repeated here; it is the position of
- * this value in `FoldsData.slots`.
- */
-type FoldSlot<Id extends SerializableKey> = Readonly<{
-  name: string;
-  description: string | null;
-  tree: FoldTree<Id>;
-}>;
-
-/**
- * Fold-data slots.
- *
- * Slot zero is always occupied. Later slots may be unoccupied.
- */
-type FoldSlots<Id extends SerializableKey> = readonly [
-  FoldSlot<Id>,
-  ...(FoldSlot<Id> | undefined)[],
-];
-
-/**
- * Private runtime representation of Folds.
- *
- * `slots[0]` is the required primary fold tree.
- *
- * For indexes greater than zero, `slots[index]` is either FoldData or
- * undefined when that slot is unoccupied.
- */
-type FoldsData<Id extends SerializableKey> = Readonly<{
-  slots: FoldSlots<Id>;
 }>;
 
 /**
@@ -97,19 +45,11 @@ export type Folds<Id extends SerializableKey> = {
   };
 };
 
-function toData<Id extends SerializableKey>(folds: Folds<Id>): FoldsData<Id> {
-  return folds as unknown as FoldsData<Id>;
-}
-
-function fromData<Id extends SerializableKey>(data: FoldsData<Id>): Folds<Id> {
-  return data as unknown as Folds<Id>;
-}
-
 export type FoldsApi<Id extends SerializableKey> = Readonly<{
   /**
    * Creates Folds with its required primary fold tree in slot zero.
    *
-   * The primary fold tree initially contains no hidden entries.
+   * The new fold tree initially contains no hidden entries and is active.
    */
   create(rootId: Id, initialPrimaryInfo: FoldInfo): Folds<Id>;
 
@@ -119,6 +59,13 @@ export type FoldsApi<Id extends SerializableKey> = Readonly<{
    * Index zero always returns FoldInfo for a valid Folds value.
    */
   getInfoAtIndex(folds: Folds<Id>, index: FoldIndex): FoldInfo | undefined;
+
+  /**
+   * Returns whether the fold tree at an occupied slot is active.
+   *
+   * Returns `undefined` when the slot is unoccupied.
+   */
+  isActiveAtIndex(folds: Folds<Id>, index: FoldIndex): boolean | undefined;
 
   /**
    * Returns whether a slot is occupied.
@@ -135,10 +82,14 @@ export type FoldsApi<Id extends SerializableKey> = Readonly<{
   indexes(folds: Folds<Id>): Iterable<FoldIndex>;
 
   /**
-   * Stores an occupied fold slot at an index.
+   * Stores a serialized occupied fold slot at an index.
    *
    * Replaces any existing slot at that index. The supplied `Folds` value is not
    * mutated.
+   *
+   * `foldData` is converted into the internal opaque fold-tree representation.
+   * This operation returns `undefined` when `index` is not a non-negative safe
+   * integer or when the slot's fold-tree model cannot be restored.
    *
    * This is a low-level operation. Most callers should use
    * `setAdditionalFoldAtIndex`, `updateInfoAtIndex`, or the fold-state
@@ -147,8 +98,8 @@ export type FoldsApi<Id extends SerializableKey> = Readonly<{
   setAtIndex(
     folds: Folds<Id>,
     index: FoldIndex,
-    foldData: FoldSlot<Id>,
-  ): Folds<Id>;
+    foldData: FoldSlotModel<Id>,
+  ): Folds<Id> | undefined;
 
   /**
    * Creates or replaces a non-primary fold tree at a slot.
@@ -197,13 +148,57 @@ export type FoldsApi<Id extends SerializableKey> = Readonly<{
   ): Folds<Id> | undefined;
 
   /**
-   * Returns whether an entry is hidden in the fold tree at one slot.
+   * Marks the fold tree at an occupied slot as active.
    *
-   * `path` has the same meaning as a path in the source TreeNode tree.
+   * An active fold tree contributes to hiding entries.
+   *
+   * Returns `undefined` when the slot is unoccupied. Returns the original
+   * Folds reference when the fold tree is already active.
+   */
+  activateAtIndex(folds: Folds<Id>, index: FoldIndex): Folds<Id> | undefined;
+
+  /**
+   * Marks the fold tree at an occupied slot as inactive.
+   *
+   * An inactive fold tree retains its definition but does not contribute to
+   * hiding entries.
+   *
+   * Returns `undefined` when the slot is unoccupied. Returns the original
+   * Folds reference when the fold tree is already inactive.
+   */
+  deactivateAtIndex(folds: Folds<Id>, index: FoldIndex): Folds<Id> | undefined;
+
+  /**
+   * Inverts whether the fold tree at an occupied slot is active.
+   *
+   * Returns `undefined` when the slot is unoccupied.
+   */
+  toggleActiveAtIndex(
+    folds: Folds<Id>,
+    index: FoldIndex,
+  ): Folds<Id> | undefined;
+
+  /**
+   * Returns whether an entry is hidden by one fold tree at an occupied slot.
+   *
+   * This checks the fold definition regardless of whether that fold tree is
+   * currently active.
+   */
+  isEntryHiddenInFoldAtPath(
+    folds: Folds<Id>,
+    index: FoldIndex,
+    path: readonly Id[],
+    entryId: Id,
+  ): boolean;
+
+  /**
+   * Returns whether an entry is hidden by at least one active fold tree.
+   *
+   * Inactive fold trees retain fold definitions but do not contribute to this
+   * result.
    */
   isEntryHiddenAtPath(
     folds: Folds<Id>,
-    index: FoldIndex,
     path: readonly Id[],
     entryId: Id,
   ): boolean;

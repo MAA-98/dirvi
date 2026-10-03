@@ -1,11 +1,12 @@
-import {
+import type {
+  Cursor,
   CursorApi,
   NavBranch,
+  NavEntry,
+  NavNode,
   NavNodeApi,
   SerializableKey,
-  TreeNode,
 } from 'dirvi-lib';
-import { Cursor, NavEntry, NavNode } from 'dirvi-lib';
 
 type ViewRowBase = {
   id: string;
@@ -29,9 +30,9 @@ export type View = {
 };
 
 export const View = {
-  createRows<Id extends SerializableKey, Node extends TreeNode<Id, Node>>(
+  createRows<Id extends SerializableKey, Value>(
     rootNode: NavBranch<Id>,
-    navNodeApi: NavNodeApi<Id, Node>,
+    navNodeApi: NavNodeApi<Id, Value>,
     cursor: Cursor<Id>,
     cursorApi: CursorApi<Id>,
   ): ViewRow[] {
@@ -54,9 +55,9 @@ export const View = {
     ];
   },
 
-  create<Id extends SerializableKey, Node extends TreeNode<Id, Node>>(
+  create<Id extends SerializableKey, Value>(
     rootNode: NavBranch<Id>,
-    navNodeApi: NavNodeApi<Id, Node>,
+    navNodeApi: NavNodeApi<Id, Value>,
     cursor: Cursor<Id>,
     cursorApi: CursorApi<Id>,
     viewportHeight: number,
@@ -81,13 +82,10 @@ export const View = {
  *   ['src']         root/src
  *   ['src', 'lib']  root/src/lib
  */
-function viewRowsAtNode<
-  Id extends SerializableKey,
-  Node extends TreeNode<Id, Node>,
->(
+function viewRowsAtNode<Id extends SerializableKey, Value>(
   node: NavNode<Id>,
   parentPath: Id[],
-  navNodeApi: NavNodeApi<Id, Node>,
+  navNodeApi: NavNodeApi<Id, Value>,
   cursor: Cursor<Id>,
   cursorApi: CursorApi<Id>,
 ): ViewRow[] {
@@ -117,14 +115,11 @@ function viewRowsAtNode<
   return rows;
 }
 
-function viewRowForEntry<
-  Id extends SerializableKey,
-  Node extends TreeNode<Id, Node>,
->(
+function viewRowForEntry<Id extends SerializableKey, Value>(
   entry: NavEntry<Id>,
   parentPath: Id[] | null,
   cursor: boolean,
-  navNodeApi: NavNodeApi<Id, Node>,
+  navNodeApi: NavNodeApi<Id, Value>,
 ): ViewRow {
   const id = entryId(parentPath ?? [], entry.id);
   const indent = parentPath ? parentPath.length + 1 : 0;

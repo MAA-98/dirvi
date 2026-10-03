@@ -1,4 +1,4 @@
-import type { SerializableKey } from '../../tree-surfer/index.js';
+import type { SerializableKey } from '../../trees/index.js';
 import type { Effect } from '../domain/index.js';
 
 const DEFAULT_VIEW_NAME = 'default';

@@ -4,7 +4,7 @@ import type {
   State,
   StateApi,
   TreeNodeApi,
-} from '../../tree-surfer/index.js';
+} from '../../trees/index.js';
 import type { Effect, EffectAction, Intent } from '../domain/index.js';
 
 import { parseCommand } from './parse-command.js';

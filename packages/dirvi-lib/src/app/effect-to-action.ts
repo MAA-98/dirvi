@@ -1,40 +1,28 @@
-import type { ReducerAction } from './reducer-action.js';
-import {
-  SerializableKey,
-  TreeNode,
-  TreeNodeApi,
-} from 'packages/dirvi-lib/src/tree-surfer/tree-node/deprecated/tree-node.types.js';
-import {
+import type {
   CursorApi,
-  EffectAction,
   NavBranch,
-  NavNode,
   NavNodeApi,
+  SerializableKey,
   State,
-} from 'dirvi-lib';
+} from '../trees/index.js';
+import type { EffectAction } from '../input/domain/index.js';
+import type { ReducerAction } from './reducer-action.js';
 
-export type EffectToAction<
-  Id extends SerializableKey,
-  Node extends TreeNode<Id, Node>,
-> = (
-  effectAction: EffectAction<Id, Node>,
+export type EffectToAction<Id extends SerializableKey, Value> = (
+  effectAction: EffectAction<Id, Value>,
   navigation: NavBranch<Id>,
-  state: State<Id, Node>,
-) => ReducerAction<Id, Node> | undefined;
+  state: State<Id, Value>,
+) => ReducerAction<Id, Value> | undefined;
 
-export function createEffectToAction<
-  Id extends SerializableKey,
-  Node extends TreeNode<Id, Node>,
->(
-  treeNodeApi: TreeNodeApi<Id, Node>,
+export function createEffectToAction<Id extends SerializableKey, Value>(
   cursorApi: CursorApi<Id>,
-  navNodeApi: NavNodeApi<Id, Node>,
-): EffectToAction<Id, Node> {
+  navNodeApi: NavNodeApi<Id, Value>,
+): EffectToAction<Id, Value> {
   function effectToAction(
-    effectAction: EffectAction<Id, Node>,
+    effectAction: EffectAction<Id, Value>,
     navigation: NavBranch<Id>,
-    state: State<Id, Node>,
-  ): ReducerAction<Id, Node> | undefined {
+    state: State<Id, Value>,
+  ): ReducerAction<Id, Value> | undefined {
     switch (effectAction.effectActionType) {
       case 'nextEntry': {
         const cursor = navNodeApi.nextCursor(navigation, state.cursor);
