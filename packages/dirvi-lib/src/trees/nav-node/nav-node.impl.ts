@@ -299,6 +299,7 @@ export function createNavNodeApi<Id extends SerializableKey, Value>(
       rootNode: NavBranch<Id>,
       cursor: Cursor<Id>,
     ): Cursor<Id> | undefined {
+      // Folding root disallowed
       if (cursor.length === 0) {
         return undefined;
       }
@@ -312,26 +313,27 @@ export function createNavNodeApi<Id extends SerializableKey, Value>(
       if (currentIndex === -1) {
         return undefined;
       }
-
+      
+      // If the last entry, then cursor should go to previous entry
+      // This works to go to the root when the last entry in the root is folded.
+      if (currentIndex + 1 === cursors.length) {
+        return cursors[currentIndex - 1]
+      }
+      
       for (let index = currentIndex + 1; index < cursors.length; index += 1) {
         const candidate = cursors[index];
 
         if (candidate === undefined) {
           continue;
         }
-
+        
+        // Skip any entries that are children of the entry about to be folded
         if (cursorApi.cursorBelongsToSubtree(candidate, cursor)) {
           continue;
         }
 
         return candidate;
       }
-
-      /*
-       * The folded synthetic row is displayed after the final visible entry
-       * within this directory.
-       */
-      return [...cursor];
     },
 
     parentCursor(_navigation, cursor) {
