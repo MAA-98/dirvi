@@ -18,13 +18,9 @@
     "login": "npm login",
     "publish": "pnpm build && pnpm --filter dirvi-lib publish --access public && pnpm --filter @mak-98/dirvi-cli publish --access public",
     "deps": "depcruise packages",
-    "deps:json": "depcruise packages --output-type json --output-to dependency-graph.json",
-    "deps:graph": "depcruise packages --output-type dot --output-to dependency-graph.dot",
-    "deps:graph:svg": "pnpm deps:graph && dot -Tsvg dependency-graph.dot -o dependency-graph.svg",
-    "deps:graph:lib": "depcruise packages/dirvi-lib/src --output-type dot --output-to dirvi-lib-dependency-graph.dot",
-    "deps:graph:lib:svg": "pnpm deps:graph:lib && dot -Tsvg dirvi-lib-dependency-graph.dot -o dirvi-lib-dependency-graph.svg",
-    "deps:graph:cli": "depcruise packages/dirvi-cli/src --output-type dot --output-to dirvi-cli-dependency-graph.dot",
-    "deps:graph:cli:svg": "pnpm deps:graph:cli && dot -Tsvg dirvi-cli-dependency-graph.dot -o dirvi-cli-dependency-graph.svg"
+    "deps:svg": "depcruise packages --output-type dot | dot -T svg > dependency-graph.svg",
+    "deps:svg:lib": "depcruise packages/dirvi-lib --output-type dot | dot -T svg > dependency-graph-lib.svg",
+    "deps:svg:cli": "depcruise packages/dirvi-cli --output-type dot | dot -T svg > dependency-graph-cli.svg"
   },
   "repository": {
     "type": "git",
