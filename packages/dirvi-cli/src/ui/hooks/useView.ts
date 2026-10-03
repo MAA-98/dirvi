@@ -1,12 +1,9 @@
-import {
+import type {
   CursorApi,
   NavBranch,
-  NavEntry,
-  NavNode,
   NavNodeApi,
   SerializableKey,
   State,
-  TreeNode,
 } from 'dirvi-lib';
 import { View, ViewRow } from '../view.js';
 import { useRef } from 'react';
@@ -14,13 +11,10 @@ import { STATUS_BAR_HEIGHT } from '../components/StatusBar.js';
 
 // Hooks that keeps Ref of the viewport's start, and returns View sliced to
 // only the rows that should be visible.
-export function useView<
-  Id extends SerializableKey,
-  Node extends TreeNode<Id, Node>,
->(
+export function useView<Id extends SerializableKey, Value>(
   navNode: NavBranch<Id>,
-  state: State<Id, Node>,
-  navNodeApi: NavNodeApi<Id, Node>,
+  state: State<Id, Value>,
+  navNodeApi: NavNodeApi<Id, Value>,
   cursorApi: CursorApi<Id>,
   terminalRows: number,
 ): View {

@@ -3,20 +3,19 @@ import { watch, type FSWatcher } from 'node:fs';
 import { getUnixAbsPath } from './get-unix-abs-path.js';
 import { getDirEntries } from './get-dir-entries.js';
 import envPaths from 'env-paths';
-import { createFileViewApi, StateCodec } from './create-file-view-api.js';
+import { createFileViewApi } from './create-file-view-api.js';
+import type { StateCodec } from './create-file-view-api.js';
 import { createHash } from 'node:crypto';
 import {
-  PosixBranchTreeNodeSchema,
-  PosixCursorSchema,
-  PosixFoldNode,
+  PosixCursorApi,
+  PosixEntry, PosixFoldsApi,
   PosixName,
-  PosixNameSchema,
-  PosixState,
-  PosixTreeNode,
+  PosixNameSchema, PosixNavApi, PosixState, PosixStateModel, PosixStateModelSchema,
+  PosixTreeNode, PosixTreeNodeApi,
 } from '../domain/posix-tree-node.js';
 import { UnixAbsolutePath } from '../domain/unix-path.js';
-import { z } from 'zod';
-import { AppApi, createAppApis } from 'dirvi-lib';
+import type { AppApi } from 'dirvi-lib';
+import { createAppStateApis } from 'dirvi-lib';
 
 // ---*--- App Data ---*---
 
@@ -30,73 +29,66 @@ function encodeKey(key: UnixAbsolutePath): string {
   return createHash('sha256').update(key).digest('hex');
 }
 
-// ---*--- Stored State Types and Schemas ---*---
-
-export type StoredPosixFoldNode = {
-  id: PosixName;
-  children: StoredPosixFoldNode[];
-  foldedChildren: StoredPosixFoldNode[];
+/**
+ * Persists public POSIX state models while keeping TreeNode and Folds runtime
+ * representations opaque.
+ */
+const posixStateCodec: StateCodec<
+  PosixName,
+  PosixEntry,
+  PosixStateModel
+> = {
+  schema: PosixStateModelSchema,
+  encode: encodePosixState,
+  decode: decodePosixState,
 };
 
-const StoredPosixFoldNodeSchema: z.ZodType<StoredPosixFoldNode> = z.lazy(() =>
-  z.object({
-    id: PosixNameSchema,
-    children: z.array(StoredPosixFoldNodeSchema),
-    foldedChildren: z.array(StoredPosixFoldNodeSchema),
-  }),
-);
-
-const StoredPosixStateSchema: z.ZodType<StoredPosixState> = z
-  .object({
-    root: PosixBranchTreeNodeSchema,
-    foldRoot: StoredPosixFoldNodeSchema,
-    cursor: PosixCursorSchema,
-  })
-  .refine((state) => state.root.id !== state.foldRoot.id, {
-    message: 'The fold root ID must match the tree root ID.',
-  });
-
-export type StoredPosixState = Omit<PosixState, 'foldRoot'> & {
-  foldRoot: StoredPosixFoldNode;
-};
-
-// ---*--- Codec ---*---
-
-function encodePosixFoldNode(node: PosixFoldNode): StoredPosixFoldNode {
+/**
+ * Converts opaque POSIX runtime state into its serializable persistence model.
+ */
+function encodePosixState(state: PosixState): PosixStateModel {
   return {
-    id: node.id,
-    children: node.children.map(encodePosixFoldNode),
-    foldedChildren: [...node.foldedChildren],
+    root: PosixTreeNodeApi.toModel(state.root),
+    folds: PosixFoldsApi.toModel(state.folds),
+    cursor: PosixCursorApi.getPath(state.cursor),
   };
 }
 
-function decodePosixFoldNode(node: StoredPosixFoldNode): PosixFoldNode {
+/**
+ * Restores opaque POSIX runtime state from a schema-validated model.
+ *
+ * `TreeNodeApi.fromModel` performs the structural sibling-ID uniqueness check
+ * which cannot be fully expressed by the JSON/Zod model schema.
+ */
+function decodePosixState(
+  model: PosixStateModel,
+): PosixState | undefined {
+  const root = PosixTreeNodeApi.fromModel(model.root);
+  
+  /*
+   * State requires an open root branch. The POSIX domain additionally requires
+   * files and symlinks to be leaves, and directories to be branches.
+   */
+  if (
+    root === undefined ||
+    !PosixTreeNode.isValid(root) ||
+    PosixTreeNodeApi.kind(root) !== 'loaded-branch'
+  ) {
+    return undefined;
+  }
+  
+  const folds = PosixFoldsApi.fromModel(model.folds);
+  
+  if (folds === undefined) {
+    return undefined;
+  }
+  
   return {
-    id: node.id,
-    children: node.children.map(decodePosixFoldNode),
-    foldedChildren: node.foldedChildren.map(decodePosixFoldNode),
+    root,
+    folds,
+    cursor: PosixCursorApi.getPath(model.cursor),
   };
 }
-
-const posixStateCodec: StateCodec<PosixState, StoredPosixState> = {
-  schema: StoredPosixStateSchema,
-
-  encode(state): StoredPosixState {
-    return {
-      root: state.root,
-      foldRoot: encodePosixFoldNode(state.foldRoot),
-      cursor: state.cursor,
-    };
-  },
-
-  decode(state): PosixState {
-    return {
-      root: state.root,
-      foldRoot: decodePosixFoldNode(state.foldRoot),
-      cursor: state.cursor,
-    };
-  },
-};
 
 // --- Creating Posix App API ---
 
@@ -107,12 +99,12 @@ const posixStateCodec: StateCodec<PosixState, StoredPosixState> = {
  */
 export function loadNodePosixAppApi(
   directory?: string,
-): AppApi<PosixName, PosixTreeNode, UnixAbsolutePath> {
+): AppApi<PosixName, PosixEntry, UnixAbsolutePath> {
   const unixAbsPath = getUnixAbsPath(directory ?? process.cwd());
   const rootId = PosixNameSchema.parse(basename(unixAbsPath));
-  const apis = createAppApis<PosixName, PosixTreeNode>();
+  const apis = createAppStateApis<PosixName, PosixEntry>();
 
-  function loadBranches(path: PosixName[]) {
+  function loadBranches(path: readonly PosixName[]) {
     const address = join(unixAbsPath, ...path);
     return getDirEntries(address);
   }
@@ -121,17 +113,19 @@ export function loadNodePosixAppApi(
     appId: 'posix',
     name: unixAbsPath,
     rootId,
-
     loadBranches,
     createRoot: async () => {
       // Start with root branches already loaded
       const rootBranches = await loadBranches([]);
+      const root = PosixTreeNode.loadedDirectory(rootId, rootBranches);
 
-      return {
-        id: rootId,
-        kind: 'directory',
-        children: rootBranches,
-      };
+      if (root === undefined) {
+        throw new Error(
+          'Cannot create POSIX root: duplicate directory entry names',
+        );
+      }
+
+      return root;
     },
 
     subscribeToResync: createFsResyncSubscription(join(unixAbsPath)),
@@ -144,6 +138,8 @@ export function loadNodePosixAppApi(
       stateCodec: posixStateCodec,
     }),
 
+    foldsApi: PosixFoldsApi,
+    navNodeApi: PosixNavApi,
     ...apis,
   };
 }
