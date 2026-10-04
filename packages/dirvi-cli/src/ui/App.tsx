@@ -15,12 +15,13 @@ import type {
   Feedback,
 } from 'dirvi-lib';
 
+import type { Config } from '../domain/config.js';
 import { ViewRowComponent } from './components/ViewRowComponent.js';
-import { StatusBar } from './components/StatusBar.js';
-import { inkInputToUserInput } from '../infrastructure/ink-input-to-user-input.js';
-import { useView } from './hooks/useView.js';
-import { Config } from '../domain/config.js';
 import { FeedbackBar } from './components/FeedbackBar.js';
+import { STATUS_BAR_HEIGHT, StatusBar } from './components/StatusBar.js';
+import { useView } from './hooks/useView.js';
+import { inkInputToUserInput } from '../infrastructure/ink-input-to-user-input.js';
+import { createFeedbackDisplay } from './components/feedback-display.js';
 
 function toError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
@@ -81,14 +82,29 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
       }),
     [],
   );
+  
+  const { columns: terminalColumns, rows: terminalRows } = useWindowSize();
+  const feedbackDisplay = useMemo(() => {
+    if (feedback === undefined) {
+      return {
+        content: '',
+        height: 0,
+      };
+    }
 
-  const { rows: terminalRows } = useWindowSize();
+    return createFeedbackDisplay(
+      feedbackApi.getMessage(feedback),
+      terminalColumns,
+      Math.max(0, terminalRows - STATUS_BAR_HEIGHT),
+    );
+  }, [feedback, terminalColumns, terminalRows]);
   const view = useView(
     navEntry,
     state,
     appApi.navNodeApi,
     appApi.cursorApi,
     terminalRows,
+    feedbackDisplay.height,
   );
   const [exitStatus, setExitStatus] = useState<string | undefined>();
 
@@ -309,7 +325,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
         )}
       </Box>
       
-      <FeedbackBar feedback={feedback} feedbackApi={feedbackApi} />
+      <FeedbackBar display={feedbackDisplay} />
       <StatusBar inputState={inputState} config={config} />
     </Box>
   );

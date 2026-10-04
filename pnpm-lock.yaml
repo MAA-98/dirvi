@@ -47,6 +47,12 @@ importers:
       react:
         specifier: ^19.0.0
         version: 19.2.7
+      slice-ansi:
+        specifier: ^9.0.1
+        version: 9.0.1
+      wrap-ansi:
+        specifier: ^10.0.2
+        version: 10.0.2
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -881,8 +887,8 @@ packages:
   sisteransi@1.0.5:
     resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
 
-  slice-ansi@9.0.0:
-    resolution: {integrity: sha512-SO/3iYL5S3W57LLEniscOGPZgOqZUPCx6d3dB+52B80yJ0XstzsC/eV8gnA4tM3MHDrKz+OCFSLNjswdSC+/bA==}
+  slice-ansi@9.0.1:
+    resolution: {integrity: sha512-aBY19bn/XA+hKOKX0qL7Z0UfdBsbQvc9hn993U8ALUjzxCvDcuZqLoRXjGJrUARWAlwMnsRVD9sw2AFNOYvalA==}
     engines: {node: '>=22'}
 
   source-map-js@1.2.1:
@@ -1079,8 +1085,8 @@ packages:
     resolution: {integrity: sha512-U89AsyEeAsyoF0zVJBkG9zBgekjgjK7yk9sje3F4IQpXBJ10TF6ByLlIfjMhcmHMJgHZI4KHt4rdNfktzxIAMA==}
     engines: {node: '>=20'}
 
-  wrap-ansi@10.0.0:
-    resolution: {integrity: sha512-SGcvg80f0wUy2/fXES19feHMz8E0JoXv2uNgHOu4Dgi2OrCy1lqwFYEJz1BLbDI0exjPMe/ZdzZ/YpGECBG/aQ==}
+  wrap-ansi@10.0.2:
+    resolution: {integrity: sha512-6OLRNZqRntVGBm26ghZ5eZhCuWWyOkRCSn8XsOIuq5stpCE/tjLbdozd93naILZig0lmD8ANfRwnhn0DLeXGlg==}
     engines: {node: '>=20'}
 
   ws@8.21.0:
@@ -1393,7 +1399,7 @@ snapshots:
 
   cli-truncate@6.0.0:
     dependencies:
-      slice-ansi: 9.0.0
+      slice-ansi: 9.0.1
       string-width: 8.2.1
 
   code-excerpt@4.0.0:
@@ -1547,13 +1553,13 @@ snapshots:
       react-reconciler: 0.33.0(react@19.2.7)
       scheduler: 0.27.0
       signal-exit: 3.0.7
-      slice-ansi: 9.0.0
+      slice-ansi: 9.0.1
       stack-utils: 2.0.6
       string-width: 8.2.1
       terminal-size: 4.0.1
       type-fest: 5.7.0
       widest-line: 6.0.0
-      wrap-ansi: 10.0.0
+      wrap-ansi: 10.0.2
       ws: 8.21.0
       yoga-layout: 3.2.1
     optionalDependencies:
@@ -1760,7 +1766,7 @@ snapshots:
 
   sisteransi@1.0.5: {}
 
-  slice-ansi@9.0.0:
+  slice-ansi@9.0.1:
     dependencies:
       ansi-styles: 6.2.3
       is-fullwidth-code-point: 5.1.0
@@ -1899,11 +1905,10 @@ snapshots:
     dependencies:
       string-width: 8.2.1
 
-  wrap-ansi@10.0.0:
+  wrap-ansi@10.0.2:
     dependencies:
       ansi-styles: 6.2.3
       string-width: 8.2.1
-      strip-ansi: 7.2.0
 
   ws@8.21.0: {}
 

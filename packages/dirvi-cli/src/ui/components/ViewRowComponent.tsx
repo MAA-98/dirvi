@@ -19,7 +19,7 @@ export function ViewRowComponent({ row }: { row: ViewRow }) {
 
           {row.foldedCount > 0 && (
             <Text color="gray" dimColor>
-              {` …${row.foldedCount}`}
+              {` … ${row.foldedCount}`}
             </Text>
           )}
         </Box>

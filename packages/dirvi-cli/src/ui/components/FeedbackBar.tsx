@@ -1,21 +1,19 @@
 import { Box, Text } from 'ink';
 
-import type { Feedback, FeedbackApi } from 'dirvi-lib';
-
-export const FEEDBACK_BAR_HEIGHT = 1;
+import type { FeedbackDisplay } from './feedback-display.js';
 
 type FeedbackBarProps = {
-  feedback: Feedback | undefined;
-  feedbackApi: FeedbackApi;
+  display: FeedbackDisplay;
 };
 
-export function FeedbackBar({ feedback, feedbackApi }: FeedbackBarProps) {
-  const message =
-    feedback === undefined ? '' : feedbackApi.getMessage(feedback);
+export function FeedbackBar({ display }: FeedbackBarProps) {
+  if (display.height === 0) {
+    return null;
+  }
 
   return (
-    <Box width="100%" height={FEEDBACK_BAR_HEIGHT} flexShrink={0}>
-      <Text wrap="truncate-end">{message}</Text>
+    <Box width="100%" height={display.height} flexShrink={0}>
+      <Text>{display.content}</Text>
     </Box>
   );
 }

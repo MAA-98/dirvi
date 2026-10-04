@@ -16,27 +16,27 @@ const DEFAULT_VIEW_NAME = 'default';
 export function parseCommand<Id extends SerializableKey, Value>(
   commandLine: string,
 ): Effect<Id, Value> | undefined {
-  const command = commandLine.trim();
+  const command = commandLine.trim().replace(/^:/, '');
   
-  if (command === ":") {
+  if (command === "") {
     return undefined;
   }
   
   const [commandName, ...commandArgs] = command.split(/\s+/);
 
   switch (commandName) {
-    case ':q':
+    case 'q':
       return {
         effectType: 'quit',
         exitMessage: '',
       };
 
-    case ':evlp':
+    case 'evlp':
       return {
         effectType: 'emitVisibleLeavesPaths',
       };
 
-    case ':mkview!':
+    case 'mkview!':
       return {
         effectType: 'saveView',
         name: commandArgs[0] || DEFAULT_VIEW_NAME,
@@ -44,7 +44,6 @@ export function parseCommand<Id extends SerializableKey, Value>(
       };
 
     case 'loadview':
-      const name = commandArgs[0] || DEFAULT_VIEW_NAME;
       return {
         effectType: 'loadView',
         name: commandArgs[0] || DEFAULT_VIEW_NAME,

@@ -8,7 +8,6 @@ import type {
 import { View, ViewRow } from '../view.js';
 import { useRef } from 'react';
 import { STATUS_BAR_HEIGHT } from '../components/StatusBar.js';
-import { FEEDBACK_BAR_HEIGHT } from '../components/FeedbackBar.js';
 
 // Hooks that keeps Ref of the viewport's start, and returns View sliced to
 // only the rows that should be visible.
@@ -18,12 +17,18 @@ export function useView<Id extends SerializableKey, Value>(
   navNodeApi: NavNodeApi<Id, Value>,
   cursorApi: CursorApi<Id>,
   terminalRows: number,
+  feedbackBarHeight: number,
 ): View {
   const viewportStartRef = useRef(0);
   const viewportHeight = Math.max(
-    1,
-    terminalRows - STATUS_BAR_HEIGHT - FEEDBACK_BAR_HEIGHT,
+    0,
+    terminalRows - STATUS_BAR_HEIGHT - feedbackBarHeight,
   );
+  
+  if (viewportHeight === 0) {
+    return { rows: [] };
+  }
+  
   const rows = View.createRows(navNode, navNodeApi, state.cursor, cursorApi);
 
   viewportStartRef.current = viewportStart(
