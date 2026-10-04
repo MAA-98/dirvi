@@ -52,8 +52,8 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   onError,
 }: AppProps<Id, Value, ViewKey>) {
   const [state, dispatch] = useReducer(reducer, initialState);
-  // Give `subscribeToResync` callback a way to see current state:
-  const stateRef = useRef(state);
+  const stateRef = useRef(state); // Gives `subscribeToResync` callback a way to
+  // see current state
   stateRef.current = state;
 
   const navEntry: NavBranch<Id> = useMemo(() => {
@@ -75,10 +75,11 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
     normalBuffer: '',
   });
   const [feedback, setFeedback] = useState<Feedback>();
+  const [exitStatus, setExitStatus] = useState<string | undefined>();
 
-  // =============================================================================
+  // ===========================================================================
   // Display hooks
-  // =============================================================================
+  // ===========================================================================
   const feedbackApi = useMemo(
     () =>
       createFeedbackApi((nextFeedback) => {
@@ -111,7 +112,6 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
     terminalRows,
     feedbackDisplay.height,
   );
-  const [exitStatus, setExitStatus] = useState<string | undefined>();
 
   // =============================================================================
   // Resync Subscriptions
@@ -273,7 +273,10 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           inputMode: 'normal',
           normalBuffer: '',
         });
-        feedbackApi.addMessage(`Unrecognized command: ${effect.commandLine}`, 'error');
+        feedbackApi.addMessage(
+          `Unrecognized command: ${effect.commandLine}`,
+          'error',
+        );
         return;
 
       case 'quit':

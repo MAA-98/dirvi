@@ -117,6 +117,9 @@ function normalBufferToEffectResult<Id extends SerializableKey, Value>(
   updatedNormalBuffer: string,
 ): Effect<Id, Value> {
   switch (updatedNormalBuffer) {
+    // =========================================================================
+    // Fold
+    // =========================================================================
     case 'z':
       return {
         effectType: 'setInputState',
@@ -126,14 +129,49 @@ function normalBufferToEffectResult<Id extends SerializableKey, Value>(
         },
       };
 
+    case 'zf':
+      return dispatchAction<Id, Value>({
+        effectActionType: 'addToFoldTree',
+        foldTree: {
+          foldTreeReferenceType: 'index',
+          index: 0,
+        },
+      });
+
+    case 'zd':
+      return dispatchAction<Id, Value>({
+        effectActionType: 'removeFromFoldTree',
+        foldTree: {
+          foldTreeReferenceType: 'index',
+          index: 0,
+        },
+      });
+
     case 'zc':
       return dispatchAction<Id, Value>({
         effectActionType: 'fold',
+        foldTree: {
+          foldTreeReferenceType: 'index',
+          index: 0,
+        },
       });
 
     case 'zo':
       return dispatchAction<Id, Value>({
         effectActionType: 'unfold',
+        foldTree: {
+          foldTreeReferenceType: 'index',
+          index: 0,
+        },
+      });
+
+    case 'za':
+      return dispatchAction<Id, Value>({
+        effectActionType: 'toggleFold',
+        foldTree: {
+          foldTreeReferenceType: 'index',
+          index: 0,
+        },
       });
 
     default:

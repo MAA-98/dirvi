@@ -16,12 +16,29 @@ export type ReducerAction<Id extends SerializableKey, Value> =
       newState: State<Id, Value>;
     }
   | {
-      kind: 'fold';
+      kind: 'addToFoldTree';
       path: readonly Id[];
       cursor: Cursor<Id>;
+      foldTreeIndex: number;
     }
   | {
-      kind: 'unfold';
+      kind: 'removeFromFoldTree';
       path: readonly Id[];
       cursor: Cursor<Id>;
-    };
+      foldTreeIndex: number;
+    }
+  | {
+      /**
+       * Activates a fold tree, making its hidden entries contribute to the
+       * visible navigation projection.
+       */
+      kind: 'fold';
+      foldTreeIndex: number;
+    }
+  | {
+      /**
+       * Deactivates a fold tree while preserving its fold definition.
+       */
+      kind: 'unfold';
+      foldTreeIndex: number;
+    };;

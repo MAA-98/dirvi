@@ -15,12 +15,6 @@ export function createReducer<Id extends SerializableKey, Value>(
   treeNodeApi: TreeNodeApi<Id, Value>,
   foldsApi: FoldsApi<Id>,
 ): Reducer<Id, Value> {
-  /*
-   * The current zc/zo input actions operate on the required primary fold tree.
-   * Indexed fold-tree commands can add an index to ReducerAction later.
-   */
-  const primaryFoldIndex = 0;
-  
   return (state, action) => {
     switch (action.kind) {
       case 'changeCursor':
@@ -76,7 +70,7 @@ export function createReducer<Id extends SerializableKey, Value>(
         };
       }
 
-      case 'fold': {
+      case 'addToFoldTree': {
         const entryId = action.path.at(-1);
 
         if (entryId === undefined) {
@@ -86,7 +80,7 @@ export function createReducer<Id extends SerializableKey, Value>(
         const parentPath = action.path.slice(0, -1);
         const folds = foldsApi.hideEntryAtPath(
           state.folds,
-          primaryFoldIndex,
+          action.foldTreeIndex,
           parentPath,
           entryId,
         );
@@ -102,10 +96,11 @@ export function createReducer<Id extends SerializableKey, Value>(
         };
       }
 
-      case 'unfold': {
+      case 'removeFromFoldTree': {
+        // TODO: Change to show only entry at cursor. mirroring addToFoldTree
         const folds = foldsApi.showAllHiddenEntriesAtPath(
           state.folds,
-          primaryFoldIndex,
+          action.foldTreeIndex,
           action.path,
         );
 
@@ -118,6 +113,34 @@ export function createReducer<Id extends SerializableKey, Value>(
           folds,
           cursor: action.cursor,
         };
+      }
+
+      case 'fold': {
+        const folds = foldsApi.activateAtIndex(
+          state.folds,
+          action.foldTreeIndex,
+        );
+
+        return folds === undefined
+          ? state
+          : {
+              ...state,
+              folds,
+            };
+      }
+
+      case 'unfold': {
+        const folds = foldsApi.deactivateAtIndex(
+          state.folds,
+          action.foldTreeIndex,
+        );
+
+        return folds === undefined
+          ? state
+          : {
+              ...state,
+              folds,
+            };
       }
     }
   };

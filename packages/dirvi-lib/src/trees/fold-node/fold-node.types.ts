@@ -54,6 +54,15 @@ export type FoldsApi<Id extends SerializableKey> = Readonly<{
   create(rootId: Id, initialPrimaryInfo: FoldInfo): Folds<Id>;
 
   /**
+   * Returns the occupied slot index for a unique fold-tree name.
+   *
+   * Returns `undefined` when no occupied fold tree has the name, or when the
+   * name is ambiguous. Fold-tree names should be kept unique so they remain
+   * durable user-facing references.
+   */
+  getIndexByName(folds: Folds<Id>, name: string): FoldIndex | undefined;
+  
+  /**
    * Returns metadata for the fold tree at an occupied slot.
    *
    * Index zero always returns FoldInfo for a valid Folds value.
@@ -81,6 +90,7 @@ export type FoldsApi<Id extends SerializableKey> = Readonly<{
    */
   indexes(folds: Folds<Id>): Iterable<FoldIndex>;
 
+  // TODO: Enforce unique names
   /**
    * Stores a serialized occupied fold slot at an index.
    *

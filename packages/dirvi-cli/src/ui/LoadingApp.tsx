@@ -132,8 +132,8 @@ export function LoadingApp<
   );
   
   const effectToAction = useMemo(
-    () => createEffectToAction(appApi.cursorApi, appApi.navNodeApi),
-    [appApi.navNodeApi, appApi.cursorApi],
+    () => createEffectToAction(appApi.foldsApi , appApi.cursorApi, appApi.navNodeApi),
+    [appApi.navNodeApi, appApi.cursorApi, appApi.foldsApi],
   );
 
   // --- JSX ---

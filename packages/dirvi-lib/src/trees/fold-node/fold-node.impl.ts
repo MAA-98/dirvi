@@ -378,6 +378,32 @@ export function createFoldsApi<Id extends SerializableKey>(
       });
     },
 
+    getIndexByName(folds, name) {
+      const { slots } = toData(folds);
+      let matchingIndex: FoldIndex | undefined;
+
+      for (let index = 0; index < slots.length; index += 1) {
+        const foldData = slots[index];
+
+        if (foldData === undefined || foldData.name !== name) {
+          continue;
+        }
+
+        /*
+         * Names are intended to be durable user-facing references. Until
+         * creation, rename, and restoration enforce unique names, do not
+         * choose an arbitrary matching fold tree.
+         */
+        if (matchingIndex !== undefined) {
+          return undefined;
+        }
+
+        matchingIndex = index;
+      }
+
+      return matchingIndex;
+    },
+
     getInfoAtIndex(folds, index) {
       const foldData = getSlotAtIndex(folds, index);
 
@@ -409,6 +435,7 @@ export function createFoldsApi<Id extends SerializableKey>(
       }
     },
 
+    // TODO: Enforce unique names
     setAtIndex(folds, index, foldData) {
       if (!isValidFoldIndex(index)) {
         return undefined;
@@ -664,7 +691,7 @@ export function createFoldsApi<Id extends SerializableKey>(
           tree,
         });
       }
-      
+
       const primarySlot = slots[0];
 
       if (primarySlot === undefined) {

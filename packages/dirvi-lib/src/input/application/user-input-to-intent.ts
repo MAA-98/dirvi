@@ -1,10 +1,12 @@
 import { UserInput, InputModeState, Intent } from '../domain/index.js';
 
 /**
- * By design "intent = input + mode + modeState", so it interprets the key
- * inputs depending on the mode and input so far. No context in terms of UI.
+ * Converts a user input, mode and mode's buffer into an intent.
  *
- * @param userInput - the key user input.
+ * By design "intent = input + mode + modeState", so it interprets the key
+ * inputs depending on the mode and mode's buffer. No other context.
+ *
+ * @param userInput - the user input pressed now.
  * @param inputModeState - the current mode and the user inputs so far.
  * @returns The user's intent.
  */
@@ -25,6 +27,7 @@ function normalUserInputToIntent(
   userInput: UserInput,
   normalBuffer: string,
 ): Intent | undefined {
+  // Esc cancels of current key sequence
   if (userInput.userInputType === 'esc') {
     return {
       intentType: 'setNormalBuffer',
@@ -65,11 +68,6 @@ function normalCharacterToIntent(
 ): Intent | undefined {
   if (normalBuffer === '') {
     switch (character) {
-      case 'l':
-        return {
-          intentType: 'normalRight',
-        };
-
       case 'h':
         return {
           intentType: 'normalLeft',
@@ -83,6 +81,11 @@ function normalCharacterToIntent(
       case 'k':
         return {
           intentType: 'normalUp',
+        };
+
+      case 'l':
+        return {
+          intentType: 'normalRight',
         };
 
       case ':':

@@ -42,6 +42,22 @@ export type Effect<Id extends SerializableKey, Value> =
     }>;
 
 /**
+ * A user-facing reference to a fold tree.
+ *
+ * Indexes are local to a view and may be reused after deletion. Names are
+ * durable references intended for command-line use.
+ */
+export type FoldTreeReference =
+  | Readonly<{
+      foldTreeReferenceType: 'index';
+      index: number;
+    }>
+  | Readonly<{
+      foldTreeReferenceType: 'name';
+      name: string;
+    }>;
+
+/**
  * An action interpreted by the state reducer.
  *
  * @typeParam Id - The sibling-unique tree-node ID type.
@@ -63,8 +79,22 @@ export type EffectAction<Id extends SerializableKey, Value> =
       effectActionType: 'navigateToParent';
     }>
   | Readonly<{
+      effectActionType: 'addToFoldTree';
+      foldTree: FoldTreeReference;
+    }>
+  | Readonly<{
+      effectActionType: 'removeFromFoldTree';
+      foldTree: FoldTreeReference;
+    }>
+  | Readonly<{
       effectActionType: 'fold';
+      foldTree: FoldTreeReference;
     }>
   | Readonly<{
       effectActionType: 'unfold';
+      foldTree: FoldTreeReference;
+    }>
+  | Readonly<{
+      effectActionType: 'toggleFold';
+      foldTree: FoldTreeReference;
     }>;
