@@ -1,11 +1,9 @@
-# Design Choices: Vim-like Tree Editor
+# Design Choices: Vim-like Folding in Trees
 
 This is a record of design decisions and their justifications. Previous design choices influence the next, so this is 
 to be interpreted chronologically.
 
-## Folding
-
-### Folding children in a parent node
+## Folding children in a parent node
 
 **Requirement:**
 
@@ -50,7 +48,7 @@ clear.
 A starting design could be `zc` over a node folds it in the parent, and `zo` over a parent with folded
 children unfolds all the children.
 
-### Inspecting folds
+## Inspecting folds
 
 **Requirement:**
 

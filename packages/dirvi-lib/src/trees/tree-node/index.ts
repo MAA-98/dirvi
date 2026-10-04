@@ -1,3 +1,4 @@
-export * from './tree-node.model.js';
-export * from './tree-node.types.js';
-export * from './tree-node.impl.js';
+export type * from './tree-node.model.js';
+export { serializableKeySchema, createTreeNodeModelSchema } from './tree-node.model.js';
+export type * from './tree-node.types.js';
+export { createTreeNodeApi } from './tree-node.impl.js';

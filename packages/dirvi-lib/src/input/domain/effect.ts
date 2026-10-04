@@ -17,10 +17,6 @@ export type Effect<Id extends SerializableKey, Value> =
       path: readonly Id[];
     }>
   | Readonly<{
-      effectType: 'peekFold';
-      parentPath: readonly Id[];
-    }>
-  | Readonly<{
       effectType: 'saveView';
       name: string;
       overwrite: boolean;
@@ -39,6 +35,10 @@ export type Effect<Id extends SerializableKey, Value> =
   | Readonly<{
       effectType: 'setInputState';
       inputState: InputModeState;
+    }>
+  | Readonly<{
+      effectType: 'unrecognizedCommand';
+      commandLine: string;
     }>;
 
 /**

@@ -17,8 +17,14 @@ export function parseCommand<Id extends SerializableKey, Value>(
   commandLine: string,
 ): Effect<Id, Value> | undefined {
   const command = commandLine.trim();
+  
+  if (command === ":") {
+    return undefined;
+  }
+  
+  const [commandName, ...commandArgs] = command.split(/\s+/);
 
-  switch (command) {
+  switch (commandName) {
     case ':q':
       return {
         effectType: 'quit',
@@ -28,6 +34,26 @@ export function parseCommand<Id extends SerializableKey, Value>(
     case ':evlp':
       return {
         effectType: 'emitVisibleLeavesPaths',
+      };
+
+    case ':mkview!':
+      return {
+        effectType: 'saveView',
+        name: commandArgs[0] || DEFAULT_VIEW_NAME,
+        overwrite: true,
+      };
+
+    case 'loadview':
+      const name = commandArgs[0] || DEFAULT_VIEW_NAME;
+      return {
+        effectType: 'loadView',
+        name: commandArgs[0] || DEFAULT_VIEW_NAME,
+      };
+
+    default:
+      return {
+        effectType: 'unrecognizedCommand',
+        commandLine,
       };
   }
 
@@ -44,31 +70,4 @@ export function parseCommand<Id extends SerializableKey, Value>(
    *
    * TODO Later: mkview that checks if a same-named view already exists.
    */
-  const viewCommand = command.match(/^:(mkview!|loadview)(?:\s+(.+?))?$/);
-
-  if (viewCommand === null) {
-    return undefined;
-  }
-
-  const commandName = viewCommand[1];
-  const suppliedName = viewCommand[2]?.trim();
-  const name = suppliedName || DEFAULT_VIEW_NAME;
-
-  switch (commandName) {
-    case 'mkview!':
-      return {
-        effectType: 'saveView',
-        name,
-        overwrite: true,
-      };
-
-    case 'loadview':
-      return {
-        effectType: 'loadView',
-        name,
-      };
-
-    default:
-      return undefined;
-  }
 }

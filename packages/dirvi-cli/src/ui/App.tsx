@@ -1,7 +1,7 @@
 import { Box, Text, useApp, useInput, useWindowSize } from 'ink';
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
-import { userInputToIntent } from 'dirvi-lib';
+import { createFeedbackApi, userInputToIntent } from 'dirvi-lib';
 import type {
   AppApi,
   Effect,
@@ -12,6 +12,7 @@ import type {
   Reducer,
   SerializableKey,
   State,
+  Feedback,
 } from 'dirvi-lib';
 
 import { ViewRowComponent } from './components/ViewRowComponent.js';
@@ -19,6 +20,7 @@ import { StatusBar } from './components/StatusBar.js';
 import { inkInputToUserInput } from '../infrastructure/ink-input-to-user-input.js';
 import { useView } from './hooks/useView.js';
 import { Config } from '../domain/config.js';
+import { FeedbackBar } from './components/FeedbackBar.js';
 
 function toError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
@@ -70,6 +72,15 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
     inputMode: 'normal',
     normalBuffer: '',
   });
+  
+  const [feedback, setFeedback] = useState<Feedback>();
+  const feedbackApi = useMemo(
+    () =>
+      createFeedbackApi((nextFeedback) => {
+        setFeedback(nextFeedback);
+      }),
+    [],
+  );
 
   const { rows: terminalRows } = useWindowSize();
   const view = useView(
@@ -150,17 +161,14 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           .catch((error: unknown) => {
             const appError =
               error instanceof Error ? error : new Error(String(error));
-
-            onError?.(appError);
-            setExitStatus(`Unable to open directory: ${appError.message}`);
+            
+            feedbackApi.addMessage(
+              `Unable to open directory: ${appError.message}`,
+            );
           });
 
         return;
       }
-
-      case 'peekFold':
-        // TODO: Need a peek state to know what to display
-        return;
 
       case 'emitVisibleLeavesPaths':
         const navigation = navEntry.children;
@@ -191,10 +199,12 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
               inputMode: 'normal',
               normalBuffer: '',
             });
+            feedbackApi.addMessage(`Saved view: ${effect.name}`);
           })
           .catch((error: unknown) => {
-            onError?.(toError(error));
-            setExitStatus(`Unable to save view: ${toError(error).message}`);
+            feedbackApi.addMessage(
+              `Unable to save view: ${toError(error).message}`,
+            );
           });
 
         return;
@@ -232,6 +242,16 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
 
         return;
       }
+      
+      case 'unrecognizedCommand':
+        setInputState({
+          inputMode: 'normal',
+          normalBuffer: '',
+        });
+        feedbackApi.addMessage(
+          `Unrecognized command: ${effect.commandLine}`,
+        );
+        return;
 
       case 'quit':
         setExitStatus(effect.exitMessage);
@@ -255,7 +275,8 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
     if (effectResult === undefined) {
       return;
     }
-
+    
+    setFeedback(undefined);
     executeEffect(effectResult);
   });
 
@@ -287,7 +308,8 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           view.rows.map((row) => <ViewRowComponent key={row.id} row={row} />)
         )}
       </Box>
-
+      
+      <FeedbackBar feedback={feedback} feedbackApi={feedbackApi} />
       <StatusBar inputState={inputState} config={config} />
     </Box>
   );
