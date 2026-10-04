@@ -1,4 +1,4 @@
-import type { ColorConfig, Config } from '../domain/config.js';
+import type { ColorConfig, Config } from '../../domain/config.js';
 
 type RgbColor = [number, number, number];
 

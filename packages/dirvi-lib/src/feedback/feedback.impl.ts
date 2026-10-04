@@ -1,18 +1,20 @@
 import type {
   Feedback,
   FeedbackApi,
+  FeedbackType
 } from './feedback.types.js';
 
 type FeedbackValue = Readonly<{
   message: string;
+  type: FeedbackType;
 }>;
 
 const values = new WeakMap<Feedback, FeedbackValue>();
 
-function createFeedback(message: string): Feedback {
+function createFeedback(message: string, type: FeedbackType): Feedback {
   const feedback = Object.freeze({}) as Feedback;
 
-  values.set(feedback, { message });
+  values.set(feedback, { message, type });
 
   return feedback;
 }
@@ -37,9 +39,9 @@ export function createFeedbackApi(
   onMessageAdded?: (feedback: Feedback, message: string) => void,
 ): FeedbackApi {
   return {
-    addMessage(message) {
-      const feedback = createFeedback(message);
-      
+    addMessage(message, type = 'message') {
+      const feedback = createFeedback(message, type);
+
       onMessageAdded?.(feedback, message);
 
       return feedback;
@@ -47,6 +49,10 @@ export function createFeedbackApi(
 
     getMessage(feedback) {
       return getValue(feedback).message;
+    },
+
+    getType(feedback) {
+      return getValue(feedback).type;
     },
   };
 }

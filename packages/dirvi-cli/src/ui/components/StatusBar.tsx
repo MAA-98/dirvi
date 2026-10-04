@@ -2,7 +2,7 @@ import { Box, Text } from 'ink';
 import type { Config } from '../../domain/config.js';
 
 import type { InputModeState } from 'dirvi-lib';
-import { colorConfigToInkColor } from '../color-resolver.js';
+import { colorConfigToInkColor } from '../helpers/color-resolver.js';
 
 export const STATUS_BAR_HEIGHT = 1;
 

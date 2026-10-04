@@ -1,3 +1,5 @@
+export type FeedbackType = 'success' | 'message' | 'error';
+
 declare const feedbackBrand: unique symbol;
 
 /**
@@ -13,9 +15,13 @@ export type Feedback = Readonly<{
 export type FeedbackApi = Readonly<{
   /**
    * Creates feedback for a new message and notifies the configured hook.
+   * Defaults to a standard message.
    */
-  addMessage: (message: string) => Feedback;
+  addMessage: (message: string, type?: FeedbackType) => Feedback;
 
   /** Returns the message represented by feedback. */
   getMessage: (feedback: Feedback) => string;
+
+  /** Returns the display type represented by feedback. */
+  getType: (feedback: Feedback) => FeedbackType;
 }>;

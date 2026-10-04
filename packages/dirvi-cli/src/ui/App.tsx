@@ -13,6 +13,7 @@ import type {
   SerializableKey,
   State,
   Feedback,
+  FeedbackType
 } from 'dirvi-lib';
 
 import type { Config } from '../domain/config.js';
@@ -21,7 +22,7 @@ import { FeedbackBar } from './components/FeedbackBar.js';
 import { STATUS_BAR_HEIGHT, StatusBar } from './components/StatusBar.js';
 import { useView } from './hooks/useView.js';
 import { inkInputToUserInput } from '../infrastructure/ink-input-to-user-input.js';
-import { createFeedbackDisplay } from './components/feedback-display.js';
+import { createFeedbackDisplay } from './helpers/feedback-display.js';
 
 function toError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
@@ -54,7 +55,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   // Give `subscribeToResync` callback a way to see current state:
   const stateRef = useRef(state);
   stateRef.current = state;
-  
+
   const navEntry: NavBranch<Id> = useMemo(() => {
     const navigation = appApi.navNodeApi.from(state.root, state.folds);
 
@@ -73,8 +74,11 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
     inputMode: 'normal',
     normalBuffer: '',
   });
-  
   const [feedback, setFeedback] = useState<Feedback>();
+
+  // =============================================================================
+  // Display hooks
+  // =============================================================================
   const feedbackApi = useMemo(
     () =>
       createFeedbackApi((nextFeedback) => {
@@ -82,7 +86,8 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
       }),
     [],
   );
-  
+  const feedbackType: FeedbackType =
+    feedback === undefined ? 'message' : feedbackApi.getType(feedback);
   const { columns: terminalColumns, rows: terminalRows } = useWindowSize();
   const feedbackDisplay = useMemo(() => {
     if (feedback === undefined) {
@@ -108,7 +113,9 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   );
   const [exitStatus, setExitStatus] = useState<string | undefined>();
 
-  // Subscribe to directory watcher, do not resubscribe on every state change.
+  // =============================================================================
+  // Resync Subscriptions
+  // =============================================================================
   useEffect(() => {
     let active = true;
 
@@ -121,7 +128,6 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           if (!active) {
             return;
           }
-
           dispatch({
             kind: 'setState',
             oldState: oldState,
@@ -142,6 +148,9 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
     };
   }, [appApi, onError]);
 
+  // =============================================================================
+  // Executing Effects
+  // =============================================================================
   function executeEffect(effect: Effect<Id, Value> | undefined): void {
     if (effect === undefined) {
       return;
@@ -177,7 +186,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           .catch((error: unknown) => {
             const appError =
               error instanceof Error ? error : new Error(String(error));
-            
+
             feedbackApi.addMessage(
               `Unable to open directory: ${appError.message}`,
             );
@@ -258,15 +267,13 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
 
         return;
       }
-      
+
       case 'unrecognizedCommand':
         setInputState({
           inputMode: 'normal',
           normalBuffer: '',
         });
-        feedbackApi.addMessage(
-          `Unrecognized command: ${effect.commandLine}`,
-        );
+        feedbackApi.addMessage(`Unrecognized command: ${effect.commandLine}`, 'error');
         return;
 
       case 'quit':
@@ -275,7 +282,9 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
     }
   }
 
-  // --- Ink Input Hook ---
+  // =============================================================================
+  // Ink input hook
+  // =============================================================================
   useInput((input, key) => {
     const userInput = inkInputToUserInput(input, key);
     if (userInput === undefined) {
@@ -291,12 +300,14 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
     if (effectResult === undefined) {
       return;
     }
-    
+
     setFeedback(undefined);
     executeEffect(effectResult);
   });
 
-  // --- Exit Logic ---
+  // =============================================================================
+  // Exit
+  // =============================================================================
   const { exit } = useApp();
   useEffect(() => {
     if (exitStatus === undefined) {
@@ -314,7 +325,9 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
     return null;
   }
 
-  // --- JSX ---
+  // =============================================================================
+  // Render
+  // =============================================================================
   return (
     <Box flexDirection="column" height={terminalRows}>
       <Box flexDirection="column" flexGrow={1} flexShrink={1}>
@@ -324,8 +337,8 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           view.rows.map((row) => <ViewRowComponent key={row.id} row={row} />)
         )}
       </Box>
-      
-      <FeedbackBar display={feedbackDisplay} />
+
+      <FeedbackBar display={feedbackDisplay} type={feedbackType} />
       <StatusBar inputState={inputState} config={config} />
     </Box>
   );
