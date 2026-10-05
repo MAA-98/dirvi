@@ -88,10 +88,7 @@ export type NavNodeApi<Id extends SerializableKey, Value> = {
    * synthetic `folded` entry.
    * @returns The projected root branch, or `undefined` when `root` is a leaf.
    */
-  from(
-    root: TreeNode<Id, Value>,
-    folds: Folds<Id>,
-  ): NavBranch<Id> | undefined;
+  from(root: TreeNode<Id, Value>, folds: Folds<Id>): NavBranch<Id> | undefined;
 
   /**
    * Finds the navigation node represented by a path relative to `navigation`.

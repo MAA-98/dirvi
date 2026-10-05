@@ -1,4 +1,8 @@
-import type { SerializableKey, TreeNode, TreeNodeApi } from '../tree-node/index.js';
+import type {
+  SerializableKey,
+  TreeNode,
+  TreeNodeApi,
+} from '../tree-node/index.js';
 import type { Folds, FoldsApi } from '../fold-node/index.js';
 import type { Cursor, CursorApi } from '../cursor.js';
 import type {
@@ -88,7 +92,7 @@ export function createNavNodeApi<Id extends SerializableKey, Value>(
     for (const entry of orderedEntries) {
       const entryId = treeNodeApi.id(entry);
       const entryPath = [...parentPath, entryId];
-      
+
       const isFolded = foldsApi.isEntryHiddenAtPath(
         foldRoot,
         parentPath,
@@ -141,7 +145,7 @@ export function createNavNodeApi<Id extends SerializableKey, Value>(
       }),
     });
   }
-  
+
   function createRootNavBranch(
     root: TreeNode<Id, Value>,
     foldRoot: Folds<Id>,
@@ -313,20 +317,20 @@ export function createNavNodeApi<Id extends SerializableKey, Value>(
       if (currentIndex === -1) {
         return undefined;
       }
-      
+
       // If the last entry, then cursor should go to previous entry
       // This works to go to the root when the last entry in the root is folded.
       if (currentIndex + 1 === cursors.length) {
-        return cursors[currentIndex - 1]
+        return cursors[currentIndex - 1];
       }
-      
+
       for (let index = currentIndex + 1; index < cursors.length; index += 1) {
         const candidate = cursors[index];
 
         if (candidate === undefined) {
           continue;
         }
-        
+
         // Skip any entries that are children of the entry about to be folded
         if (cursorApi.cursorBelongsToSubtree(candidate, cursor)) {
           continue;

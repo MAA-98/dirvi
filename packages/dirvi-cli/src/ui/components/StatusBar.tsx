@@ -14,7 +14,7 @@ type StatusBarProps = {
 export function StatusBar({ inputState, config }: StatusBarProps) {
   const inputMode = inputState.inputMode;
   const statusBarBgColor = colorConfigToInkColor(config.statusBarBgColor);
-  
+
   return (
     <Box
       width="100%"

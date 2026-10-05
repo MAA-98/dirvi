@@ -55,11 +55,11 @@ export function parseCommand<Id extends SerializableKey, Value>(
   commandLine: string,
 ): Effect<Id, Value> | undefined {
   const command = commandLine.trim().replace(/^:/, '');
-  
-  if (command === "") {
+
+  if (command === '') {
     return undefined;
   }
-  
+
   const [commandName, ...commandArgs] = command.split(/\s+/);
 
   switch (commandName) {
@@ -71,7 +71,7 @@ export function parseCommand<Id extends SerializableKey, Value>(
 
     case 'fold':
       return parseFoldCommand<Id, Value>(commandArgs);
-      
+
     case 'evlp':
       return {
         effectType: 'emitVisibleLeavesPaths',

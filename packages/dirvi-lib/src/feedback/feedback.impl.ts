@@ -1,8 +1,4 @@
-import type {
-  Feedback,
-  FeedbackApi,
-  FeedbackType
-} from './feedback.types.js';
+import type { Feedback, FeedbackApi, FeedbackType } from './feedback.types.js';
 
 type FeedbackValue = Readonly<{
   message: string;

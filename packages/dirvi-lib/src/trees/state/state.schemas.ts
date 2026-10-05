@@ -10,10 +10,7 @@ import type { SerializableKey, TreeNodeModel } from '../tree-node/index.js';
  * public structural models, while runtime state holds opaque TreeNode and
  * Folds values.
  */
-export type StateModel<
-  Id extends SerializableKey,
-  Value,
-> = Readonly<{
+export type StateModel<Id extends SerializableKey, Value> = Readonly<{
   root: TreeNodeModel<Id, Value>;
   folds: FoldsModel<Id>;
   cursor: Cursor<Id>;
@@ -26,10 +23,7 @@ export type StateModel<
  * the validated root and folds models through their specialized TreeNodeApi and
  * FoldsApi before constructing opaque runtime State.
  */
-export function createStateModelSchema<
-  Id extends SerializableKey,
-  Value,
->(
+export function createStateModelSchema<Id extends SerializableKey, Value>(
   rootSchema: z.ZodType<TreeNodeModel<Id, Value>>,
   foldsSchema: z.ZodType<FoldsModel<Id>>,
   cursorSchema: z.ZodType<Cursor<Id>>,

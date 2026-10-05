@@ -1,18 +1,18 @@
 import { Text } from 'ink';
 import { useEffect, useMemo, useState } from 'react';
 
-import { createEffectToAction, createIntentToEffect, createReducer } from 'dirvi-lib';
+import {
+  createEffectToAction,
+  createIntentToEffect,
+  createReducer,
+} from 'dirvi-lib';
 import type { AppApi, SerializableKey, State } from 'dirvi-lib';
 
 import { App } from './App.js';
 import { ConfigApi } from '../application/config-api.js';
 import { Config } from '../domain/config.js';
 
-type LoadingAppProps<
-  Id extends SerializableKey,
-  Value,
-  ViewKey = string,
-> = {
+type LoadingAppProps<Id extends SerializableKey, Value, ViewKey = string> = {
   appApi: AppApi<Id, Value, ViewKey>;
   configApi: ConfigApi;
   stdout?: (message: string) => void;
@@ -87,7 +87,7 @@ export function LoadingApp<
         if (!mounted) {
           return;
         }
-        
+
         setInitialState({
           root,
           folds: appApi.foldsApi.create(appApi.rootId, {
@@ -115,12 +115,12 @@ export function LoadingApp<
   }, [appApi, onError]);
 
   // --- Pure function deps ---
-  
+
   const reducer = useMemo(
     () => createReducer(appApi.treeNodeApi, appApi.foldsApi),
     [appApi.treeNodeApi, appApi.foldsApi],
   );
-  
+
   const intentToEffect = useMemo(
     () =>
       createIntentToEffect(
@@ -130,9 +130,14 @@ export function LoadingApp<
       ),
     [appApi.stateApi, appApi.cursorApi, appApi.treeNodeApi],
   );
-  
+
   const effectToAction = useMemo(
-    () => createEffectToAction(appApi.foldsApi , appApi.cursorApi, appApi.navNodeApi),
+    () =>
+      createEffectToAction(
+        appApi.foldsApi,
+        appApi.cursorApi,
+        appApi.navNodeApi,
+      ),
     [appApi.navNodeApi, appApi.cursorApi, appApi.foldsApi],
   );
 

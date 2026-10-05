@@ -1,6 +1,8 @@
 import type { ViewApi } from './view-api.js';
 import type {
-  CursorApi, FoldsApi, NavNodeApi,
+  CursorApi,
+  FoldsApi,
+  NavNodeApi,
   SerializableKey,
   State,
   StateApi,
@@ -24,7 +26,11 @@ import {
  * @typeParam Value - Application-owned data stored in each tree node.
  * @typeParam ViewKey - The key used to identify view implementations.
  */
-export type AppApi<Id extends SerializableKey, Value, ViewKey = string> = Readonly<{
+export type AppApi<
+  Id extends SerializableKey,
+  Value,
+  ViewKey = string,
+> = Readonly<{
   /**
    * Name used to distinguish the application, for example `posix` for a
    * POSIX-directory application.

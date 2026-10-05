@@ -150,7 +150,11 @@ export type TreeNodeKind = 'leaf' | 'unloaded-branch' | 'loaded-branch';
  * });
  * ```
  */
-export type TreeNodeMatch<Id extends SerializableKey, Value, Result> = Readonly<{
+export type TreeNodeMatch<
+  Id extends SerializableKey,
+  Value,
+  Result,
+> = Readonly<{
   leaf: (
     node: Readonly<{
       id: Id;

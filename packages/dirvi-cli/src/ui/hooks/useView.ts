@@ -24,11 +24,11 @@ export function useView<Id extends SerializableKey, Value>(
     0,
     terminalRows - STATUS_BAR_HEIGHT - feedbackBarHeight,
   );
-  
+
   if (viewportHeight === 0) {
     return { rows: [] };
   }
-  
+
   const rows = View.createRows(navNode, navNodeApi, state.cursor, cursorApi);
 
   viewportStartRef.current = viewportStart(

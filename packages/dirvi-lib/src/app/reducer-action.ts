@@ -1,4 +1,9 @@
-import type { Cursor, SerializableKey, State, TreeNode } from '../trees/index.js';
+import type {
+  Cursor,
+  SerializableKey,
+  State,
+  TreeNode,
+} from '../trees/index.js';
 
 export type ReducerAction<Id extends SerializableKey, Value> =
   | {

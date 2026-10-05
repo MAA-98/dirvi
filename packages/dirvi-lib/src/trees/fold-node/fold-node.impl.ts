@@ -328,7 +328,7 @@ export function createFoldsApi<Id extends SerializableKey>(
       }),
     });
   }
-  
+
   function foldSlotToModel(foldData: FoldSlot<Id>): FoldSlotModel<Id> {
     return {
       name: foldData.name,

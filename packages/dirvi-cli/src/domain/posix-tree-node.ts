@@ -15,7 +15,9 @@ import {
   createFoldsModelSchema,
   createCursorSchema,
   Cursor,
-  createCursorApi, createStateModelSchema, StateModel,
+  createCursorApi,
+  createStateModelSchema,
+  StateModel,
 } from 'dirvi-lib';
 
 import { UnixPath, UnixPathSchema } from './unix-path.js';

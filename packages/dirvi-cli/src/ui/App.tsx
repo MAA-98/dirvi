@@ -13,7 +13,7 @@ import type {
   SerializableKey,
   State,
   Feedback,
-  FeedbackType
+  FeedbackType,
 } from 'dirvi-lib';
 
 import type { Config } from '../domain/config.js';
@@ -277,7 +277,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           info: appApi.foldsApi.getInfoAtIndex(folds, index),
           active: appApi.foldsApi.isActiveAtIndex(folds, index),
         }));
-        
+
         const indexWidth = Math.max(
           ...foldTrees.map(({ index }) => String(index).length),
         );
@@ -289,16 +289,16 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           return `${String(index).padStart(indexWidth)}  ${status.padEnd(8)}  ${name}`;
         });
 
-        feedbackApi.addMessage(['Fold trees:', ...lines].join('\n'));
-        
-        return;
-      }
-
-      case 'unrecognizedCommand':
         setInputState({
           inputMode: 'normal',
           normalBuffer: '',
         });
+        feedbackApi.addMessage(['Fold trees:', ...lines].join('\n'));
+
+        return;
+      }
+
+      case 'unrecognizedCommand':
         feedbackApi.addMessage(
           `Unrecognized command: ${effect.commandLine}`,
           'error',

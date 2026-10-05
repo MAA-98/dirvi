@@ -1,6 +1,6 @@
 # Design Choices: Vim-like Folding in Trees
 
-This is a record of design decisions and their justifications. Previous design choices influence the next, so this is 
+This is a record of design decisions and their justifications. Previous design choices influence the next, so this is
 to be interpreted chronologically.
 
 ## Folding children in a parent node
@@ -53,23 +53,23 @@ children unfolds all the children.
 **Requirement:**
 
 1. Being able to see which entries are folded without unfolding.
-2. Unfold a select few children, rather than in the current design (0.8.x) of `zo` over a branch with folds unfolding 
-all its children.
+2. Unfold a select few children, rather than in the current design (0.8.x) of `zo` over a branch with folds unfolding
+   all its children.
 
 **Implications:**
 
-Like in the design of Vim's folds, there should be a way to toggle a "fold" between active and inactive states. This 
+Like in the design of Vim's folds, there should be a way to toggle a "fold" between active and inactive states. This
 allows "peeking" the hidden entries without having to delete all children at a branch from the fold tree.
 
-Since there's nothing special about the active fold tree, it makes sense to be able to have multiple fold trees 
+Since there's nothing special about the active fold tree, it makes sense to be able to have multiple fold trees
 active/inactive and refer to them by name.
 
-An entry is hidden when at least one active fold tree contains it. Removing it from one fold tree does not expose it 
+An entry is hidden when at least one active fold tree contains it. Removing it from one fold tree does not expose it
 while another active fold tree contains it.
 
 **_Decision:_**
 
-Have a dictionary of fold trees, instead of just one. Toggle whether a fold tree is active using: 
+Have a dictionary of fold trees, instead of just one. Toggle whether a fold tree is active using:
 
 ```
 :fold enable foldTreeName    # tree contributes to hiding entries
@@ -77,8 +77,8 @@ Have a dictionary of fold trees, instead of just one. Toggle whether a fold tree
 :fold toggle foldTreeName
 ```
 
-in command mode, and `[index]zc` enables the fold tree (hides its entries from UI), `[index]zo` disables the fold tree: 
-reveals its entries if no other active tree hides them, and `[index]za` in normal mode. 
+in command mode, and `[index]zc` enables the fold tree (hides its entries from UI), `[index]zo` disables the fold tree:
+reveals its entries if no other active tree hides them, and `[index]za` in normal mode.
 
 Similarly `[index]zf` adds the current entry to the fold tree at `[index]` and `[index]zd` removes the current entry
 from the fold tree at `[index]`.
@@ -87,6 +87,7 @@ Enabling or disabling a fold tree changes whether its whole definition contribut
 entry changes the definition of one fold tree. These are separate operations.
 
 Controls for managing fold trees should also be added:
+
 ```
 :fold list
 :fold create foldTreeName
@@ -94,7 +95,7 @@ Controls for managing fold trees should also be added:
 :fold rename oldName newName
 ```
 
-A fresh view will start with an empty fold tree named `default` and index `0`. Fold commands with no index or name 
+A fresh view will start with an empty fold tree named `default` and index `0`. Fold commands with no index or name
 default to that one.
 
 A fresh view starts with an empty, non-deletable fold tree at index `0`, named

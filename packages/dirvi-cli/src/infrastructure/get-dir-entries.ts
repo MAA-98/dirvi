@@ -1,5 +1,10 @@
 import { TreeNode, TreeNodeApi } from 'dirvi-lib';
-import { PosixEntry, PosixName, PosixNameSchema, PosixTreeNode } from '../domain/posix-tree-node.js';
+import {
+  PosixEntry,
+  PosixName,
+  PosixNameSchema,
+  PosixTreeNode,
+} from '../domain/posix-tree-node.js';
 import { UnixAbsolutePath, UnixPathSchema } from '../domain/unix-path.js';
 import { readdir, readlink } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -19,10 +24,10 @@ export async function getDirEntries(
         const target = UnixPathSchema.parse(
           await readlink(join(address, directoryEntry.name)),
         );
-        
+
         return PosixTreeNode.symlink(id, target);
       }
-      
+
       if (directoryEntry.isDirectory()) {
         return PosixTreeNode.unloadedDirectory(id);
       }

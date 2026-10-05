@@ -8,10 +8,16 @@ import type { StateCodec } from './create-file-view-api.js';
 import { createHash } from 'node:crypto';
 import {
   PosixCursorApi,
-  PosixEntry, PosixFoldsApi,
+  PosixEntry,
+  PosixFoldsApi,
   PosixName,
-  PosixNameSchema, PosixNavApi, PosixState, PosixStateModel, PosixStateModelSchema,
-  PosixTreeNode, PosixTreeNodeApi,
+  PosixNameSchema,
+  PosixNavApi,
+  PosixState,
+  PosixStateModel,
+  PosixStateModelSchema,
+  PosixTreeNode,
+  PosixTreeNodeApi,
 } from '../domain/posix-tree-node.js';
 import { UnixAbsolutePath } from '../domain/unix-path.js';
 import type { AppApi } from 'dirvi-lib';
@@ -33,11 +39,7 @@ function encodeKey(key: UnixAbsolutePath): string {
  * Persists public POSIX state models while keeping TreeNode and Folds runtime
  * representations opaque.
  */
-const posixStateCodec: StateCodec<
-  PosixName,
-  PosixEntry,
-  PosixStateModel
-> = {
+const posixStateCodec: StateCodec<PosixName, PosixEntry, PosixStateModel> = {
   schema: PosixStateModelSchema,
   encode: encodePosixState,
   decode: decodePosixState,
@@ -60,11 +62,9 @@ function encodePosixState(state: PosixState): PosixStateModel {
  * `TreeNodeApi.fromModel` performs the structural sibling-ID uniqueness check
  * which cannot be fully expressed by the JSON/Zod model schema.
  */
-function decodePosixState(
-  model: PosixStateModel,
-): PosixState | undefined {
+function decodePosixState(model: PosixStateModel): PosixState | undefined {
   const root = PosixTreeNodeApi.fromModel(model.root);
-  
+
   /*
    * State requires an open root branch. The POSIX domain additionally requires
    * files and symlinks to be leaves, and directories to be branches.
@@ -76,13 +76,13 @@ function decodePosixState(
   ) {
     return undefined;
   }
-  
+
   const folds = PosixFoldsApi.fromModel(model.folds);
-  
+
   if (folds === undefined) {
     return undefined;
   }
-  
+
   return {
     root,
     folds,

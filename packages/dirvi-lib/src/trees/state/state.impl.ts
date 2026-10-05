@@ -1,4 +1,8 @@
-import type { SerializableKey, TreeNode, TreeNodeApi } from '../tree-node/index.js';
+import type {
+  SerializableKey,
+  TreeNode,
+  TreeNodeApi,
+} from '../tree-node/index.js';
 import type { Folds } from '../fold-node/index.js';
 import type { Cursor, CursorApi } from '../cursor.js';
 import type { StateApi, State } from './state.types.js';
@@ -112,7 +116,9 @@ export function createStateApi<Id extends SerializableKey, Value>(
         loadBranches,
       );
 
-      const reloadedGrandchildren = treeNodeApi.getLoadedChildren(reloadedChild.root);
+      const reloadedGrandchildren = treeNodeApi.getLoadedChildren(
+        reloadedChild.root,
+      );
 
       if (reloadedGrandchildren === undefined) {
         throw new Error(
@@ -134,7 +140,10 @@ export function createStateApi<Id extends SerializableKey, Value>(
       const updatedChildren = [...currentChildrenArray];
       updatedChildren[currentChildIndex] = updatedCurrentChild;
 
-      const updatedRoot = treeNodeApi.withLoadedChildren(newRoot, updatedChildren);
+      const updatedRoot = treeNodeApi.withLoadedChildren(
+        newRoot,
+        updatedChildren,
+      );
 
       if (updatedRoot === undefined) {
         throw new Error(
@@ -180,14 +189,14 @@ export function createStateApi<Id extends SerializableKey, Value>(
 
     async resync(oldState, loadBranches) {
       const reloaded = await reload(oldState.root, [], loadBranches);
-      
+
       /*
        * Fold-state resynchronization is not implemented yet. Keep the existing
        * fold definitions while the source tree is reloaded.
        */
       const folds = oldState.folds;
       const root = reloaded.root;
-      
+
       return {
         ...oldState,
         root,

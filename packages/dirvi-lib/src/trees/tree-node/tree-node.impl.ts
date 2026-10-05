@@ -333,17 +333,17 @@ export function createTreeNodeApi<
 
       return modifyChildAtPath(root, path, update);
     },
-    
+
     toModel(node): TreeNodeModel<Id, Value> {
       const data = toData(node);
-      
+
       if (isLeafData(data)) {
         return {
           id: data.id,
           value: data.value,
         };
       }
-      
+
       if (isUnloadedBranchData(data)) {
         return {
           id: data.id,
@@ -351,14 +351,14 @@ export function createTreeNodeApi<
           children: null,
         };
       }
-      
+
       return {
         id: data.id,
         value: data.value,
         children: data.children.map(api.toModel),
       };
     },
-    
+
     fromModel(model) {
       if (!('children' in model)) {
         return api.createLeaf(model.id, model.value);
@@ -381,7 +381,7 @@ export function createTreeNodeApi<
       }
 
       return api.createLoadedBranch(model.id, model.value, children);
-    }
+    },
   };
 
   function modifyChildAtPath(

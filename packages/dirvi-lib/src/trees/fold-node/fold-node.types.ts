@@ -61,7 +61,7 @@ export type FoldsApi<Id extends SerializableKey> = Readonly<{
    * durable user-facing references.
    */
   getIndexByName(folds: Folds<Id>, name: string): FoldIndex | undefined;
-  
+
   /**
    * Returns metadata for the fold tree at an occupied slot.
    *

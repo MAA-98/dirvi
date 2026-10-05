@@ -100,7 +100,7 @@ function generatedLoadedBranchModel(
     value,
     children: children.map(({ model: child }) => child),
   };
-  
+
   const reachableDescendants = children.flatMap(
     ({ model: childModel, reachableModels }) =>
       reachableModels.map(({ path, model: reachableModel }) => ({
@@ -108,23 +108,19 @@ function generatedLoadedBranchModel(
         model: reachableModel,
       })),
   );
-  
+
   return {
     model,
-    reachableModels: [
-      { path: [], model },
-      ...reachableDescendants,
-    ],
+    reachableModels: [{ path: [], model }, ...reachableDescendants],
   };
 }
 
 /**
  * Generates a leaf model.
  */
-export const generatedLeafModelArb: fc.Arbitrary<ModelWithReachableModels> =
-  fc
-    .tuple(testIdArb, testValueArb)
-    .map(([id, value]) => generatedLeafModel(id, value));
+export const generatedLeafModelArb: fc.Arbitrary<ModelWithReachableModels> = fc
+  .tuple(testIdArb, testValueArb)
+  .map(([id, value]) => generatedLeafModel(id, value));
 
 /**
  * Generates an unloaded-branch model.
@@ -140,10 +136,7 @@ export const generatedUnloadedBranchModelArb: fc.Arbitrary<ModelWithReachableMod
  * Both leaves and unloaded branches terminate path traversal.
  */
 const generatedTerminalModelArb: fc.Arbitrary<ModelWithReachableModels> =
-  fc.oneof(
-    generatedLeafModelArb,
-    generatedUnloadedBranchModelArb,
-  );
+  fc.oneof(generatedLeafModelArb, generatedUnloadedBranchModelArb);
 
 /**
  * Generates a leaf, an unloaded branch, or a loaded branch.
@@ -153,8 +146,8 @@ const generatedTerminalModelArb: fc.Arbitrary<ModelWithReachableModels> =
  *
  * The weighted choice gives recursive open branches a geometric dropoff.
  */
-export const generatedNodeArb: fc.Arbitrary<ModelWithReachableModels> = fc.letrec(
-  (tie) => {
+export const generatedNodeArb: fc.Arbitrary<ModelWithReachableModels> =
+  fc.letrec((tie) => {
     const generatedChildModelArb = tie(
       'node',
     ) as fc.Arbitrary<ModelWithReachableModels>;
@@ -177,7 +170,9 @@ export const generatedNodeArb: fc.Arbitrary<ModelWithReachableModels> = fc.letre
      */
     const generatedLoadedBranchModelArb = fc
       .tuple(testIdArb, testValueArb, generatedOpenChildrenArb)
-      .map(([id, value, children]) => generatedLoadedBranchModel(id, value, children));
+      .map(([id, value, children]) =>
+        generatedLoadedBranchModel(id, value, children),
+      );
 
     return {
       node: fc
@@ -192,8 +187,7 @@ export const generatedNodeArb: fc.Arbitrary<ModelWithReachableModels> = fc.letre
             : generatedTerminalModelArb,
         ),
     };
-  },
-).node;
+  }).node;
 
 /**
  * Generates an array of generated nodes with unique sibling IDs.

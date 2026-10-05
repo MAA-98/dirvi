@@ -33,7 +33,7 @@ export type StateCodec<
 > = Readonly<{
   schema: z.ZodType<StoredState>;
   encode: (state: State<Id, Value>) => StoredState;
-  
+
   /*
    * A validated model can still violate runtime-only invariants, for example
    * duplicate TreeNode sibling IDs. The domain decoder reports that case with
@@ -174,7 +174,7 @@ export function createFileViewApi<
       const contents = await readFile(viewFile(key, name), 'utf8');
       const parsed: unknown = JSON.parse(contents);
       const value = storedViewSchema.parse(parsed);
-      
+
       const state = stateCodec.decode(value.state);
 
       if (state === undefined) {

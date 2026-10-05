@@ -143,9 +143,7 @@ function clearBuffer<Id extends SerializableKey, Value>(): Effect<Id, Value> {
 function normalBufferToEffectResult<Id extends SerializableKey, Value>(
   updatedNormalBuffer: string,
 ): Effect<Id, Value> {
-  const commandResult = parseNormalCommand<Id, Value>(
-    updatedNormalBuffer,
-  );
+  const commandResult = parseNormalCommand<Id, Value>(updatedNormalBuffer);
 
   switch (commandResult.kind) {
     case 'incomplete':
