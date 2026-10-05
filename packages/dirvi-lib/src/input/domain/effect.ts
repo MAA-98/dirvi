@@ -29,6 +29,9 @@ export type Effect<Id extends SerializableKey, Value> =
       effectType: 'emitVisibleLeavesPaths';
     }>
   | Readonly<{
+      effectType: 'listFolds';
+    }>
+  | Readonly<{
       effectType: 'quit';
       exitMessage: string;
     }>
@@ -97,4 +100,8 @@ export type EffectAction<Id extends SerializableKey, Value> =
   | Readonly<{
       effectActionType: 'toggleFold';
       foldTree: FoldTreeReference;
+    }>
+  | Readonly<{
+      effectActionType: 'createFoldTree';
+      name: string;
     }>;

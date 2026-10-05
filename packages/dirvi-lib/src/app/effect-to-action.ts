@@ -180,6 +180,15 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
               foldTreeIndex,
             };
       }
+
+      case 'createFoldTree':
+        return foldsApi.getIndexByName(state.folds, effectAction.name) ===
+          undefined
+          ? {
+              kind: 'createFoldTree',
+              name: effectAction.name,
+            }
+          : undefined;
     }
   }
 

@@ -6,6 +6,19 @@ import type {
 } from '../trees/index.js';
 import type { ReducerAction } from './reducer-action.js';
 
+function firstAvailableAdditionalFoldIndex<Id extends SerializableKey, Value>(
+  foldsApi: FoldsApi<Id>,
+  state: State<Id, Value>,
+): number {
+  let index = 1;
+
+  while (foldsApi.hasAtIndex(state.folds, index)) {
+    index += 1;
+  }
+
+  return index;
+}
+
 export type Reducer<Id extends SerializableKey, Value> = (
   state: State<Id, Value>,
   action: ReducerAction<Id, Value>,
@@ -133,6 +146,28 @@ export function createReducer<Id extends SerializableKey, Value>(
         const folds = foldsApi.deactivateAtIndex(
           state.folds,
           action.foldTreeIndex,
+        );
+
+        return folds === undefined
+          ? state
+          : {
+              ...state,
+              folds,
+            };
+      }
+
+      case 'createFoldTree': {
+        const index = firstAvailableAdditionalFoldIndex(foldsApi, state);
+
+        const folds = foldsApi.setAdditionalFoldAtIndex(
+          state.folds,
+          index,
+          // Obtain this through the actual TreeNodeApi root-ID operation.
+          treeNodeApi.id(state.root),
+          {
+            name: action.name,
+            description: null,
+          },
         );
 
         return folds === undefined

@@ -3,6 +3,44 @@ import type { Effect } from '../domain/index.js';
 
 const DEFAULT_VIEW_NAME = 'default';
 
+function parseFoldCommand<Id extends SerializableKey, Value>(
+  commandArgs: readonly string[],
+): Effect<Id, Value> {
+  const [subcommand, name] = commandArgs;
+
+  switch (subcommand) {
+    case 'list':
+      return commandArgs.length === 1
+        ? {
+            effectType: 'listFolds',
+          }
+        : {
+            effectType: 'unrecognizedCommand',
+            commandLine: `fold ${commandArgs.join(' ')}`,
+          };
+
+    case 'create':
+      return name === undefined || commandArgs.length !== 2
+        ? {
+            effectType: 'unrecognizedCommand',
+            commandLine: `fold ${commandArgs.join(' ')}`,
+          }
+        : {
+            effectType: 'dispatchEffectAction',
+            action: {
+              effectActionType: 'createFoldTree',
+              name,
+            },
+          };
+
+    default:
+      return {
+        effectType: 'unrecognizedCommand',
+        commandLine: `fold ${commandArgs.join(' ')}`,
+      };
+  }
+}
+
 /**
  * Parses a command-line command into an application effect.
  *
@@ -31,6 +69,9 @@ export function parseCommand<Id extends SerializableKey, Value>(
         exitMessage: '',
       };
 
+    case 'fold':
+      return parseFoldCommand<Id, Value>(commandArgs);
+      
     case 'evlp':
       return {
         effectType: 'emitVisibleLeavesPaths',

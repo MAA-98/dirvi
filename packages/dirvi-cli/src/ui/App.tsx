@@ -148,9 +148,9 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
     };
   }, [appApi, onError]);
 
-  // =============================================================================
+  // ===========================================================================
   // Executing Effects
-  // =============================================================================
+  // ===========================================================================
   function executeEffect(effect: Effect<Id, Value> | undefined): void {
     if (effect === undefined) {
       return;
@@ -265,6 +265,32 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
             onError?.(toError(error));
           });
 
+        return;
+      }
+
+      // TODO: Add descriptions with `...` truncation.
+      case 'listFolds': {
+        const folds = state.folds;
+
+        const foldTrees = [...appApi.foldsApi.indexes(folds)].map((index) => ({
+          index,
+          info: appApi.foldsApi.getInfoAtIndex(folds, index),
+          active: appApi.foldsApi.isActiveAtIndex(folds, index),
+        }));
+        
+        const indexWidth = Math.max(
+          ...foldTrees.map(({ index }) => String(index).length),
+        );
+
+        const lines = foldTrees.map(({ index, info, active }) => {
+          const status = active === true ? 'active' : 'inactive';
+          const name = info?.name ?? '<unavailable>';
+
+          return `${String(index).padStart(indexWidth)}  ${status.padEnd(8)}  ${name}`;
+        });
+
+        feedbackApi.addMessage(['Fold trees:', ...lines].join('\n'));
+        
         return;
       }
 

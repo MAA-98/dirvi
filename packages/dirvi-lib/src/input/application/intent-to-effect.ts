@@ -8,6 +8,7 @@ import type {
 import type { Effect, EffectAction, Intent } from '../domain/index.js';
 
 import { parseCommand } from './parse-command.js';
+import { parseNormalCommand } from './parse-normal-command.js';
 
 /**
  * Converts a user intent and the current tree state into an effect.
@@ -95,12 +96,38 @@ export function createIntentToEffect<Id extends SerializableKey, Value>(
   };
 }
 
+// =============================================================================
+// Normal mode
+// =============================================================================
+
+function keepNormalBuffer<Id extends SerializableKey, Value>(
+  normalBuffer: string,
+): Effect<Id, Value> {
+  return {
+    effectType: 'setInputState',
+    inputState: {
+      inputMode: 'normal',
+      normalBuffer,
+    },
+  };
+}
+
 function dispatchAction<Id extends SerializableKey, Value>(
   action: EffectAction<Id, Value>,
 ): Effect<Id, Value> {
   return {
     effectType: 'dispatchEffectAction',
     action,
+  };
+}
+
+function clearBuffer<Id extends SerializableKey, Value>(): Effect<Id, Value> {
+  return {
+    effectType: 'setInputState',
+    inputState: {
+      inputMode: 'normal',
+      normalBuffer: '',
+    },
   };
 }
 
@@ -116,72 +143,19 @@ function dispatchAction<Id extends SerializableKey, Value>(
 function normalBufferToEffectResult<Id extends SerializableKey, Value>(
   updatedNormalBuffer: string,
 ): Effect<Id, Value> {
-  switch (updatedNormalBuffer) {
-    // =========================================================================
-    // Fold
-    // =========================================================================
-    case 'z':
-      return {
-        effectType: 'setInputState',
-        inputState: {
-          inputMode: 'normal',
-          normalBuffer: updatedNormalBuffer,
-        },
-      };
+  const commandResult = parseNormalCommand<Id, Value>(
+    updatedNormalBuffer,
+  );
 
-    case 'zf':
-      return dispatchAction<Id, Value>({
-        effectActionType: 'addToFoldTree',
-        foldTree: {
-          foldTreeReferenceType: 'index',
-          index: 0,
-        },
-      });
+  switch (commandResult.kind) {
+    case 'incomplete':
+      return keepNormalBuffer(updatedNormalBuffer);
 
-    case 'zd':
-      return dispatchAction<Id, Value>({
-        effectActionType: 'removeFromFoldTree',
-        foldTree: {
-          foldTreeReferenceType: 'index',
-          index: 0,
-        },
-      });
+    case 'complete':
+      return dispatchAction(commandResult.action);
 
-    case 'zc':
-      return dispatchAction<Id, Value>({
-        effectActionType: 'fold',
-        foldTree: {
-          foldTreeReferenceType: 'index',
-          index: 0,
-        },
-      });
-
-    case 'zo':
-      return dispatchAction<Id, Value>({
-        effectActionType: 'unfold',
-        foldTree: {
-          foldTreeReferenceType: 'index',
-          index: 0,
-        },
-      });
-
-    case 'za':
-      return dispatchAction<Id, Value>({
-        effectActionType: 'toggleFold',
-        foldTree: {
-          foldTreeReferenceType: 'index',
-          index: 0,
-        },
-      });
-
-    default:
-      return {
-        effectType: 'setInputState',
-        inputState: {
-          inputMode: 'normal',
-          normalBuffer: '',
-        },
-      };
+    case 'invalid':
+      return clearBuffer();
   }
 }
 

@@ -41,4 +41,8 @@ export type ReducerAction<Id extends SerializableKey, Value> =
        */
       kind: 'unfold';
       foldTreeIndex: number;
-    };;
+    }
+  | {
+      kind: 'createFoldTree';
+      name: string;
+    };
