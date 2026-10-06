@@ -9,20 +9,17 @@ import { loadNodePosixAppApi } from './infrastructure/load-node-posix-app-api.js
 
 const program = new Command();
 
-// ---*--- TERMINAL ALTERNATE SCREEN ---*---
-// Restore the terminal away from alternate screen
-// during normal cleanup and as a last-resort fallback
-// when Node is exiting.
-
-// Write UI to stderr
+// =============================================================================
+// Terminal Screen Setup
+// =============================================================================
+// Restore the terminal away from alternate screen during normal cleanup and as
+// a last-resort fallback when Node is exiting.
 const uiOutput = process.stderr;
-
 const enterAlternateScreen = '\u001b[?1049h\u001b[2J\u001b[H\u001b[?25l';
 const leaveAlternateScreen = '\u001b[?25h\u001b[?1049l';
 
 // Idempotent terminal restoration
 let alternateScreenActive = false;
-
 const restoreTerminal = () => {
   if (!alternateScreenActive) {
     return;
@@ -35,7 +32,9 @@ const restoreTerminal = () => {
 // Node exit last resort
 process.on('exit', restoreTerminal);
 
-// ---*--- COMPOSITION ---*---
+// =============================================================================
+// Commands
+// =============================================================================
 program
   .name('direx')
   .description('View and manage directories.')
@@ -59,7 +58,7 @@ program
 
     const stdout = (message: string): void => {
       // The newline makes each message a separate JSON Lines message.
-      // Note: if you pipe output you'll need to use FORCE_COLOR=3
+      // Note: if you pipe output you'll need to use FORCE_COLOR=1/2/3
       // to keep interactive screen colored.
       process.stdout.write(`${message}\n`);
     };
@@ -110,12 +109,14 @@ program
     }
   });
 
-// ---*--- RUN AND HANDLE ERROR ---*---
+// =============================================================================
+// App Runner
+// =============================================================================
 try {
   await program.parseAsync(process.argv);
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
 
-  process.stderr.write(`direx: ${message}\n`);
+  process.stderr.write(`direx error: ${message}\n`);
   process.exitCode = 1;
 }

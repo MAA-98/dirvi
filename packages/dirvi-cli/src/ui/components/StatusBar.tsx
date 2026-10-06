@@ -13,7 +13,12 @@ type StatusBarProps = {
 
 export function StatusBar({ inputState, config }: StatusBarProps) {
   const inputMode = inputState.inputMode;
-  const statusBarBgColor = colorConfigToInkColor(config.statusBarBgColor);
+
+  const commandColor = colorConfigToInkColor(config.theme.statusBar.command.fg);
+  const normalColor = colorConfigToInkColor(config.theme.statusBar.normal.fg);
+  const backgroundColor = colorConfigToInkColor(
+    config.theme.statusBar.background.bg,
+  );
 
   return (
     <Box
@@ -22,16 +27,16 @@ export function StatusBar({ inputState, config }: StatusBarProps) {
       flexDirection="row"
       justifyContent="space-between"
       flexShrink={0}
-      backgroundColor={statusBarBgColor}
+      backgroundColor={backgroundColor}
     >
       <Box flexShrink={1}>
-        <Text color="black" wrap="truncate-end">
+        <Text color={commandColor} wrap="truncate-end">
           {inputMode === 'command' ? inputState.commandLine : ''}
         </Text>
       </Box>
 
       <Box flexShrink={1}>
-        <Text color="black" wrap="truncate-start">
+        <Text color={normalColor} wrap="truncate-start">
           {inputMode === 'normal' ? inputState.normalBuffer : ''}
         </Text>
       </Box>

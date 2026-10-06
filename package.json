@@ -9,6 +9,7 @@
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "clean": "rm -rf dist packages/*/dist",
     "dev": "pnpm --filter @mak-98/dirvi-cli dev",
@@ -18,6 +19,7 @@
     "login": "npm login",
     "publish": "pnpm build && pnpm --filter dirvi-lib publish --access public && pnpm --filter @mak-98/dirvi-cli publish --access public",
     "deps": "depcruise packages",
+    "deps:check": "depcruise --validate .dependency-cruiser.cjs packages",
     "deps:svg": "depcruise packages --output-type dot | dot -T svg > dependency-graph.svg",
     "deps:svg:lib": "depcruise packages/dirvi-lib --output-type dot | dot -T svg > dependency-graph-lib.svg",
     "deps:svg:cli": "depcruise packages/dirvi-cli --output-type dot | dot -T svg > dependency-graph-cli.svg"
@@ -31,11 +33,13 @@
   },
   "homepage": "https://github.com/MAA-98/dirvi#readme",
   "devDependencies": {
+    "@vitest/coverage-v8": "4.1.11",
     "dependency-cruiser": "^18.4.0",
     "fast-check": "^4.9.0",
     "prettier": "^3.8.4",
     "typedoc": "^0.28.20",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.3",
+    "typescript-language-server": "^6.0.1",
     "vitest": "^4.1.11"
   }
 }

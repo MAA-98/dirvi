@@ -1,4 +1,4 @@
-import type { ColorConfig, Config } from '../../domain/config.js';
+import type { ColorConfig } from '../../domain/theme.js';
 
 type RgbColor = [number, number, number];
 
@@ -25,10 +25,10 @@ export function colorConfigToInkColor(
   colorConfig: ColorConfig,
   colorDepth: number = process.stderr.getColorDepth(),
 ): string {
-  const { trueColor, ansi256, basic } = colorConfig;
+  const { hex, ansi256, basic } = colorConfig;
 
-  if (colorDepth >= 24 && trueColor !== undefined) {
-    return toHex(trueColor);
+  if (colorDepth >= 24 && hex !== undefined) {
+    return hex;
   }
 
   if (colorDepth >= 8 && ansi256 !== undefined) {
@@ -45,8 +45,12 @@ export function colorConfigToInkColor(
     return toHex(ansi256ToRgb(ansi256));
   }
 
-  // ConfigSchema guarantees that one profile is present.
-  return toHex(trueColor!);
+  if (hex !== undefined) {
+    return hex;
+  }
+
+  // ColorConfigSchema guarantees at least one profile is configured.
+  throw new Error('Expected at least one terminal color profile');
 }
 
 function ansi256ToRgb(color: number): RgbColor {

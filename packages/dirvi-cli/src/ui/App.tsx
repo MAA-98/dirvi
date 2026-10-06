@@ -354,20 +354,20 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
     return null;
   }
 
-  // =============================================================================
+  // ===========================================================================
   // Render
-  // =============================================================================
+  // ===========================================================================
   return (
     <Box flexDirection="column" height={terminalRows}>
       <Box flexDirection="column" flexGrow={1} flexShrink={1}>
         {view.rows.length === 0 ? (
           <Text dimColor>Empty.</Text>
         ) : (
-          view.rows.map((row) => <ViewRowComponent key={row.id} row={row} />)
+          view.rows.map((row) => <ViewRowComponent key={row.id} row={row} config={config}/>)
         )}
       </Box>
 
-      <FeedbackBar display={feedbackDisplay} type={feedbackType} />
+      <FeedbackBar display={feedbackDisplay} type={feedbackType} config={config} />
       <StatusBar inputState={inputState} config={config} />
     </Box>
   );

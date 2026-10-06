@@ -1,10 +1,12 @@
-import { mkdirSync, watch, type FSWatcher } from 'node:fs';
+import type { FSWatcher } from "node:fs";
+import { mkdirSync, watch } from 'node:fs';
 import { readFile, rename, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import envPaths from 'env-paths';
 
-import { Config, ConfigSchema, defaultConfig } from '../domain/config.js';
-import { ConfigApi } from '../application/config-api.js';
+import type { Config } from '../domain/config.js';
+import { ConfigSchema, defaultConfig } from '../domain/config.js';
+import type { ConfigApi } from '../application/config-api.js';
 
 const environmentPaths = envPaths('dirvi');
 const configDirectory = environmentPaths.config;

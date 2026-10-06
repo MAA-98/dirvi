@@ -20,7 +20,7 @@ type LoadingAppProps<Id extends SerializableKey, Value, ViewKey = string> = {
   onError?: (error: Error) => void;
 };
 
-export function LoadingApp<
+export function AppSetup<
   Id extends SerializableKey,
   Value,
   ViewKey = string,

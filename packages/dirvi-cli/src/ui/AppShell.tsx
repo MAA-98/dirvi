@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { LoadingApp } from './LoadingApp.js';
+import { AppSetup } from './AppSetup.js';
 import type { ConfigApi } from '../application/config-api.js';
 import type { AppApi } from 'dirvi-lib';
 import type { PosixEntry, PosixName } from '../domain/posix-tree-node.js';
@@ -81,7 +81,7 @@ export function AppShell({
   );
 
   return (
-    <LoadingApp
+    <AppSetup
       configApi={configApi}
       appApi={posixAppApi}
       {...(stdout === undefined ? {} : { stdout })}
