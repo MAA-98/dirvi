@@ -45,6 +45,10 @@ export const ForegroundHighlightConfigSchema = z.object({
   fg: ColorConfigSchema,
 });
 
+export const OptionalForegroundHighlightConfigSchema = z.object({
+  fg: ColorConfigSchema.optional(),
+});
+
 export const BackgroundHighlightConfigSchema = z.object({
   bg: ColorConfigSchema,
 });
@@ -56,6 +60,10 @@ export const ForegroundBackgroundHighlightConfigSchema = z.object({
 
 export type ForegroundHighlightConfig = z.infer<
   typeof ForegroundHighlightConfigSchema
+>;
+
+export type OptionalForegroundHighlightConfig = z.infer<
+  typeof OptionalForegroundHighlightConfigSchema
 >;
 
 export type BackgroundHighlightConfig = z.infer<
@@ -100,6 +108,12 @@ const folded: ColorConfig = {
   basic: 'gray',
 };
 
+const indentGuide: ColorConfig = {
+  hex: '#808080',
+  ansi256: 245,
+  basic: 'gray',
+};
+
 const cursorLine: ColorConfig = {
   hex: '#3a3a3c',
   ansi256: 237,
@@ -129,6 +143,7 @@ const themeDefaults = {
     branch: { fg: branch },
     folded: { fg: folded },
     cursorLine: { bg: cursorLine },
+    indentGuide: { fg: indentGuide },
   },
   feedbackBar: {
     message: {
@@ -176,6 +191,9 @@ export const ThemeSchema = z.object({
       ),
       cursorLine: BackgroundHighlightConfigSchema.default(
         themeDefaults.tree.cursorLine,
+      ),
+      indentGuide: OptionalForegroundHighlightConfigSchema.default(
+        themeDefaults.tree.indentGuide,
       ),
     })
     .default(themeDefaults.tree),

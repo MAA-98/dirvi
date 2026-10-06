@@ -11,9 +11,9 @@ import type {
 type ViewRowBase = {
   id: string;
   indent: number;
-  selected: boolean;
-  cursor: boolean;
   content: string;
+  cursor: boolean;
+  selected: boolean;
 };
 
 export type ViewRow =

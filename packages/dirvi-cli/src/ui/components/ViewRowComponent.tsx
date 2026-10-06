@@ -8,6 +8,25 @@ type ViewRowComponentProps = {
   config: Config;
 };
 
+function indentationPrefix(
+  indent: number,
+  indentSize: number,
+  showGuides: boolean,
+): string {
+  if (indent <= 0 || indentSize <= 0) {
+    return '';
+  }
+
+  if (!showGuides) {
+    return ' '.repeat(indent * indentSize);
+  }
+
+  const indentationUnit = `│${' '.repeat(Math.max(0, indentSize - 1))}`;
+  const firstIndentation = ' '.repeat(indentSize);
+
+  return `${firstIndentation}${indentationUnit.repeat(indent - 1)}`;
+}
+
 export function ViewRowComponent({ row, config }: ViewRowComponentProps) {
   const leafColor = colorConfigToInkColor(config.theme.tree.leaf.fg);
   const branchColor = colorConfigToInkColor(config.theme.tree.branch.fg);
@@ -15,15 +34,35 @@ export function ViewRowComponent({ row, config }: ViewRowComponentProps) {
   const cursorRowBgColor = colorConfigToInkColor(
     config.theme.tree.cursorLine.bg,
   );
+  
+  const indentationGuideColor =
+    config.theme.tree.indentGuide.fg === undefined
+      ? undefined
+      : colorConfigToInkColor(config.theme.tree.indentGuide.fg);
+
+  const indentation = indentationPrefix(
+    row.indent,
+    config.indentSize,
+    indentationGuideColor !== undefined,
+  );
 
   switch (row.type) {
     case 'leaf':
       return (
         <Box
-          paddingLeft={row.indent * config.indentSize}
           width="100%"
           backgroundColor={row.cursor ? cursorRowBgColor : undefined}
         >
+          {indentation !== '' && (
+            <Text
+              {...(indentationGuideColor === undefined
+                ? {}
+                : { color: indentationGuideColor, dimColor: true })}
+            >
+              {indentation}
+            </Text>
+          )}
+          
           <Text color={leafColor}>{row.content}</Text>
         </Box>
       );
@@ -31,10 +70,19 @@ export function ViewRowComponent({ row, config }: ViewRowComponentProps) {
     case 'branch':
       return (
         <Box
-          paddingLeft={row.indent * config.indentSize}
           width="100%"
           backgroundColor={row.cursor ? cursorRowBgColor : undefined}
         >
+          {indentation !== '' && (
+            <Text
+              {...(indentationGuideColor === undefined
+                ? {}
+                : { color: indentationGuideColor, dimColor: true })}
+            >
+              {indentation}
+            </Text>
+          )}
+
           <Text color={branchColor}>{row.content}</Text>
 
           {row.foldedCount > 0 && (
