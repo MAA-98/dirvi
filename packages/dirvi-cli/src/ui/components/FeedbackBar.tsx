@@ -16,14 +16,14 @@ export function FeedbackBar({ display, type, config }: FeedbackBarProps) {
   if (display.height === 0) {
     return null;
   }
-  
+
   const highlight =
     type === 'success'
       ? config.theme.feedbackBar.success
       : type === 'error'
         ? config.theme.feedbackBar.error
         : config.theme.feedbackBar.message;
-  
+
   const color = colorConfigToInkColor(highlight.fg);
   const backgroundColor = colorConfigToInkColor(highlight.bg);
 

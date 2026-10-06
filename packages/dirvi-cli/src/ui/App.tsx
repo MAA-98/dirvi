@@ -113,9 +113,9 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
     feedbackDisplay.height,
   );
 
-  // =============================================================================
+  // ===========================================================================
   // Resync Subscriptions
-  // =============================================================================
+  // ===========================================================================
   useEffect(() => {
     let active = true;
 
@@ -311,9 +311,9 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
     }
   }
 
-  // =============================================================================
+  // ===========================================================================
   // Ink input hook
-  // =============================================================================
+  // ===========================================================================
   useInput((input, key) => {
     const userInput = inkInputToUserInput(input, key);
     if (userInput === undefined) {
@@ -334,9 +334,9 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
     executeEffect(effectResult);
   });
 
-  // =============================================================================
+  // ===========================================================================
   // Exit
-  // =============================================================================
+  // ===========================================================================
   const { exit } = useApp();
   useEffect(() => {
     if (exitStatus === undefined) {
@@ -363,11 +363,17 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
         {view.rows.length === 0 ? (
           <Text dimColor>Empty.</Text>
         ) : (
-          view.rows.map((row) => <ViewRowComponent key={row.id} row={row} config={config}/>)
+          view.rows.map((row) => (
+            <ViewRowComponent key={row.id} row={row} config={config} />
+          ))
         )}
       </Box>
 
-      <FeedbackBar display={feedbackDisplay} type={feedbackType} config={config} />
+      <FeedbackBar
+        display={feedbackDisplay}
+        type={feedbackType}
+        config={config}
+      />
       <StatusBar inputState={inputState} config={config} />
     </Box>
   );

@@ -4,8 +4,7 @@ module.exports = {
     {
       name: 'no-circular',
       severity: 'error',
-      comment:
-        'This dependency is part of a circular relationship.',
+      comment: 'This dependency is part of a circular relationship.',
       from: {},
       to: {
         circular: true,

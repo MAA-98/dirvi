@@ -1,4 +1,4 @@
-import type { FSWatcher } from "node:fs";
+import type { FSWatcher } from 'node:fs';
 import { mkdirSync, watch } from 'node:fs';
 import { readFile, rename, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
