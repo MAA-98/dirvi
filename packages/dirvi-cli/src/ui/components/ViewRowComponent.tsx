@@ -11,20 +11,18 @@ type ViewRowComponentProps = {
 function indentationPrefix(
   indent: number,
   indentSize: number,
+  firstIndent: string,
   showGuides: boolean,
 ): string {
   if (indent <= 0 || indentSize <= 0) {
     return '';
   }
 
-  if (!showGuides) {
-    return ' '.repeat(indent * indentSize);
-  }
+  const remainingIndentation = showGuides
+    ? `│${' '.repeat(Math.max(0, indentSize - 1))}`
+    : ' '.repeat(indentSize);
 
-  const indentationUnit = `│${' '.repeat(Math.max(0, indentSize - 1))}`;
-  const firstIndentation = ' '.repeat(indentSize);
-
-  return `${firstIndentation}${indentationUnit.repeat(indent - 1)}`;
+  return `${firstIndent}${remainingIndentation.repeat(indent - 1)}`;
 }
 
 export function ViewRowComponent({ row, config }: ViewRowComponentProps) {
@@ -39,10 +37,14 @@ export function ViewRowComponent({ row, config }: ViewRowComponentProps) {
     config.theme.tree.indentGuide.fg === undefined
       ? undefined
       : colorConfigToInkColor(config.theme.tree.indentGuide.fg);
-
+  const firstIndent =
+    config.firstIndent === undefined
+      ? ' '.repeat(config.indentSize)
+      : config.firstIndent;
   const indentation = indentationPrefix(
     row.indent,
     config.indentSize,
+    firstIndent,
     indentationGuideColor !== undefined,
   );
 
