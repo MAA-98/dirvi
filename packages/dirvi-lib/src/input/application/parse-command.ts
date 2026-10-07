@@ -33,6 +33,20 @@ function parseFoldCommand<Id extends SerializableKey, Value>(
             },
           };
 
+    case 'delete':
+      return name === undefined || commandArgs.length !== 2
+        ? {
+            effectType: 'unrecognizedCommand',
+            commandLine: `fold ${commandArgs.join(' ')}`,
+          }
+        : {
+            effectType: 'dispatchEffectAction',
+            action: {
+              effectActionType: 'deleteFoldTree',
+              name,
+            },
+          };
+
     default:
       return {
         effectType: 'unrecognizedCommand',

@@ -1,6 +1,7 @@
 import type { SerializableKey, TreeNode } from '../tree-node/index.js';
 import type { Cursor } from '../cursor.js';
 import type { Folds } from '../fold-node/index.js';
+import type { AppApi } from '../../app/index.js';
 
 export type NavNode<Id extends SerializableKey> = {
   /**
@@ -41,6 +42,10 @@ export type NavBranch<Id extends SerializableKey> = {
    * `null` means this branch's children have not been loaded or opened.
    */
   children: NavNode<Id> | null;
+};
+
+type LoadedNavBranch<Id extends SerializableKey> = NavBranch<Id> & {
+  children: NavNode<Id>;
 };
 
 /**
@@ -125,7 +130,12 @@ export type NavNodeApi<Id extends SerializableKey, Value> = {
     rootNode: NavBranch<Id>,
     cursor: Cursor<Id>,
   ): Cursor<Id> | undefined;
-
+  
+  /**
+   * Returns undefined if at the root already, i.e. cursor is [].
+   * @param navigation
+   * @param cursor
+   */
   parentCursor(
     navigation: NavNode<Id>,
     cursor: Cursor<Id>,

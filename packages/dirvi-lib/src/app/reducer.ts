@@ -156,6 +156,20 @@ export function createReducer<Id extends SerializableKey, Value>(
             };
       }
 
+      case 'toggleFold': {
+        const folds = foldsApi.toggleActiveAtIndex(
+          state.folds,
+          action.foldTreeIndex,
+        );
+
+        return folds === undefined
+          ? state
+          : {
+              ...state,
+              folds,
+            };
+      }
+
       case 'createFoldTree': {
         const index = firstAvailableAdditionalFoldIndex(foldsApi, state);
 
@@ -176,6 +190,31 @@ export function createReducer<Id extends SerializableKey, Value>(
               ...state,
               folds,
             };
+      }
+
+      case 'deleteFoldTree': {
+        const index = foldsApi.getIndexByName(state.folds, action.name);
+
+        if (index === undefined || index === 0) {
+          return state;
+        }
+
+        const folds = foldsApi.removeAdditionalFoldAtIndex(state.folds, index);
+
+        return folds === undefined
+          ? state
+          : {
+              ...state,
+              folds,
+            };
+      }
+
+      default: {
+        const _exhaustive: never = action;
+
+        throw new Error(
+          `Unhandled reducer action: ${JSON.stringify(_exhaustive)}`,
+        );
       }
     }
   };

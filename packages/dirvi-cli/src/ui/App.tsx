@@ -158,16 +158,34 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
 
     switch (effect.effectType) {
       case 'dispatchEffectAction':
-        const action = effectToAction(effect.action, navEntry, state);
-        if (action === undefined) {
-          return;
-        }
-        dispatch(action);
+        const effectActionResult = effectToAction(
+          effect.action,
+          navEntry,
+          state,
+        );
+        
+        // A completed normal-mode command or submitted Ex command always
+        // leaves its input buffer, whether it succeeds, is rejected, or no-ops.
         setInputState({
           inputMode: 'normal',
           normalBuffer: '',
         });
-        return;
+        
+        switch (effectActionResult.kind) {
+          case 'action':
+            dispatch(effectActionResult.action);
+            return;
+
+          case 'rejected':
+            feedbackApi.addMessage(effectActionResult.message, 'error');
+            return;
+
+          case 'ignored':
+            return;
+
+          default:
+            return
+        }
 
       case 'setInputState':
         setInputState(effect.inputState);

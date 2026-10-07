@@ -11,25 +11,72 @@ import type {
 import type { EffectAction, FoldTreeReference } from '../input/domain/index.js';
 import type { ReducerAction } from './reducer-action.js';
 
+export type EffectToActionResult<Id extends SerializableKey, Value> =
+  | Readonly<{
+      kind: 'action';
+      action: ReducerAction<Id, Value>;
+    }>
+  | Readonly<{
+      kind: 'rejected';
+      message: string;
+    }>
+  | Readonly<{
+      kind: 'ignored';
+    }>;
+
 export type EffectToAction<Id extends SerializableKey, Value> = (
   effectAction: EffectAction<Id, Value>,
   navigation: NavBranch<Id>,
   state: State<Id, Value>,
-) => ReducerAction<Id, Value> | undefined;
+) => EffectToActionResult<Id, Value>;
+
+type FoldTreeResolution =
+  | Readonly<{
+      kind: 'found';
+      index: FoldIndex;
+    }>
+  | Readonly<{
+      kind: 'notFound';
+      message: string;
+    }>;
 
 function resolveFoldTreeIndex<Id extends SerializableKey>(
   foldsApi: FoldsApi<Id>,
   folds: Folds<Id>,
   foldTree: FoldTreeReference,
-): FoldIndex | undefined {
+): FoldTreeResolution {
   switch (foldTree.foldTreeReferenceType) {
     case 'index':
       return foldsApi.hasAtIndex(folds, foldTree.index)
-        ? foldTree.index
-        : undefined;
+        ? {
+            kind: 'found',
+            index: foldTree.index,
+          }
+        : {
+            kind: 'notFound',
+            message: `Fold tree at index ${foldTree.index} not found.`,
+          };
 
     case 'name':
-      return foldsApi.getIndexByName(folds, foldTree.name);
+      const index = foldsApi.getIndexByName(folds, foldTree.name);
+
+      return index === undefined
+        ? {
+            kind: 'notFound',
+            message: `Fold tree named "${foldTree.name}" not found.`,
+          }
+        : {
+            kind: 'found',
+            index,
+          };
+
+    default: {
+      const _exhaustive: never = foldTree;
+
+      throw new Error(
+        `Unhandled fold tree reference: ${JSON.stringify(_exhaustive)}`,
+      );
+    }
   }
 }
 
@@ -38,157 +85,231 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
   cursorApi: CursorApi<Id>,
   navNodeApi: NavNodeApi<Id, Value>,
 ): EffectToAction<Id, Value> {
+  function action(
+    reducerAction: ReducerAction<Id, Value>,
+  ): EffectToActionResult<Id, Value> {
+    return {
+      kind: 'action',
+      action: reducerAction,
+    };
+  }
+
+  function rejected(message: string): EffectToActionResult<Id, Value> {
+    return {
+      kind: 'rejected',
+      message,
+    };
+  }
+
+  function ignored(): EffectToActionResult<Id, Value> {
+    return {
+      kind: 'ignored',
+    };
+  }
+  
   function effectToAction(
     effectAction: EffectAction<Id, Value>,
     navigation: NavBranch<Id>,
     state: State<Id, Value>,
-  ): ReducerAction<Id, Value> | undefined {
+  ): EffectToActionResult<Id, Value> {
     switch (effectAction.effectActionType) {
       case 'nextEntry': {
         const cursor = navNodeApi.nextCursor(navigation, state.cursor);
 
         return cursor === undefined
-          ? undefined
-          : {
+          ? ignored()
+          : action({
               kind: 'changeCursor',
               cursor,
-            };
+            });
       }
 
       case 'prevEntry': {
         const cursor = navNodeApi.previousCursor(navigation, state.cursor);
 
         return cursor === undefined
-          ? undefined
-          : {
+          ? ignored()
+          : action({
               kind: 'changeCursor',
               cursor,
-            };
+            });
       }
 
       case 'setBranchEntries':
-        return {
+        return action({
           kind: 'updateBranch',
           path: effectAction.path,
           entries: effectAction.entries,
-        };
+        });
 
       case 'navigateToParent': {
+        // TODO: navigation should be Loaded Branch instead to encode invariant
+        // in state
         const navNode = navigation.children;
 
         if (navNode === null) {
-          return undefined;
+          return ignored();
         }
 
         const cursor = navNodeApi.parentCursor(navNode, state.cursor);
 
         return cursor === undefined
-          ? undefined
-          : {
+          ? ignored()
+          : action({
               kind: 'changeCursor',
               cursor,
-            };
+            });
       }
 
       case 'addToFoldTree': {
+        const foldTree = resolveFoldTreeIndex(
+          foldsApi,
+          state.folds,
+          effectAction.foldTree,
+        );
+
+        if (foldTree.kind === 'notFound') {
+          return rejected(foldTree.message);
+        }
+
         if (state.cursor.length === 0) {
-          return undefined;
+          return ignored();
         }
 
         const cursor = navNodeApi.cursorAfterFold(navigation, state.cursor);
 
         if (cursor === undefined) {
-          return undefined;
+          return ignored();
         }
 
-        const foldTreeIndex = resolveFoldTreeIndex(
+        return action({
+          kind: 'addToFoldTree',
+          path: state.cursor,
+          cursor,
+          foldTreeIndex: foldTree.index,
+        });
+      }
+
+      case 'removeFromFoldTree': {
+        const foldTree = resolveFoldTreeIndex(
           foldsApi,
           state.folds,
           effectAction.foldTree,
         );
 
-        if (foldTreeIndex === undefined) {
-          return undefined;
+        if (foldTree.kind === 'notFound') {
+          return rejected(foldTree.message);
         }
 
-        return {
-          kind: 'addToFoldTree',
-          path: state.cursor,
-          cursor,
-          foldTreeIndex,
-        };
-      }
-
-      case 'removeFromFoldTree': {
         const currentPath = cursorApi.getPath(state.cursor);
         const navNode = navigation.children;
 
+        // TODO: Should not be possible with update type
         if (navNode === null) {
-          return undefined;
+          return ignored();
         }
 
         const node = navNodeApi.getNodeAtPath(navNode, currentPath);
 
         if (node === undefined || node.folded?.entries.length === 0) {
-          return undefined;
+          return ignored();
         }
 
-        const foldTreeIndex = resolveFoldTreeIndex(
-          foldsApi,
-          state.folds,
-          effectAction.foldTree,
-        );
-
-        if (foldTreeIndex === undefined) {
-          return undefined;
-        }
-
-        return {
+        return action({
           kind: 'removeFromFoldTree',
           path: currentPath,
           cursor: state.cursor,
-          foldTreeIndex,
-        };
+          foldTreeIndex: foldTree.index,
+        });
       }
 
       case 'fold': {
-        const foldTreeIndex = resolveFoldTreeIndex(
+        const foldTree = resolveFoldTreeIndex(
           foldsApi,
           state.folds,
           effectAction.foldTree,
         );
 
-        return foldTreeIndex === undefined
-          ? undefined
-          : {
+        return foldTree.kind === 'notFound'
+          ? rejected(foldTree.message)
+          : action({
               kind: 'fold',
-              foldTreeIndex,
-            };
+              foldTreeIndex: foldTree.index,
+            });
       }
 
       case 'unfold': {
-        const foldTreeIndex = resolveFoldTreeIndex(
+        const foldTree = resolveFoldTreeIndex(
           foldsApi,
           state.folds,
           effectAction.foldTree,
         );
 
-        return foldTreeIndex === undefined
-          ? undefined
-          : {
+        return foldTree.kind === 'notFound'
+          ? rejected(foldTree.message)
+          : action({
               kind: 'unfold',
-              foldTreeIndex,
-            };
+              foldTreeIndex: foldTree.index,
+            });
       }
 
-      case 'createFoldTree':
-        return foldsApi.getIndexByName(state.folds, effectAction.name) ===
-          undefined
-          ? {
+      case 'toggleFold': {
+        const foldTree = resolveFoldTreeIndex(
+          foldsApi,
+          state.folds,
+          effectAction.foldTree,
+        );
+
+        return foldTree.kind === 'notFound'
+          ? rejected(foldTree.message)
+          : action({
+              kind: 'toggleFold',
+              foldTreeIndex: foldTree.index,
+            });
+      }
+
+      case 'createFoldTree': {
+        const existingIndex = foldsApi.getIndexByName(
+          state.folds,
+          effectAction.name,
+        );
+
+        return existingIndex === undefined
+          ? action({
               kind: 'createFoldTree',
               name: effectAction.name,
-            }
-          : undefined;
+            })
+          : rejected(`Fold tree named "${effectAction.name}" already exists.`);
+      }
+
+      case 'deleteFoldTree': {
+        const foldTreeIndex = foldsApi.getIndexByName(
+          state.folds,
+          effectAction.name,
+        );
+
+        if (foldTreeIndex === undefined) {
+          return rejected(`Fold tree named "${effectAction.name}" not found.`);
+        }
+
+        if (foldTreeIndex === 0) {
+          return rejected(
+            'The primary fold tree at index 0 cannot be deleted.',
+          );
+        }
+
+        return action({
+          kind: 'deleteFoldTree',
+          name: effectAction.name,
+        });
+      }
+
+      default:
+        const _exhaustive: never = effectAction;
+
+        throw new Error(
+          `Unhandled effect action: ${JSON.stringify(_exhaustive)}`,
+        );
     }
   }
 

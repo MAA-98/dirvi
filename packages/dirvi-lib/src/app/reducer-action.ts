@@ -48,6 +48,17 @@ export type ReducerAction<Id extends SerializableKey, Value> =
       foldTreeIndex: number;
     }
   | {
+      /**
+       * Inverts whether a fold tree contributes to hiding entries.
+       */
+      kind: 'toggleFold';
+      foldTreeIndex: number;
+    }
+  | {
       kind: 'createFoldTree';
+      name: string;
+    }
+  | {
+      kind: 'deleteFoldTree';
       name: string;
     };

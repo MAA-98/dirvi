@@ -104,4 +104,8 @@ export type EffectAction<Id extends SerializableKey, Value> =
   | Readonly<{
       effectActionType: 'createFoldTree';
       name: string;
+    }>
+  | Readonly<{
+      effectActionType: 'deleteFoldTree';
+      name: string;
     }>;
