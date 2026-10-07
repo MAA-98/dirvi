@@ -22,7 +22,8 @@
     "deps:check": "depcruise --validate .dependency-cruiser.cjs packages",
     "deps:svg": "depcruise packages --output-type dot | dot -T svg > dependency-graph.svg",
     "deps:svg:lib": "depcruise packages/dirvi-lib --output-type dot | dot -T svg > dependency-graph-lib.svg",
-    "deps:svg:cli": "depcruise packages/dirvi-cli --output-type dot | dot -T svg > dependency-graph-cli.svg"
+    "deps:svg:cli": "depcruise packages/dirvi-cli --output-type dot | dot -T svg > dependency-graph-cli.svg",
+    "loc": "find . -type d -name node_modules -prune -o -type d -name src -print -exec find {} -type f -print0 \\; | xargs -0 wc -l | tail -n 1"
   },
   "repository": {
     "type": "git",

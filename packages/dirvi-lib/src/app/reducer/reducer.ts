@@ -3,7 +3,7 @@ import type {
   SerializableKey,
   State,
   TreeNodeApi,
-} from '../trees/index.js';
+} from '../../trees/index.js';
 import type { ReducerAction } from './reducer-action.js';
 
 function firstAvailableAdditionalFoldIndex<Id extends SerializableKey, Value>(

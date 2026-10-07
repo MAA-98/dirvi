@@ -72,13 +72,20 @@ while another active fold tree contains it.
 Have a dictionary of fold trees, instead of just one. Toggle whether a fold tree is active using:
 
 ```
-:fold enable foldTreeName    # tree contributes to hiding entries
-:fold disable foldTreeName   # tree no longer contributes to hiding entries
-:fold toggle foldTreeName
+:fold enable [foldTreeName]   # tree contributes to hiding entries
+:fold disable [foldTreeName]  # tree no longer contributes to hiding entries
+
+:fold close [foldTreeName]    # alias for :fold enable
+:fold open [foldTreeName]     # alias for :fold disable
+
+:fold toggle [foldTreeName]
 ```
 
-in command mode, and `[index]zc` enables the fold tree (hides its entries from UI), `[index]zo` disables the fold tree:
-reveals its entries if no other active tree hides them, and `[index]za` in normal mode.
+in command mode. When `foldTreeName` is omitted, it refers to
+the fold tree named `default`.
+
+In normal mode `[index]zc` enables the fold tree (hides its entries from UI), `[index]zo` disables the fold tree:
+reveals its entries if no other active tree hides them, and `[index]za` toggles.
 
 Similarly `[index]zf` adds the current entry to the fold tree at `[index]` and `[index]zd` removes the current entry
 from the fold tree at `[index]`.
@@ -92,7 +99,6 @@ Controls for managing fold trees should also be added:
 :fold list
 :fold create foldTreeName
 :fold delete foldTreeName
-:fold rename oldName newName
 ```
 
 A fresh view will start with an empty fold tree named `default` and index `0`. Fold commands with no index or name
@@ -105,3 +111,5 @@ target the fold tree at index `0`.
 Indexes identify fold trees within the current view. When a fold tree is
 deleted, its index may be reused by a newly created fold tree. Names are the
 durable user-facing references to fold trees.
+
+TODO Later: Add command `:fold rename oldName newName` and `:fold copy oldName newName`

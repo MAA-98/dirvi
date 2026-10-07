@@ -2,6 +2,7 @@ import type { SerializableKey } from '../../trees/index.js';
 import type { Effect } from '../domain/index.js';
 
 const DEFAULT_VIEW_NAME = 'default';
+const DEFAULT_FOLD_TREE_NAME = 'default';
 
 function parseFoldCommand<Id extends SerializableKey, Value>(
   commandArgs: readonly string[],
@@ -44,6 +45,59 @@ function parseFoldCommand<Id extends SerializableKey, Value>(
             action: {
               effectActionType: 'deleteFoldTree',
               name,
+            },
+          };
+
+    case 'enable':
+    case 'close':
+      return commandArgs.length > 2
+        ? {
+            effectType: 'unrecognizedCommand',
+            commandLine: `fold ${commandArgs.join(' ')}`,
+          }
+        : {
+            effectType: 'dispatchEffectAction',
+            action: {
+              effectActionType: 'fold',
+              foldTree: {
+                foldTreeReferenceType: 'name',
+                name: name ?? DEFAULT_FOLD_TREE_NAME,
+              },
+            },
+          };
+
+    case 'disable':
+    case 'open':
+      return commandArgs.length > 2
+        ? {
+            effectType: 'unrecognizedCommand',
+            commandLine: `fold ${commandArgs.join(' ')}`,
+          }
+        : {
+            effectType: 'dispatchEffectAction',
+            action: {
+              effectActionType: 'unfold',
+              foldTree: {
+                foldTreeReferenceType: 'name',
+                name: name ?? DEFAULT_FOLD_TREE_NAME,
+              },
+            },
+          };
+
+    case 'toggle':
+      return commandArgs.length > 2
+        ? {
+            effectType: 'unrecognizedCommand',
+            commandLine: `fold ${commandArgs.join(' ')}`,
+          }
+        : {
+            effectType: 'dispatchEffectAction',
+            action: {
+              effectActionType: 'toggleFold',
+              foldTree: {
+                foldTreeReferenceType: 'name',
+                name: name ?? DEFAULT_FOLD_TREE_NAME,
+              },
             },
           };
 

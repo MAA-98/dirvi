@@ -7,8 +7,8 @@ import type {
   NavNodeApi,
   SerializableKey,
   State,
-} from '../trees/index.js';
-import type { EffectAction, FoldTreeReference } from '../input/domain/index.js';
+} from '../../trees/index.js';
+import type { EffectAction, FoldTreeReference } from '../../input/domain/index.js';
 import type { ReducerAction } from './reducer-action.js';
 
 export type EffectToActionResult<Id extends SerializableKey, Value> =

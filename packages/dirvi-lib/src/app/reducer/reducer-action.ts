@@ -3,7 +3,7 @@ import type {
   SerializableKey,
   State,
   TreeNode,
-} from '../trees/index.js';
+} from '../../trees/index.js';
 
 export type ReducerAction<Id extends SerializableKey, Value> =
   | {
