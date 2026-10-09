@@ -4,7 +4,7 @@ import { Command } from 'commander';
 import { render } from 'ink';
 
 import { AppShell } from './ui/AppShell.js';
-import { loadNodeConfigApi } from './infrastructure/load-node-config-api.js';
+import { loadNodeConfig } from './infrastructure/load-node-config.js';
 import { loadNodePosixAppApi } from './infrastructure/load-node-posix-app-api.js';
 
 const program = new Command();
@@ -50,6 +50,8 @@ program
 
     const useAlternateScreen = uiOutput.isTTY === true;
     const stdoutIsInteractive = process.stdout.isTTY === true;
+    
+    const config = await loadNodeConfig();
 
     if (useAlternateScreen) {
       uiOutput.write(enterAlternateScreen);
@@ -82,7 +84,7 @@ program
     try {
       const app = render(
         <AppShell
-          loadConfigApi={loadNodeConfigApi}
+          config={config}
           loadPosixAppApi={loadNodePosixAppApi}
           {...(options.directory === undefined
             ? {}

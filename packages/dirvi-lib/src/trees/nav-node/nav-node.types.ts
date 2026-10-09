@@ -1,7 +1,6 @@
 import type { SerializableKey, TreeNode } from '../tree-node/index.js';
 import type { Cursor } from '../cursor.js';
 import type { Folds } from '../fold-node/index.js';
-import type { AppApi } from '../../app/index.js';
 
 export type NavNode<Id extends SerializableKey> = {
   /**

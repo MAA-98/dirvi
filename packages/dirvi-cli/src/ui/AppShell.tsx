@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
 import { AppSetup } from './AppSetup.js';
-import type { ConfigApi } from '../application/config-api.js';
+import type { Config } from '../domain/config.js';
 import type { AppApi } from 'dirvi-lib';
 import type { PosixEntry, PosixName } from '../domain/posix-tree-node.js';
 import type { UnixAbsolutePath } from '../domain/unix-path.js';
@@ -14,12 +14,13 @@ import type { UnixAbsolutePath } from '../domain/unix-path.js';
  */
 export type ShellAppProps = {
   /**
-   * Creates the configuration API.
+   * Resolved startup configuration.
    *
-   * The returned API owns configuration loading, saving, file watching, and
-   * change subscriptions.
+   * The composition root evaluates init.mjs before rendering the UI, so
+   * configuration is already validated and does not change while this shell
+   * is running.
    */
-  loadConfigApi: () => ConfigApi;
+  config: Config;
 
   /**
    * Creates the POSIX application API for the selected directory.
@@ -50,22 +51,21 @@ export type ShellAppProps = {
 };
 
 /**
- * Composes the application APIs and renders the loading application.
+ * Composes the application API and renders the application setup.
  *
- * `AppShell` is kept independent of the concrete infrastructure
- * implementations by receiving API loader functions through its props.
- * It memoizes the resulting API instances so their watchers and
+ * `AppShell` is kept independent of the concrete POSIX infrastructure by
+ * receiving the POSIX API loader through its props. Startup configuration is
+ * evaluated by the composition root before rendering and is passed in as an
+ * already validated value.
+ *
+ * The shell memoizes the POSIX API instance so its filesystem watchers and
  * subscriptions are not recreated during ordinary React renders.
  *
- * The APIs themselves own their file watchers and subscriptions. The shell
- * only owns the identity of the API instances and passes them to
- * `LoadingApp`.
- *
- * @param props - API loaders, optional directory option, and application
- * callbacks.
+ * @param props - Startup configuration, POSIX API loader, optional directory,
+ * and application callbacks.
  */
 export function AppShell({
-  loadConfigApi,
+  config,
   loadPosixAppApi,
   directory,
   stdout,
@@ -74,7 +74,6 @@ export function AppShell({
 }: ShellAppProps) {
   // Owns stable API instances.
   // The APIs own their file watchers and subscriptions.
-  const configApi = useMemo(() => loadConfigApi(), [loadConfigApi]);
   const posixAppApi = useMemo(
     () => loadPosixAppApi(directory),
     [directory, loadPosixAppApi],
@@ -82,7 +81,7 @@ export function AppShell({
 
   return (
     <AppSetup
-      configApi={configApi}
+      loadedConfig={config}
       appApi={posixAppApi}
       {...(stdout === undefined ? {} : { stdout })}
       {...(clipboard === undefined ? {} : { clipboard })}

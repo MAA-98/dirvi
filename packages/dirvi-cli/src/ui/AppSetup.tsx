@@ -9,12 +9,11 @@ import {
 import type { AppApi, SerializableKey, State } from 'dirvi-lib';
 
 import { App } from './App.js';
-import { ConfigApi } from '../application/config-api.js';
-import { Config } from '../domain/config.js';
+import type { Config } from '../domain/config.js';
 
 type LoadingAppProps<Id extends SerializableKey, Value, ViewKey = string> = {
   appApi: AppApi<Id, Value, ViewKey>;
-  configApi: ConfigApi;
+  loadedConfig: Config;
   stdout?: (message: string) => void;
   clipboard?: (value: string) => void;
   onError?: (error: Error) => void;
@@ -22,56 +21,57 @@ type LoadingAppProps<Id extends SerializableKey, Value, ViewKey = string> = {
 
 export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
   appApi,
-  configApi,
+  loadedConfig,
   stdout,
   clipboard,
   onError,
 }: LoadingAppProps<Id, Value, ViewKey>) {
   const [initialState, setInitialState] = useState<State<Id, Value>>();
-  const [config, setConfig] = useState<Config>();
+  const [config, setConfig] = useState<Config>(loadedConfig);
   const [error, setError] = useState<Error>();
 
+  
   // Load the initial configuration and keep it synchronized with changes made
   // by another process or another running direx instance.
-  useEffect(() => {
-    let mounted = true;
-    let latestLoad = 0;
-
-    const loadConfig = (): void => {
-      const loadNumber = ++latestLoad;
-
-      void configApi
-        .load()
-        .then((nextConfig) => {
-          // Ignore a stale read if a newer config read has begun meanwhile.
-          if (!mounted || loadNumber !== latestLoad) {
-            return;
-          }
-
-          setConfig(nextConfig);
-        })
-        .catch((cause: unknown) => {
-          if (!mounted || loadNumber !== latestLoad) {
-            return;
-          }
-
-          const nextError =
-            cause instanceof Error ? cause : new Error(String(cause));
-
-          setError(nextError);
-          onError?.(nextError);
-        });
-    };
-
-    // Subscribe before the first load so a change during startup is not missed.
-    const unsubscribe = configApi.subscribeToResync(loadConfig);
-    loadConfig();
-
-    return () => {
-      mounted = false;
-      unsubscribe();
-    };
-  }, [configApi, onError]);
+  // useEffect(() => {
+  //   let mounted = true;
+  //   let latestLoad = 0;
+  //
+  //   const loadConfig = (): void => {
+  //     const loadNumber = ++latestLoad;
+  //
+  //     void configApi
+  //       .load()
+  //       .then((nextConfig) => {
+  //         // Ignore a stale read if a newer config read has begun meanwhile.
+  //         if (!mounted || loadNumber !== latestLoad) {
+  //           return;
+  //         }
+  //
+  //         setConfig(nextConfig);
+  //       })
+  //       .catch((cause: unknown) => {
+  //         if (!mounted || loadNumber !== latestLoad) {
+  //           return;
+  //         }
+  //
+  //         const nextError =
+  //           cause instanceof Error ? cause : new Error(String(cause));
+  //
+  //         setError(nextError);
+  //         onError?.(nextError);
+  //       });
+  //   };
+  //
+  //   // Subscribe before the first load so a change during startup is not missed.
+  //   const unsubscribe = configApi.subscribeToResync(loadConfig);
+  //   loadConfig();
+  //
+  //   return () => {
+  //     mounted = false;
+  //     unsubscribe();
+  //   };
+  // }, [configApi, onError]);
 
   // Loading and setting initial state.
   useEffect(() => {
@@ -143,7 +143,7 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
     return <Text color="red">{error.message}</Text>;
   }
 
-  if (initialState === undefined || config === undefined) {
+  if (initialState === undefined) {
     return <Text dimColor>Loading.</Text>;
   }
 
