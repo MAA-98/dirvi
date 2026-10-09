@@ -50,7 +50,7 @@ program
 
     const useAlternateScreen = uiOutput.isTTY === true;
     const stdoutIsInteractive = process.stdout.isTTY === true;
-    
+
     const config = await loadNodeConfig();
 
     if (useAlternateScreen) {

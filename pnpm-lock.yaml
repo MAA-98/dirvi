@@ -43,9 +43,6 @@ importers:
       dirvi-lib:
         specifier: workspace:*
         version: link:../dirvi-lib
-      env-paths:
-        specifier: ^4.0.0
-        version: 4.0.0
       ink:
         specifier: ^7.1.1
         version: 7.1.1(@types/react@19.2.17)(react@19.2.7)
@@ -912,13 +909,6 @@ packages:
       }
     engines: { node: '>=0.12' }
 
-  env-paths@4.0.0:
-    resolution:
-      {
-        integrity: sha512-pxP8eL2SwwaTRi/KHYwLYXinDs7gL3jxFcBYmEdYfZmZXbaVDvdppd0XBU8qVz03rDfKZMXg1omHCbsJjZrMsw==,
-      }
-    engines: { node: '>=20' }
-
   environment@1.1.0:
     resolution:
       {
@@ -1125,13 +1115,6 @@ packages:
         integrity: sha512-lJJV/5dYS+RcL8uQdBDW9c9uWFLLBNRyFhnAKXw5tVqLlKZ4RMGZKv+YQ/IA3OhD+RpbJa1LLFM1FQPGyIXvOA==,
       }
     engines: { node: '>=12' }
-
-  is-safe-filename@0.1.1:
-    resolution:
-      {
-        integrity: sha512-4SrR7AdnY11LHfDKTZY1u6Ga3RuxZdl3YKWWShO5iyuG5h8QS4GD2tOb04peBJ5I7pXbR+CGBNEhTcwK+FzN3g==,
-      }
-    engines: { node: '>=20' }
 
   istanbul-lib-coverage@3.2.2:
     resolution:
@@ -2282,10 +2265,6 @@ snapshots:
 
   entities@4.5.0: {}
 
-  env-paths@4.0.0:
-    dependencies:
-      is-safe-filename: 0.1.1
-
   environment@1.1.0: {}
 
   es-errors@1.3.0: {}
@@ -2418,8 +2397,6 @@ snapshots:
       is-path-inside: 4.0.0
 
   is-path-inside@4.0.0: {}
-
-  is-safe-filename@0.1.1: {}
 
   istanbul-lib-coverage@3.2.2: {}
 

@@ -163,14 +163,14 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           navEntry,
           state,
         );
-        
+
         // A completed normal-mode command or submitted Ex command always
         // leaves its input buffer, whether it succeeds, is rejected, or no-ops.
         setInputState({
           inputMode: 'normal',
           normalBuffer: '',
         });
-        
+
         switch (effectActionResult.kind) {
           case 'action':
             dispatch(effectActionResult.action);
@@ -184,7 +184,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
             return;
 
           default:
-            return
+            return;
         }
 
       case 'setInputState':

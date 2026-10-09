@@ -30,7 +30,6 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
   const [config, setConfig] = useState<Config>(loadedConfig);
   const [error, setError] = useState<Error>();
 
-  
   // Load the initial configuration and keep it synchronized with changes made
   // by another process or another running direx instance.
   // useEffect(() => {

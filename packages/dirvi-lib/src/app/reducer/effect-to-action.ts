@@ -8,7 +8,10 @@ import type {
   SerializableKey,
   State,
 } from '../../trees/index.js';
-import type { EffectAction, FoldTreeReference } from '../../input/domain/index.js';
+import type {
+  EffectAction,
+  FoldTreeReference,
+} from '../../input/domain/index.js';
 import type { ReducerAction } from './reducer-action.js';
 
 export type EffectToActionResult<Id extends SerializableKey, Value> =
@@ -106,7 +109,7 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
       kind: 'ignored',
     };
   }
-  
+
   function effectToAction(
     effectAction: EffectAction<Id, Value>,
     navigation: NavBranch<Id>,

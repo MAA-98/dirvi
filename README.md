@@ -1,15 +1,15 @@
 # dirvi
 
-A TUI for navigating and interacting with tree structures. Heavily inspired by Vim/Neovim, 
-to provide a similar fast and extensible editing environment, but for trees rather than 
+A TUI for navigating and interacting with tree structures. Heavily inspired by Vim/Neovim,
+to provide a similar fast and extensible editing environment, but for trees rather than
 text buffers.
 
 ## Design Goals
 
 - Navigate and manipulate trees in a way reminiscent of how Vim/Neovim navigates and manipulates
-text buffers.
+  text buffers.
 - Programmable configurations and easy to connect to other processes (c.f. Unix philosophy).
-- Two examples of `dirvi` apps: for directories and XML. 
+- Two examples of `dirvi` apps: for directories and XML.
 
 ## Installation
 
@@ -85,13 +85,13 @@ Normal mode is the default mode when `dirvi` starts.
 
 ##### Folds
 
-| Key sequence    | Action |
-| --------------- | ------ |
-| `[index]zf`     | Add the current entry to the fold tree at `index` |
-| `[index]zd`     | Remove the current entry from the fold tree at `index` |
-| `[index]zc`     | Enable the fold tree at `index`, hiding its entries |
-| `[index]zo`     | Disable the fold tree at `index`, revealing entries not hidden by another enabled fold tree |
-| `[index]za`     | Toggle whether the fold tree at `index` is enabled |
+| Key sequence | Action                                                                                      |
+| ------------ | ------------------------------------------------------------------------------------------- |
+| `[index]zf`  | Add the current entry to the fold tree at `index`                                           |
+| `[index]zd`  | Remove the current entry from the fold tree at `index`                                      |
+| `[index]zc`  | Enable the fold tree at `index`, hiding its entries                                         |
+| `[index]zo`  | Disable the fold tree at `index`, revealing entries not hidden by another enabled fold tree |
+| `[index]za`  | Toggle whether the fold tree at `index` is enabled                                          |
 
 `index` is a non-negative fold-tree index. When omitted, it defaults to `0`,
 which is the default fold tree. For example, `2zf` adds the current entry to
@@ -111,18 +111,18 @@ The status bar displays the command line at the bottom left.
 
 Currently supported commands:
 
-| Command | Action |
-| ------- | ------ |
-| `:q` | Quit `dirvi` |
-| `:evlp` | Experimental: Send to stdout an array of paths of the visible leaves |
-| `:fold list` | List fold trees in the current view |
-| `:fold create <name>` | Create a named fold tree |
-| `:fold delete <name>` | Delete a named fold tree |
-| `:fold enable [name]` | Enable a fold tree so its entries are hidden |
-| `:fold disable [name]` | Disable a fold tree so it no longer hides entries |
-| `:fold close [name]` | Alias for `:fold enable` |
-| `:fold open [name]` | Alias for `:fold disable` |
-| `:fold toggle [name]` | Toggle whether a fold tree is enabled |
+| Command                | Action                                                               |
+| ---------------------- | -------------------------------------------------------------------- |
+| `:q`                   | Quit `dirvi`                                                         |
+| `:evlp`                | Experimental: Send to stdout an array of paths of the visible leaves |
+| `:fold list`           | List fold trees in the current view                                  |
+| `:fold create <name>`  | Create a named fold tree                                             |
+| `:fold delete <name>`  | Delete a named fold tree                                             |
+| `:fold enable [name]`  | Enable a fold tree so its entries are hidden                         |
+| `:fold disable [name]` | Disable a fold tree so it no longer hides entries                    |
+| `:fold close [name]`   | Alias for `:fold enable`                                             |
+| `:fold open [name]`    | Alias for `:fold disable`                                            |
+| `:fold toggle [name]`  | Toggle whether a fold tree is enabled                                |
 
 When a fold command omits `name`, it targets the fold tree named `default`.
 
@@ -266,20 +266,20 @@ Fold state is independent of the materialized directory buffer:
 
 - What is the use case?
 
-I use the directory app for navigating project files, with fold trees now becoming 
-the indispensable way for me to quickly view files relevant to a specific part 
+I use the directory app for navigating project files, with fold trees now becoming
+the indispensable way for me to quickly view files relevant to a specific part
 of the project.
 
 - Why make it a separate app instead of a Vim/Neovim plugin?
 
-I don't know Vimscript or Lua well enough. I wanted to focus on design and easy 
+I don't know Vimscript or Lua well enough. I wanted to focus on design and easy
 iteration rather than how to make it work as a plugin, so I wrote it as standalone.
 Someday I may write it as a plugin too.
 
 - Why write it using TypeScript/React/Ink?
 
 As for the answer above, it was the easiest way for me to get started. If there's
-enough interest I would consider rewriting in Rust, which shouldn't be too hard. 
+enough interest I would consider rewriting in Rust, which shouldn't be too hard.
 
 ## Licensing
 

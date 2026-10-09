@@ -32,7 +32,7 @@ export function ViewRowComponent({ row, config }: ViewRowComponentProps) {
   const cursorRowBgColor = colorConfigToInkColor(
     config.theme.tree.cursorLine.bg,
   );
-  
+
   const indentationGuideColor =
     config.theme.tree.indentGuide.fg === undefined
       ? undefined
@@ -64,7 +64,7 @@ export function ViewRowComponent({ row, config }: ViewRowComponentProps) {
               {indentation}
             </Text>
           )}
-          
+
           <Text color={leafColor}>{row.content}</Text>
         </Box>
       );

@@ -129,7 +129,7 @@ export type NavNodeApi<Id extends SerializableKey, Value> = {
     rootNode: NavBranch<Id>,
     cursor: Cursor<Id>,
   ): Cursor<Id> | undefined;
-  
+
   /**
    * Returns undefined if at the root already, i.e. cursor is [].
    * @param navigation
