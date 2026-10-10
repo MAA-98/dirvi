@@ -1,0 +1,1 @@
+export { posixAppPlugin, type PosixAppOpenInput } from './posix-fs-dirvi-app.js';

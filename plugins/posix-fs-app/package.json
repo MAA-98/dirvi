@@ -1,0 +1,33 @@
+{
+  "name": "@mak-98/posix-fs-dirvi-app",
+  "version": "0.10.0",
+  "description": "POSIX filesystem tree app for dirvi.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier src --write"
+  },
+  "dependencies": {
+    "dirvi-apis": "workspace:*",
+    "dirvi-lib": "workspace:*",
+    "zod": "^4.4.3",
+    "env-paths": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0"
+  },
+  "license": "GPL-3.0-or-later",
+  "type": "module"
+}
