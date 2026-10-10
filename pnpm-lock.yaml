@@ -33,6 +33,16 @@ importers:
         specifier: ^4.1.11
         version: 4.1.11(@types/node@22.20.1)(@vitest/coverage-v8@4.1.11)(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.0)(tsx@4.22.4)(yaml@2.9.1))
 
+  packages/dirvi-apis:
+    dependencies:
+      dirvi-lib:
+        specifier: workspace:*
+        version: link:../dirvi-lib
+    devDependencies:
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+
   packages/dirvi-cli:
     dependencies:
       chalk:
@@ -41,6 +51,9 @@ importers:
       commander:
         specifier: ^13.0.0
         version: 13.1.0
+      dirvi-apis:
+        specifier: workspace:*
+        version: link:../dirvi-apis
       dirvi-lib:
         specifier: workspace:*
         version: link:../dirvi-lib
