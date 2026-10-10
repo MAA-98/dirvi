@@ -3,8 +3,8 @@ import { spawn } from 'node:child_process';
 import { Command } from 'commander';
 import { render } from 'ink';
 
-import { AppShell } from './ui/AppShell.js';
-import { loadNodeConfig } from './infrastructure/load-node-config.js';
+import { Shell } from './ui/Shell.js';
+import { loadNodeInit } from './infrastructure/load-node-init.js';
 import { loadNodePosixAppApi } from './infrastructure/load-node-posix-app-api.js';
 
 const program = new Command();
@@ -51,7 +51,7 @@ program
     const useAlternateScreen = uiOutput.isTTY === true;
     const stdoutIsInteractive = process.stdout.isTTY === true;
 
-    const config = await loadNodeConfig();
+    const init = await loadNodeInit();
 
     if (useAlternateScreen) {
       uiOutput.write(enterAlternateScreen);
@@ -83,8 +83,8 @@ program
 
     try {
       const app = render(
-        <AppShell
-          config={config}
+        <Shell
+          config={init.config}
           loadPosixAppApi={loadNodePosixAppApi}
           {...(options.directory === undefined
             ? {}

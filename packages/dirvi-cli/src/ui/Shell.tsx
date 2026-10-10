@@ -7,7 +7,7 @@ import type { PosixEntry, PosixName } from '../domain/posix-tree-node.js';
 import type { UnixAbsolutePath } from '../domain/unix-path.js';
 
 /**
- * Dependencies and output callbacks required by {@link AppShell}.
+ * Dependencies and output callbacks required by {@link Shell}.
  *
  * The API loader functions are injected so the shell does not depend directly
  * on a platform-specific infrastructure implementation.
@@ -64,7 +64,7 @@ export type ShellAppProps = {
  * @param props - Startup configuration, POSIX API loader, optional directory,
  * and application callbacks.
  */
-export function AppShell({
+export function Shell({
   config,
   loadPosixAppApi,
   directory,

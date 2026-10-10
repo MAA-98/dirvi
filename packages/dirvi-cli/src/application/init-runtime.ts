@@ -1,5 +1,6 @@
 import type { Config } from '../domain/config.js';
 import { ConfigSchema, defaultConfig } from '../domain/config.js';
+import type { AppPlugin } from './app-plugin.js';
 
 /**
  * A recursively optional form of a configuration value.
@@ -29,10 +30,32 @@ export type ConfigPatch = DeepPartial<Config>;
  * This is intentionally a narrow facade. It is the public scripting boundary,
  * rather than an escape hatch into UI state or infrastructure implementations.
  */
-export type DirviConfigApi = {
+export type InitApi = {
   readonly options: {
     set: (patch: ConfigPatch) => void;
   };
+  readonly apps: {
+    /**
+     * Registers an application made available by init.mjs.
+     */
+    use: (appPlugin: AppPlugin) => void;
+    /**
+     * Selects the app that should initially be opened by the shell.
+     */
+    initial: (appId: string) => void;
+  };
+};
+
+/**
+ * Everything registered while init.mjs was evaluated.
+ *
+ * Config is shared tree-UI configuration. App selection is distinct from Config
+ * value.
+ */
+export type Init = {
+  readonly config: Config;
+  readonly appPlugins: readonly AppPlugin[];
+  readonly initialAppId: string | undefined; // TODO: require id when builtin is gone
 };
 
 /**
@@ -41,9 +64,9 @@ export type DirviConfigApi = {
  * The application exposes `api` to the script, then calls `finish()` once
  * evaluation completes to seal registration and obtain the validated Config.
  */
-export type ConfigRuntime = {
-  readonly api: DirviConfigApi;
-  readonly finish: () => Config;
+export type InitRuntime = {
+  readonly api: InitApi;
+  readonly finish: () => Init;
 };
 
 /**
@@ -52,8 +75,10 @@ export type ConfigRuntime = {
  * Each runtime owns its own mutable configuration while registration is open.
  * The mutable state is not exposed directly to the config script.
  */
-export function createConfigRuntime(): ConfigRuntime {
+export function createInitRuntime(): InitRuntime {
   let config = defaultConfig;
+  let initialAppId: string | undefined;
+  const appPlugins = new Map<string, AppPlugin>();
   let finished = false;
 
   return {
@@ -64,7 +89,7 @@ export function createConfigRuntime(): ConfigRuntime {
           // after the host has finished evaluating and consuming it.
           if (finished) {
             throw new Error(
-              'Configuration registration is closed. Configure dirvi while init.mjs is being evaluated.',
+              'Initialization has finished. Configure dirvi while init.mjs is being evaluated.',
             );
           }
 
@@ -73,11 +98,51 @@ export function createConfigRuntime(): ConfigRuntime {
           config = ConfigSchema.parse(merge(config, patch));
         },
       },
+
+      apps: {
+        use: (appPlugin) => {
+          if (finished) {
+            throw new Error(
+              'Initialization has finished. Register apps while init.mjs is being evaluated.',
+            );
+          }
+
+          if (appPlugin.id.trim().length === 0) {
+            throw new Error('App plugin ID must not be empty.');
+          }
+
+          if (appPlugins.has(appPlugin.id)) {
+            throw new Error(
+              `An app plugin with ID "${appPlugin.id}" is already registered.`,
+            );
+          }
+
+          appPlugins.set(appPlugin.id, appPlugin);
+        },
+        
+        initial: (appId) => {
+          if (finished) {
+            throw new Error(
+              'Initialization has finished. Select an initial app while init.mjs is being evaluated.',
+            );
+          }
+
+          if (appId.trim().length === 0) {
+            throw new Error('App ID must not be empty.');
+          }
+
+          initialAppId = appId;
+        },
+      },
     },
 
     finish: () => {
       finished = true;
-      return config;
+      return {
+        config,
+        appPlugins: [...appPlugins.values()],
+        initialAppId,
+      };
     },
   };
 }
