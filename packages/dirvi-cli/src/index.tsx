@@ -6,7 +6,7 @@ import { render } from 'ink';
 import { Shell } from './ui/Shell.js';
 import { loadNodeInit } from './infrastructure/load-node-init.js';
 import { loadNodePosixAppApi } from './infrastructure/load-node-posix-app-api.js';
-import envPaths from 'env-paths';
+import { getXdgDataHome } from './infrastructure/get-xdg-data-home.js';
 import { createNodeAppPackageInstaller } from './infrastructure/node-app-package-installer.js';
 import { join } from 'node:path';
 
@@ -36,6 +36,12 @@ const restoreTerminal = () => {
 process.on('exit', restoreTerminal);
 
 // =============================================================================
+// Resolving Paths
+// =============================================================================
+const dirviDataDirectory = join(getXdgDataHome(), 'dirvi');
+const npmAppsDirectory = join(dirviDataDirectory, 'site', 'pack', 'apps', 'opt', 'npm')
+
+// =============================================================================
 // Commands
 // =============================================================================
 program
@@ -54,16 +60,9 @@ program
     const useAlternateScreen = uiOutput.isTTY === true;
     const stdoutIsInteractive = process.stdout.isTTY === true;
     
-    const dirviPaths = envPaths('dirvi');
 
     const appPackageInstaller = createNodeAppPackageInstaller({
-      appPackagesDirectory: join(
-        dirviPaths.data,
-        'site',
-        'pack',
-        'dirvi',
-        'opt',
-      ),
+      appPackagesDirectory: npmAppsDirectory
     });
     
     const init = await loadNodeInit({

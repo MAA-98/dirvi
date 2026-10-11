@@ -171,6 +171,11 @@ export function createInitRuntime(
         );
       }
       finished = true;
+      if (initialAppId !== undefined && !appPlugins.has(initialAppId)) {
+        throw new Error(
+          `The startup app "${initialAppId}" was not registered with dirvi.apps.use(...).`,
+        );
+      }
       return {
         config,
         appPlugins: [...appPlugins.values()],
