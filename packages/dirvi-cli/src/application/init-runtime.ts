@@ -59,7 +59,7 @@ export type InitApi = {
 export type Init = {
   readonly config: Config;
   readonly appPlugins: readonly AppPlugin[];
-  readonly initialAppId: string | undefined; // TODO: require id when builtin is gone
+  readonly initialAppId: string;
 };
 
 export type InitRuntimeDependencies = {
@@ -83,9 +83,7 @@ export type InitRuntime = {
  * Each runtime owns its own mutable configuration while registration is open.
  * The mutable state is not exposed directly to the config script.
  */
-export function createInitRuntime(
-  deps: InitRuntimeDependencies
-): InitRuntime {
+export function createInitRuntime(deps: InitRuntimeDependencies): InitRuntime {
   let config = defaultConfig;
   let initialAppId: string | undefined;
   const appPlugins = new Map<string, AppPlugin>();
@@ -117,17 +115,16 @@ export function createInitRuntime(
               'Initialization has finished. Install apps while init.mjs is being evaluated.',
             );
           }
-          
-          const installation =
-            deps.appPackageInstaller.install(ref);
-          
+
+          const installation = deps.appPackageInstaller.install(ref);
+
           pendingAppInstallations.add(installation);
-          
+
           return installation.finally(() => {
             pendingAppInstallations.delete(installation);
           });
         },
-        
+
         use: (appPlugin) => {
           if (finished) {
             throw new Error(
@@ -147,7 +144,7 @@ export function createInitRuntime(
 
           appPlugins.set(appPlugin.id, appPlugin);
         },
-        
+
         startupApp: (appId) => {
           if (finished) {
             throw new Error(
@@ -171,9 +168,14 @@ export function createInitRuntime(
         );
       }
       finished = true;
-      if (initialAppId !== undefined && !appPlugins.has(initialAppId)) {
+      if (initialAppId === undefined) {
         throw new Error(
-          `The startup app "${initialAppId}" was not registered with dirvi.apps.use(...).`,
+          'Initialization did not select a startup app. Call dirvi.apps.startupApp(appId) in init.mjs.',
+        );
+      }
+      if (!appPlugins.has(initialAppId)) {
+        throw new Error(
+          `Startup app "${initialAppId}" has not been registered. Call dirvi.apps.use(appPlugin) first.`,
         );
       }
       return {

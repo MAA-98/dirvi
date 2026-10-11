@@ -1,10 +1,7 @@
-import { useMemo } from 'react';
+import type { OpenApp } from 'dirvi-apis';
 
 import { AppSetup } from './AppSetup.js';
 import type { Config } from '../domain/config.js';
-import type { AppApi } from 'dirvi-lib';
-import type { PosixEntry, PosixName } from '../domain/posix-tree-node.js';
-import type { UnixAbsolutePath } from '../domain/unix-path.js';
 
 /**
  * Dependencies and output callbacks required by {@link Shell}.
@@ -20,72 +17,70 @@ export type ShellAppProps = {
    * configuration is already validated and does not change while this shell
    * is running.
    */
-  config: Config;
+  readonly config: Config;
 
   /**
-   * Creates the POSIX application API for the selected directory.
+   * The application currently mounted in the shell.
    *
-   * The returned API owns directory loading, filesystem watching, and view
-   * persistence.
+   * OpenApp hides the concrete AppApi generic parameters from the persistent
+   * shell while allowing AppSetup to receive a coherent concrete AppApi.
    */
-  loadPosixAppApi: (
-    directory?: string,
-  ) => AppApi<PosixName, PosixEntry, UnixAbsolutePath>;
+  readonly activeApp: OpenApp;
 
-  /**
-   * Optional directory to browse.
-   *
-   * When omitted, the platform-specific loader determines the default
-   * directory.
-   */
-  directory?: string;
+  // /**
+  //  * Creates the POSIX application API for the selected directory.
+  //  *
+  //  * The returned API owns directory loading, filesystem watching, and view
+  //  * persistence.
+  //  */
+  // loadPosixAppApi: (
+  //   directory?: string,
+  // ) => AppApi<PosixName, PosixEntry, UnixAbsolutePath>;
+  //
+  // /**
+  //  * Optional directory to browse.
+  //  *
+  //  * When omitted, the platform-specific loader determines the default
+  //  * directory.
+  //  */
+  // directory?: string;
 
   /** Writes non-interactive application output. */
-  stdout?: (message: string) => void;
+  readonly stdout?: (message: string) => void;
 
   /** Copies a value to the platform clipboard. */
-  clipboard?: (value: string) => void;
+  readonly clipboard?: (value: string) => void;
 
   /** Receives errors that should be reported by the composition root. */
-  onError?: (error: Error) => void;
+  readonly onError?: (error: Error) => void;
 };
 
 /**
- * Composes the application API and renders the application setup.
+ * Hosts the currently active application inside the persistent terminal shell.
  *
- * `AppShell` is kept independent of the concrete POSIX infrastructure by
- * receiving the POSIX API loader through its props. Startup configuration is
- * evaluated by the composition root before rendering and is passed in as an
- * already validated value.
+ * Shell deliberately does not depend on a concrete AppApi type. OpenApp keeps
+ * each application's Id, Value, and ViewKey types coherent while hiding those
+ * details from shell-level concerns such as startup, app selection, terminal
+ * integration, clipboard access, and error reporting.
  *
- * The shell memoizes the POSIX API instance so its filesystem watchers and
- * subscriptions are not recreated during ordinary React renders.
- *
- * @param props - Startup configuration, POSIX API loader, optional directory,
- * and application callbacks.
+ * AppSetup receives the concrete AppApi and mounts the app-specific tree UI.
  */
 export function Shell({
   config,
-  loadPosixAppApi,
-  directory,
+  activeApp,
   stdout,
   clipboard,
   onError,
 }: ShellAppProps) {
-  // Owns stable API instances.
-  // The APIs own their file watchers and subscriptions.
-  const posixAppApi = useMemo(
-    () => loadPosixAppApi(directory),
-    [directory, loadPosixAppApi],
-  );
-
-  return (
-    <AppSetup
-      loadedConfig={config}
-      appApi={posixAppApi}
-      {...(stdout === undefined ? {} : { stdout })}
-      {...(clipboard === undefined ? {} : { clipboard })}
-      {...(onError === undefined ? {} : { onError })}
-    />
-  );
+  return activeApp.withAppApi({
+    render: (appApi) => (
+      <AppSetup
+        loadedConfig={config}
+        appApi={appApi}
+        {...(stdout === undefined ? {} : { stdout })}
+        {...(clipboard === undefined ? {} : { clipboard })}
+        {...(onError === undefined ? {} : { onError })}
+      />
+    ),
+  });
 }

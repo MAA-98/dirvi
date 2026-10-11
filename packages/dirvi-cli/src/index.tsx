@@ -5,7 +5,6 @@ import { render } from 'ink';
 
 import { Shell } from './ui/Shell.js';
 import { loadNodeInit } from './infrastructure/load-node-init.js';
-import { loadNodePosixAppApi } from './infrastructure/load-node-posix-app-api.js';
 import { getXdgDataHome } from './infrastructure/get-xdg-data-home.js';
 import { createNodeAppPackageInstaller } from './infrastructure/node-app-package-installer.js';
 import { join } from 'node:path';
@@ -39,7 +38,14 @@ process.on('exit', restoreTerminal);
 // Resolving Paths
 // =============================================================================
 const dirviDataDirectory = join(getXdgDataHome(), 'dirvi');
-const npmAppsDirectory = join(dirviDataDirectory, 'site', 'pack', 'apps', 'opt', 'npm')
+const npmAppsDirectory = join(
+  dirviDataDirectory,
+  'site',
+  'pack',
+  'apps',
+  'opt',
+  'npm',
+);
 
 // =============================================================================
 // Commands
@@ -59,16 +65,25 @@ program
 
     const useAlternateScreen = uiOutput.isTTY === true;
     const stdoutIsInteractive = process.stdout.isTTY === true;
-    
 
     const appPackageInstaller = createNodeAppPackageInstaller({
-      appPackagesDirectory: npmAppsDirectory
+      appPackagesDirectory: npmAppsDirectory,
     });
-    
     const init = await loadNodeInit({
       appPackageInstaller,
     });
-
+    const startupAppPlugin = init.appPlugins.find(
+      (appPlugin) => appPlugin.id === init.initialAppId,
+    );
+    if (startupAppPlugin === undefined) {
+      throw new Error(
+        `Startup app "${init.initialAppId}" was selected but is not registered.`,
+      );
+    }
+    const activeApp = startupAppPlugin.open(
+      options.directory === undefined ? {} : { directory: options.directory },
+    );
+    
     if (useAlternateScreen) {
       uiOutput.write(enterAlternateScreen);
       alternateScreenActive = true;
@@ -101,10 +116,7 @@ program
       const app = render(
         <Shell
           config={init.config}
-          loadPosixAppApi={loadNodePosixAppApi}
-          {...(options.directory === undefined
-            ? {}
-            : { directory: options.directory })}
+          activeApp={activeApp}
           {...(stdoutIsInteractive ? {} : { stdout })}
           clipboard={clipboard}
           onError={(error) => {
