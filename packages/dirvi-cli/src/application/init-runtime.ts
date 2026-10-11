@@ -1,6 +1,8 @@
 import type { Config } from '../domain/config.js';
 import { ConfigSchema, defaultConfig } from '../domain/config.js';
 import type { AppPlugin } from './app-plugin.js';
+import type { AppPackageReference } from './app-pack-ref.js';
+import type { AppPackageInstaller } from './app-pack-installer.js';
 
 /**
  * A recursively optional form of a configuration value.
@@ -34,7 +36,9 @@ export type InitApi = {
   readonly options: {
     set: (patch: ConfigPatch) => void;
   };
+
   readonly apps: {
+    install: (reference: AppPackageReference) => Promise<AppPlugin>;
     /**
      * Registers an application made available by init.mjs.
      */
@@ -42,7 +46,7 @@ export type InitApi = {
     /**
      * Selects the app that should initially be opened by the shell.
      */
-    initial: (appId: string) => void;
+    startupApp: (appId: string) => void;
   };
 };
 
@@ -56,6 +60,10 @@ export type Init = {
   readonly config: Config;
   readonly appPlugins: readonly AppPlugin[];
   readonly initialAppId: string | undefined; // TODO: require id when builtin is gone
+};
+
+export type InitRuntimeDependencies = {
+  readonly appPackageInstaller: AppPackageInstaller;
 };
 
 /**
@@ -75,10 +83,13 @@ export type InitRuntime = {
  * Each runtime owns its own mutable configuration while registration is open.
  * The mutable state is not exposed directly to the config script.
  */
-export function createInitRuntime(): InitRuntime {
+export function createInitRuntime(
+  deps: InitRuntimeDependencies
+): InitRuntime {
   let config = defaultConfig;
   let initialAppId: string | undefined;
   const appPlugins = new Map<string, AppPlugin>();
+  const pendingAppInstallations = new Set<Promise<AppPlugin>>();
   let finished = false;
 
   return {
@@ -100,6 +111,23 @@ export function createInitRuntime(): InitRuntime {
       },
 
       apps: {
+        install: (ref) => {
+          if (finished) {
+            throw new Error(
+              'Initialization has finished. Install apps while init.mjs is being evaluated.',
+            );
+          }
+          
+          const installation =
+            deps.appPackageInstaller.install(ref);
+          
+          pendingAppInstallations.add(installation);
+          
+          return installation.finally(() => {
+            pendingAppInstallations.delete(installation);
+          });
+        },
+        
         use: (appPlugin) => {
           if (finished) {
             throw new Error(
@@ -120,7 +148,7 @@ export function createInitRuntime(): InitRuntime {
           appPlugins.set(appPlugin.id, appPlugin);
         },
         
-        initial: (appId) => {
+        startupApp: (appId) => {
           if (finished) {
             throw new Error(
               'Initialization has finished. Select an initial app while init.mjs is being evaluated.',
@@ -137,6 +165,11 @@ export function createInitRuntime(): InitRuntime {
     },
 
     finish: () => {
+      if (pendingAppInstallations.size > 0) {
+        throw new Error(
+          'Initialization contains unfinished app installations. Await dirvi.apps.install(...).',
+        );
+      }
       finished = true;
       return {
         config,

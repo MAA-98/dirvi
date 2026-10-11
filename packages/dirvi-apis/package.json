@@ -1,7 +1,9 @@
 {
   "name": "dirvi-apis",
-  "version": "0.10.0",
+  "version": "0.11.0-beta.1",
   "description": "Public plugin and configuration APIs for dirvi.",
+  "license": "LGPL-3.0-or-later",
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -22,16 +24,15 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "clean": "rm -rf dist",
+    "build": "pnpm clean && tsc",
     "typecheck": "tsc --noEmit",
-    "format": "prettier src --write"
+    "format": "prettier . --write"
   },
   "dependencies": {
     "dirvi-lib": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.0.0"
-  },
-  "license": "LGPL-3.0-or-later",
-  "type": "module"
+  }
 }

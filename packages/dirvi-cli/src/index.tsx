@@ -6,6 +6,9 @@ import { render } from 'ink';
 import { Shell } from './ui/Shell.js';
 import { loadNodeInit } from './infrastructure/load-node-init.js';
 import { loadNodePosixAppApi } from './infrastructure/load-node-posix-app-api.js';
+import envPaths from 'env-paths';
+import { createNodeAppPackageInstaller } from './infrastructure/node-app-package-installer.js';
+import { join } from 'node:path';
 
 const program = new Command();
 
@@ -38,7 +41,7 @@ process.on('exit', restoreTerminal);
 program
   .name('direx')
   .description('View and manage directories.')
-  .version('0.10.0')
+  .version('0.11.0-beta.1')
   .helpOption('--help')
   .option('-d, --directory <path>', 'Directory to browse')
   .action(async () => {
@@ -50,8 +53,22 @@ program
 
     const useAlternateScreen = uiOutput.isTTY === true;
     const stdoutIsInteractive = process.stdout.isTTY === true;
+    
+    const dirviPaths = envPaths('dirvi');
 
-    const init = await loadNodeInit();
+    const appPackageInstaller = createNodeAppPackageInstaller({
+      appPackagesDirectory: join(
+        dirviPaths.data,
+        'site',
+        'pack',
+        'dirvi',
+        'opt',
+      ),
+    });
+    
+    const init = await loadNodeInit({
+      appPackageInstaller,
+    });
 
     if (useAlternateScreen) {
       uiOutput.write(enterAlternateScreen);

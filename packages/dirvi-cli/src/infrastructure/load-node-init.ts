@@ -3,7 +3,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import type { Init, InitApi } from '../application/init-runtime.js';
+import type { Init, InitApi, InitRuntimeDependencies } from '../application/init-runtime.js';
 import { createInitRuntime } from '../application/init-runtime.js';
 
 /**
@@ -47,14 +47,14 @@ const configPath = join(configDirectory, 'init.mjs');
  * @throws {Error} When init.mjs cannot be read, imported, executed, or when
  * configuration registered by the script is invalid.
  */
-export async function loadNodeInit(): Promise<Init> {
+export async function loadNodeInit(deps: InitRuntimeDependencies): Promise<Init> {
   await mkdir(configDirectory, { recursive: true });
 
   if (!(await configFileExists())) {
-    return createInitRuntime().finish();
+    return createInitRuntime(deps).finish();
   }
 
-  const runtime = createInitRuntime();
+  const runtime = createInitRuntime(deps);
   // Preserve an existing property descriptor so this loader does not leak its
   // startup API into the process after init.mjs evaluation completes.
   const previousDirvi = Object.getOwnPropertyDescriptor(globalThis, 'dirvi');

@@ -1,7 +1,7 @@
 {
   "name": "dirvi-lib",
-  "version": "0.10.0",
-  "description": "Dependency for dirvi apps.",
+  "version": "0.11.0-beta.1",
+  "description": "Dependency for dirvi.",
   "license": "LGPL-3.0-or-later",
   "type": "module",
   "main": "dist/index.js",
