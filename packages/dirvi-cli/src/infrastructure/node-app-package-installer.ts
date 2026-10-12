@@ -1,3 +1,5 @@
+import { App } from 'dirvi-apis';
+
 import { execFile } from 'node:child_process';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
@@ -6,7 +8,6 @@ import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
 import type { AppPackageInstaller } from '../application/app-pack-installer.js';
-import type { AppPlugin } from '../application/app-plugin.js';
 import type { AppPackageReference } from '../application/app-pack-ref.js';
 
 const execFileAsync = promisify(execFile);
@@ -30,7 +31,7 @@ export type NodeAppPackageInstallerOptions = {
 export function createNodeAppPackageInstaller(
   options: NodeAppPackageInstallerOptions,
 ): AppPackageInstaller {
-  const installations = new Map<string, Promise<AppPlugin>>();
+  const installations = new Map<string, Promise<App>>();
 
   return {
     install: (reference) => {
@@ -58,7 +59,7 @@ export function createNodeAppPackageInstaller(
 async function installAppPackage(
   options: NodeAppPackageInstallerOptions,
   reference: AppPackageReference,
-): Promise<AppPlugin> {
+): Promise<App> {
   const appPackageDirectory = join(
     options.appPackagesDirectory,
     getAppPackageDirectoryName(reference.packageName),
@@ -166,7 +167,7 @@ async function installWithNpm(
 async function loadInstalledAppPlugin(
   appPackageDirectory: string,
   reference: AppPackageReference,
-): Promise<AppPlugin> {
+): Promise<App> {
   const requireFromAppPackageDirectory = createRequire(
     join(appPackageDirectory, 'package.json'),
   );
@@ -192,7 +193,7 @@ async function loadInstalledAppPlugin(
 function parseAppPlugin(
   value: unknown,
   reference: AppPackageReference,
-): AppPlugin {
+): App {
   if (
     !isRecord(value) ||
     typeof value.id !== 'string' ||
@@ -204,7 +205,7 @@ function parseAppPlugin(
     );
   }
 
-  return value as AppPlugin;
+  return value as App;
 }
 
 function assertAppPackageReference(reference: AppPackageReference): void {

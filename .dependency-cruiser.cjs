@@ -31,6 +31,37 @@ module.exports = {
       to: {},
     },
     {
+      name: 'no-unreachable-source-modules',
+      severity: 'warn',
+      comment:
+        'This source module is not reachable from a package entrypoint. ' +
+        'It is likely dead code, an incomplete feature, or an intentional ' +
+        'runtime/dynamic entrypoint that needs an explicit exception.',
+      from: {
+        // Every package-level src/index.ts or src/index.tsx is a root.
+        path: [
+          '^packages/[^/]+/src/index[.]tsx?$',
+          '^plugins/[^/]+/src/index[.]tsx?$',
+        ],
+      },
+      to: {
+        // Inspect implementation modules only.
+        path: '^(?:packages|plugins)/[^/]+/src/.+[.]tsx?$',
+
+        // index modules are deliberate package entrypoints / barrels. This rule
+        // checks whether implementation modules are reachable from them.
+        pathNot: [
+          '(^|/)index[.]tsx?$',
+          '[.]d[.]ts$',
+          '[.](?:spec|test)[.]tsx?$',
+        ],
+
+        // Report each matching module not transitively reachable from any root
+        // matched by `from`.
+        reachable: false,
+      },
+    },
+    {
       name: 'no-deprecated-core',
       comment:
         'A module depends on a node core module that has been deprecated. Find an alternative - these are ' +

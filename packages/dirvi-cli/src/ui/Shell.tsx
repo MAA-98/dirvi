@@ -1,4 +1,4 @@
-import type { OpenApp } from 'dirvi-apis';
+import { AppApiCombinator } from 'dirvi-apis';
 
 import { AppSetup } from './AppSetup.js';
 import type { Config } from '../domain/config.js';
@@ -20,30 +20,10 @@ export type ShellAppProps = {
   readonly config: Config;
 
   /**
-   * The application currently mounted in the shell.
-   *
-   * OpenApp hides the concrete AppApi generic parameters from the persistent
-   * shell while allowing AppSetup to receive a coherent concrete AppApi.
+   * Higher order function that will get a result given a function that has
+   * app api as input.
    */
-  readonly activeApp: OpenApp;
-
-  // /**
-  //  * Creates the POSIX application API for the selected directory.
-  //  *
-  //  * The returned API owns directory loading, filesystem watching, and view
-  //  * persistence.
-  //  */
-  // loadPosixAppApi: (
-  //   directory?: string,
-  // ) => AppApi<PosixName, PosixEntry, UnixAbsolutePath>;
-  //
-  // /**
-  //  * Optional directory to browse.
-  //  *
-  //  * When omitted, the platform-specific loader determines the default
-  //  * directory.
-  //  */
-  // directory?: string;
+  readonly appApiCombinator: AppApiCombinator;
 
   /** Writes non-interactive application output. */
   readonly stdout?: (message: string) => void;
@@ -67,13 +47,13 @@ export type ShellAppProps = {
  */
 export function Shell({
   config,
-  activeApp,
+  appApiCombinator,
   stdout,
   clipboard,
   onError,
 }: ShellAppProps) {
-  return activeApp.withAppApi({
-    render: (appApi) => (
+  // Result type is specified here to be AppSetup
+  return appApiCombinator((appApi) => (
       <AppSetup
         loadedConfig={config}
         appApi={appApi}
@@ -82,5 +62,5 @@ export function Shell({
         {...(onError === undefined ? {} : { onError })}
       />
     ),
-  });
+  );
 }

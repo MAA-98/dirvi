@@ -1,3 +1,3 @@
 export type { AppApi, SerializableKey } from './imports.js';
 
-export type { AppApiRenderer, AppPlugin, OpenApp } from './plugin.js';
+export type { App, AppApiConsumer, AppApiCombinator } from './plugin.js';

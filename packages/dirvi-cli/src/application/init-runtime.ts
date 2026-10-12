@@ -1,6 +1,7 @@
+import { App } from 'dirvi-apis';
+
 import type { Config } from '../domain/config.js';
 import { ConfigSchema, defaultConfig } from '../domain/config.js';
-import type { AppPlugin } from './app-plugin.js';
 import type { AppPackageReference } from './app-pack-ref.js';
 import type { AppPackageInstaller } from './app-pack-installer.js';
 
@@ -38,11 +39,11 @@ export type InitApi = {
   };
 
   readonly apps: {
-    install: (reference: AppPackageReference) => Promise<AppPlugin>;
+    install: (reference: AppPackageReference) => Promise<App>;
     /**
      * Registers an application made available by init.mjs.
      */
-    use: (appPlugin: AppPlugin) => void;
+    use: (appPlugin: App) => void;
     /**
      * Selects the app that should initially be opened by the shell.
      */
@@ -58,7 +59,7 @@ export type InitApi = {
  */
 export type Init = {
   readonly config: Config;
-  readonly appPlugins: readonly AppPlugin[];
+  readonly apps: readonly App[];
   readonly initialAppId: string;
 };
 
@@ -86,8 +87,8 @@ export type InitRuntime = {
 export function createInitRuntime(deps: InitRuntimeDependencies): InitRuntime {
   let config = defaultConfig;
   let initialAppId: string | undefined;
-  const appPlugins = new Map<string, AppPlugin>();
-  const pendingAppInstallations = new Set<Promise<AppPlugin>>();
+  const appPlugins = new Map<string, App>();
+  const pendingAppInstallations = new Set<Promise<App>>();
   let finished = false;
 
   return {
@@ -180,7 +181,7 @@ export function createInitRuntime(deps: InitRuntimeDependencies): InitRuntime {
       }
       return {
         config,
-        appPlugins: [...appPlugins.values()],
+        apps: [...appPlugins.values()],
         initialAppId,
       };
     },

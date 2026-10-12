@@ -1,4 +1,5 @@
-import type { AppPlugin } from './app-plugin.js';
+import { App } from 'dirvi-apis';
+
 import type { AppPackageReference } from './app-pack-ref.js';
 
 /**
@@ -8,5 +9,5 @@ import type { AppPackageReference } from './app-pack-ref.js';
  * filesystem, and Node module loading.
  */
 export type AppPackageInstaller = {
-  readonly install: (reference: AppPackageReference) => Promise<AppPlugin>;
+  readonly install: (reference: AppPackageReference) => Promise<App>;
 };
