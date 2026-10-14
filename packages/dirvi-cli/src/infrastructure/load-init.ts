@@ -1,6 +1,4 @@
-import { access, mkdir } from 'node:fs/promises';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { access } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 
 import type {
@@ -9,23 +7,6 @@ import type {
   InitRuntimeDependencies,
 } from '../application/init-runtime.js';
 import { createInitRuntime } from '../application/init-runtime.js';
-
-/**
- * The base directory for user-maintained dirvi configuration.
- *
- * Prefer the XDG override when supplied, otherwise keep configuration in the
- * conventional dot-config location:
- *
- *   ~/.config/dirvi/init.mjs
- *
- * This is intentionally separate from application data such as saved views.
- */
-const configHome =
-  process.env.XDG_CONFIG_HOME?.trim() || join(homedir(), '.config');
-/** Directory containing dirvi's user-authored startup configuration. */
-const configDirectory = join(configHome, 'dirvi');
-/** Executable ESM startup script evaluated during dirvi initialization. */
-const configPath = join(configDirectory, 'init.mjs');
 
 /**
  * Evaluates the user's init.mjs startup script and returns its resolved
@@ -51,12 +32,14 @@ const configPath = join(configDirectory, 'init.mjs');
  * @throws {Error} When init.mjs cannot be read, imported, executed, or when
  * configuration registered by the script is invalid.
  */
-export async function loadNodeInit(
-  deps: InitRuntimeDependencies,
-): Promise<Init> {
-  await mkdir(configDirectory, { recursive: true });
-
-  if (!(await configFileExists())) {
+export async function loadInit({
+  deps,
+  initPath,
+}: {
+  deps: InitRuntimeDependencies;
+  initPath: string;
+}): Promise<Init> {
+  if (!(await initFileExists(initPath))) {
     return createInitRuntime(deps).finish();
   }
 
@@ -75,7 +58,7 @@ export async function loadNodeInit(
   try {
     // Convert the filesystem path into a file URL before dynamic ESM import.
     // init.mjs may use imports and top-level await normally.
-    await import(pathToFileURL(configPath).href);
+    await import(pathToFileURL(initPath).href);
 
     // Seal startup registration only after the full init module graph has
     // finished evaluating.
@@ -84,7 +67,7 @@ export async function loadNodeInit(
     const message = error instanceof Error ? error.message : String(error);
 
     throw new Error(
-      `Unable to evaluate configuration at ${configPath}: ${message}`,
+      `Unable to evaluate configuration at ${initPath}: ${message}`,
     );
   } finally {
     restoreGlobalDirvi(previousDirvi);
@@ -98,9 +81,9 @@ export async function loadNodeInit(
  * unreadable parent directory, and other filesystem failures remain startup
  * errors rather than being silently interpreted as absent configuration.
  */
-async function configFileExists(): Promise<boolean> {
+async function initFileExists(initPath: string): Promise<boolean> {
   try {
-    await access(configPath);
+    await access(initPath);
     return true;
   } catch (error: unknown) {
     if (isFileNotFoundError(error)) {

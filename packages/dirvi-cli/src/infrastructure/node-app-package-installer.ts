@@ -190,10 +190,7 @@ async function loadInstalledAppPlugin(
   return parseAppPlugin(loadedModule.default, reference);
 }
 
-function parseAppPlugin(
-  value: unknown,
-  reference: AppPackageReference,
-): App {
+function parseAppPlugin(value: unknown, reference: AppPackageReference): App {
   if (
     !isRecord(value) ||
     typeof value.id !== 'string' ||

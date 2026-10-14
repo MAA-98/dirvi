@@ -8,18 +8,23 @@ import type { AppApi, SerializableKey } from './imports.js';
  */
 export type App = {
   readonly id: string;
-  readonly createAppApiCombinator: (input: string | undefined) => AppApiCombinator;
+  readonly createAppApiCombinator: (
+    input: string | undefined,
+  ) => AppApiCombinator;
 };
 
 export type AppApiCombinator = <Result>(
-    appApiConsumer: AppApiConsumer<Result>,
-  ) => Result;
+  appApiConsumer: AppApiConsumer<Result>,
+) => Result;
 
 /**
  * An operation that can consume an AppApi of any valid concrete type and
  * produce a caller-selected result.
  */
-export type AppApiConsumer<Result> =
-  <Id extends SerializableKey, Value, ViewKey = string>(
-    appApi: AppApi<Id, Value, ViewKey>,
-  ) => Result;
+export type AppApiConsumer<Result> = <
+  Id extends SerializableKey,
+  Value,
+  ViewKey = string,
+>(
+  appApi: AppApi<Id, Value, ViewKey>,
+) => Result;

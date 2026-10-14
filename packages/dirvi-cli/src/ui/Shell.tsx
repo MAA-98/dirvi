@@ -54,13 +54,12 @@ export function Shell({
 }: ShellAppProps) {
   // Result type is specified here to be AppSetup
   return appApiCombinator((appApi) => (
-      <AppSetup
-        loadedConfig={config}
-        appApi={appApi}
-        {...(stdout === undefined ? {} : { stdout })}
-        {...(clipboard === undefined ? {} : { clipboard })}
-        {...(onError === undefined ? {} : { onError })}
-      />
-    ),
-  );
+    <AppSetup
+      loadedConfig={config}
+      appApi={appApi}
+      {...(stdout === undefined ? {} : { stdout })}
+      {...(clipboard === undefined ? {} : { clipboard })}
+      {...(onError === undefined ? {} : { onError })}
+    />
+  ));
 }

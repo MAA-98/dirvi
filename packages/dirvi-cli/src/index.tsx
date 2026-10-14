@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
+import { join } from 'node:path';
 import { Command } from 'commander';
 import { render } from 'ink';
 
 import { Shell } from './ui/Shell.js';
-import { loadNodeInit } from './infrastructure/load-node-init.js';
-import { getXdgDataHome } from './infrastructure/get-xdg-data-home.js';
+import { loadInit } from './infrastructure/load-init.js';
 import { createNodeAppPackageInstaller } from './infrastructure/node-app-package-installer.js';
-import { join } from 'node:path';
+import {
+  getXdgDataHome,
+  getXdgConfigHome,
+} from './infrastructure/get-xdg-paths.js';
 
 const program = new Command();
 
@@ -37,6 +40,20 @@ process.on('exit', restoreTerminal);
 // =============================================================================
 // Resolving Paths
 // =============================================================================
+/**
+ * The base directory for user-maintained dirvi configuration.
+ *
+ * Prefer the XDG override when supplied, otherwise keep configuration in the
+ * conventional dot-config location:
+ *
+ *   ~/.config/dirvi/init.mjs
+ *
+ * This is intentionally separate from application data such as saved views.
+ */
+const dirviConfigDirectory = join(getXdgConfigHome(), 'dirvi');
+/** Executable ESM startup script evaluated during dirvi initialization. */
+const initPath = join(dirviConfigDirectory, 'init.mjs');
+
 const dirviDataDirectory = join(getXdgDataHome(), 'dirvi');
 const npmAppsDirectory = join(
   dirviDataDirectory,
@@ -60,14 +77,17 @@ program
     // Input is a generic startup value supplied by the host; its interpretation
     // belongs to the selected app.
     const options = program.opts<{ input?: string }>();
-    const init = await loadNodeInit({
-      appPackageInstaller: createNodeAppPackageInstaller({
-        appPackagesDirectory: npmAppsDirectory,
-      }),
+
+    const init = await loadInit({
+      deps: {
+        appPackageInstaller: createNodeAppPackageInstaller({
+          appPackagesDirectory: npmAppsDirectory,
+        }),
+      },
+      initPath,
     });
-    const initialApp = init.apps.find(
-      (app) => app.id === init.initialAppId,
-    );
+
+    const initialApp = init.apps.find((app) => app.id === init.initialAppId);
     if (initialApp === undefined) {
       throw new Error(
         `Startup app "${init.initialAppId}" was selected but is not registered.`,

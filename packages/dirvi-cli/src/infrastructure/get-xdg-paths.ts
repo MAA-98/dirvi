@@ -22,3 +22,25 @@ export function getXdgDataHome(): string {
 
   return xdgDataHome;
 }
+
+/**
+ * Returns the XDG user-configuration home directory.
+ *
+ * XDG_CONFIG_HOME must be absolute when set. Otherwise Dirvi follows the XDG
+ * default of ~/.config.
+ */
+export function getXdgConfigHome(): string {
+  const xdgConfigHome = process.env.XDG_CONFIG_HOME;
+
+  if (xdgConfigHome === undefined || xdgConfigHome.length === 0) {
+    return join(homedir(), '.config');
+  }
+
+  if (!isAbsolute(xdgConfigHome)) {
+    throw new Error(
+      `XDG_CONFIG_HOME must be an absolute path, received "${xdgConfigHome}".`,
+    );
+  }
+
+  return xdgConfigHome;
+}
