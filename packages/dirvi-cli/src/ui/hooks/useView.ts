@@ -16,13 +16,12 @@ export function useView<Id extends SerializableKey, Value>(
   state: State<Id, Value>,
   navNodeApi: NavNodeApi<Id, Value>,
   cursorApi: CursorApi<Id>,
-  terminalRows: number,
-  feedbackBarHeight: number,
+  rowCount: number,
 ): View {
   const viewportStartRef = useRef(0);
   const viewportHeight = Math.max(
     0,
-    terminalRows - STATUS_BAR_HEIGHT - feedbackBarHeight,
+    rowCount - STATUS_BAR_HEIGHT,
   );
 
   if (viewportHeight === 0) {

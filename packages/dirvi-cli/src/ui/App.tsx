@@ -1,5 +1,4 @@
-import { Box, Text, useApp, useInput, useWindowSize } from 'ink';
-import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import { createFeedbackApi, userInputToIntent } from 'dirvi-lib';
 import type {
@@ -13,22 +12,19 @@ import type {
   SerializableKey,
   State,
   Feedback,
-  FeedbackType,
+  UserInput
 } from 'dirvi-lib';
 
 import type { Config } from '../domain/config.js';
-import { ViewRowComponent } from './components/ViewRowComponent.js';
-import { FeedbackBar } from './components/FeedbackBar.js';
-import { STATUS_BAR_HEIGHT, StatusBar } from './components/StatusBar.js';
 import { useView } from './hooks/useView.js';
-import { inkInputToUserInput } from '../infrastructure/ink-input-to-user-input.js';
-import { createFeedbackDisplay } from './helpers/feedback-display.js';
+import type { AppScreenRenderer } from './app-screen.js';
 
 function toError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }
 
 type AppProps<Id extends SerializableKey, Value, ViewKey = string> = {
+  screenRenderer: AppScreenRenderer;
   appApi: AppApi<Id, Value, ViewKey>;
   config: Config;
   initialState: State<Id, Value>;
@@ -41,6 +37,7 @@ type AppProps<Id extends SerializableKey, Value, ViewKey = string> = {
 };
 
 export function App<Id extends SerializableKey, Value, ViewKey = string>({
+  screenRenderer,
   appApi,
   config,
   initialState,
@@ -51,6 +48,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   clipboard,
   onError,
 }: AppProps<Id, Value, ViewKey>) {
+  const ScreenRenderer = screenRenderer;
   const [state, dispatch] = useReducer(reducer, initialState);
   const stateRef = useRef(state); // Gives `subscribeToResync` callback a way to
   // see current state
@@ -77,6 +75,13 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   const [feedback, setFeedback] = useState<Feedback>();
   const [exitStatus, setExitStatus] = useState<string | undefined>();
 
+  const [rowCount, setRowCount] = useState(0);
+  const handleRowsChange = useCallback((nextRows: number): void => {
+    setRowCount((currentRows) =>
+      currentRows === nextRows ? currentRows : nextRows,
+    );
+  }, []);
+
   // ===========================================================================
   // Display hooks
   // ===========================================================================
@@ -87,30 +92,13 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
       }),
     [],
   );
-  const feedbackType: FeedbackType =
-    feedback === undefined ? 'message' : feedbackApi.getType(feedback);
-  const { columns: terminalColumns, rows: terminalRows } = useWindowSize();
-  const feedbackDisplay = useMemo(() => {
-    if (feedback === undefined) {
-      return {
-        content: '',
-        height: 0,
-      };
-    }
 
-    return createFeedbackDisplay(
-      feedbackApi.getMessage(feedback),
-      terminalColumns,
-      Math.max(0, terminalRows - STATUS_BAR_HEIGHT),
-    );
-  }, [feedback, terminalColumns, terminalRows]);
   const view = useView(
     navEntry,
     state,
     appApi.navNodeApi,
     appApi.cursorApi,
-    terminalRows,
-    feedbackDisplay.height,
+    rowCount,
   );
 
   // ===========================================================================
@@ -151,248 +139,236 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   // ===========================================================================
   // Executing Effects
   // ===========================================================================
-  function executeEffect(effect: Effect<Id, Value> | undefined): void {
-    if (effect === undefined) {
-      return;
-    }
-
-    switch (effect.effectType) {
-      case 'dispatchEffectAction':
-        const effectActionResult = effectToAction(
-          effect.action,
-          navEntry,
-          state,
-        );
-
-        // A completed normal-mode command or submitted Ex command always
-        // leaves its input buffer, whether it succeeds, is rejected, or no-ops.
-        setInputState({
-          inputMode: 'normal',
-          normalBuffer: '',
-        });
-
-        switch (effectActionResult.kind) {
-          case 'action':
-            dispatch(effectActionResult.action);
-            return;
-
-          case 'rejected':
-            feedbackApi.addMessage(effectActionResult.message, 'error');
-            return;
-
-          case 'ignored':
-            return;
-
-          default:
-            return;
-        }
-
-      case 'setInputState':
-        setInputState(effect.inputState);
-        return;
-
-      case 'loadBranchEntries': {
-        void appApi
-          .loadBranches(effect.path)
-          .then((entries) => {
-            dispatch({
-              kind: 'updateBranch',
-              path: effect.path,
-              entries,
-            });
-          })
-          .catch((error: unknown) => {
-            const appError =
-              error instanceof Error ? error : new Error(String(error));
-
-            feedbackApi.addMessage(
-              `Unable to open directory: ${appError.message}`,
-            );
-          });
-
+  const executeEffect = useCallback(
+    (effect: Effect<Id, Value> | undefined): void => {
+      if (effect === undefined) {
         return;
       }
 
-      case 'emitVisibleLeavesPaths':
-        const navigation = navEntry.children;
+      switch (effect.effectType) {
+        case 'dispatchEffectAction':
+          const effectActionResult = effectToAction(
+            effect.action,
+            navEntry,
+            state,
+          );
 
-        if (navigation === null) {
+          // A completed normal-mode command or submitted Ex command always
+          // leaves its input buffer, whether it succeeds, is rejected, or no-ops.
+          setInputState({
+            inputMode: 'normal',
+            normalBuffer: '',
+          });
+
+          switch (effectActionResult.kind) {
+            case 'action':
+              dispatch(effectActionResult.action);
+              return;
+
+            case 'rejected':
+              feedbackApi.addMessage(effectActionResult.message, 'error');
+              return;
+
+            case 'ignored':
+              return;
+
+            default:
+              return;
+          }
+
+        case 'setInputState':
+          setInputState(effect.inputState);
+          return;
+
+        case 'loadBranchEntries': {
+          void appApi
+            .loadBranches(effect.path)
+            .then((entries) => {
+              dispatch({
+                kind: 'updateBranch',
+                path: effect.path,
+                entries,
+              });
+            })
+            .catch((error: unknown) => {
+              const appError =
+                error instanceof Error ? error : new Error(String(error));
+
+              feedbackApi.addMessage(
+                `Unable to open directory: ${appError.message}`,
+              );
+            });
+
           return;
         }
 
-        const visibleLeavesPaths =
-          appApi.navNodeApi.visibleLeavesPaths(navigation);
-        stdout?.(
-          JSON.stringify({
-            type: 'displayed-leaves-paths',
-            paths: visibleLeavesPaths,
-          }),
-        );
-        setInputState({
-          inputMode: 'normal',
-          normalBuffer: '',
-        });
-        return;
+        case 'emitVisibleLeavesPaths':
+          const navigation = navEntry.children;
 
-      case 'saveView': {
-        void appApi.viewApi
-          .save(appApi.viewKey, effect.name, stateRef.current)
-          .then(() => {
-            setInputState({
-              inputMode: 'normal',
-              normalBuffer: '',
+          if (navigation === null) {
+            return;
+          }
+
+          const visibleLeavesPaths =
+            appApi.navNodeApi.visibleLeavesPaths(navigation);
+          stdout?.(
+            JSON.stringify({
+              type: 'displayed-leaves-paths',
+              paths: visibleLeavesPaths,
+            }),
+          );
+          setInputState({
+            inputMode: 'normal',
+            normalBuffer: '',
+          });
+          return;
+
+        case 'saveView': {
+          void appApi.viewApi
+            .save(appApi.viewKey, effect.name, stateRef.current)
+            .then(() => {
+              setInputState({
+                inputMode: 'normal',
+                normalBuffer: '',
+              });
+              feedbackApi.addMessage(`Saved view: ${effect.name}`);
+            })
+            .catch((error: unknown) => {
+              feedbackApi.addMessage(
+                `Unable to save view: ${toError(error).message}`,
+              );
             });
-            feedbackApi.addMessage(`Saved view: ${effect.name}`);
-          })
-          .catch((error: unknown) => {
-            feedbackApi.addMessage(
-              `Unable to save view: ${toError(error).message}`,
-            );
+
+          return;
+        }
+
+        case 'loadView': {
+          void appApi.viewApi
+            .load(appApi.viewKey, effect.name)
+            .then((loadedState) => {
+              if (loadedState === undefined) {
+                throw new Error(`View not found: ${effect.name}`);
+              }
+
+              // The saved buffer may be stale because the filesystem could have
+              // changed since the view was saved.
+              return appApi.stateApi.resync(loadedState, appApi.loadBranches);
+            })
+            .then((newState) => {
+              const oldState = stateRef.current;
+
+              dispatch({
+                kind: 'setState',
+                oldState,
+                newState,
+              });
+
+              setInputState({
+                inputMode: 'normal',
+                normalBuffer: '',
+              });
+            })
+            .catch((error: unknown) => {
+              onError?.(toError(error));
+            });
+
+          return;
+        }
+
+        // TODO: Add descriptions with `...` truncation.
+        case 'listFolds': {
+          const folds = state.folds;
+
+          const foldTrees = [...appApi.foldsApi.indexes(folds)].map(
+            (index) => ({
+              index,
+              info: appApi.foldsApi.getInfoAtIndex(folds, index),
+              active: appApi.foldsApi.isActiveAtIndex(folds, index),
+            }),
+          );
+
+          const indexWidth = Math.max(
+            ...foldTrees.map(({ index }) => String(index).length),
+          );
+
+          const lines = foldTrees.map(({ index, info, active }) => {
+            const status = active === true ? 'active' : 'inactive';
+            const name = info?.name ?? '<unavailable>';
+
+            return `${String(index).padStart(indexWidth)}  ${status.padEnd(8)}  ${name}`;
           });
 
-        return;
-      }
-
-      case 'loadView': {
-        void appApi.viewApi
-          .load(appApi.viewKey, effect.name)
-          .then((loadedState) => {
-            if (loadedState === undefined) {
-              throw new Error(`View not found: ${effect.name}`);
-            }
-
-            // The saved buffer may be stale because the filesystem could have
-            // changed since the view was saved.
-            return appApi.stateApi.resync(loadedState, appApi.loadBranches);
-          })
-          .then((newState) => {
-            const oldState = stateRef.current;
-
-            dispatch({
-              kind: 'setState',
-              oldState,
-              newState,
-            });
-
-            setInputState({
-              inputMode: 'normal',
-              normalBuffer: '',
-            });
-          })
-          .catch((error: unknown) => {
-            onError?.(toError(error));
+          setInputState({
+            inputMode: 'normal',
+            normalBuffer: '',
           });
+          feedbackApi.addMessage(['Fold trees:', ...lines].join('\n'));
 
+          return;
+        }
+
+        case 'unrecognizedCommand':
+          feedbackApi.addMessage(
+            `Unrecognized command: ${effect.commandLine}`,
+            'error',
+          );
+          return;
+
+        case 'quit':
+          setExitStatus(effect.exitMessage);
+          return;
+      }
+    },
+    [appApi, effectToAction, feedbackApi, navEntry, onError, state, stdout],
+  );
+
+  // ===========================================================================
+  // Input hook
+  // ===========================================================================
+  const handleInput = useCallback(
+    (userInput: UserInput) => {
+      const intent = userInputToIntent(userInput, inputState);
+      if (intent === undefined) {
         return;
       }
 
-      // TODO: Add descriptions with `...` truncation.
-      case 'listFolds': {
-        const folds = state.folds;
-
-        const foldTrees = [...appApi.foldsApi.indexes(folds)].map((index) => ({
-          index,
-          info: appApi.foldsApi.getInfoAtIndex(folds, index),
-          active: appApi.foldsApi.isActiveAtIndex(folds, index),
-        }));
-
-        const indexWidth = Math.max(
-          ...foldTrees.map(({ index }) => String(index).length),
-        );
-
-        const lines = foldTrees.map(({ index, info, active }) => {
-          const status = active === true ? 'active' : 'inactive';
-          const name = info?.name ?? '<unavailable>';
-
-          return `${String(index).padStart(indexWidth)}  ${status.padEnd(8)}  ${name}`;
-        });
-
-        setInputState({
-          inputMode: 'normal',
-          normalBuffer: '',
-        });
-        feedbackApi.addMessage(['Fold trees:', ...lines].join('\n'));
-
+      const effectResult = intentToEffect(intent, state);
+      if (effectResult === undefined) {
         return;
       }
 
-      case 'unrecognizedCommand':
-        feedbackApi.addMessage(
-          `Unrecognized command: ${effect.commandLine}`,
-          'error',
-        );
-        return;
-
-      case 'quit':
-        setExitStatus(effect.exitMessage);
-        return;
-    }
-  }
+      setFeedback(undefined);
+      executeEffect(effectResult);
+    },
+    [executeEffect, inputState, intentToEffect, state],
+  );
 
   // ===========================================================================
-  // Ink input hook
+  // Exit status
   // ===========================================================================
-  useInput((input, key) => {
-    const userInput = inkInputToUserInput(input, key);
-    if (userInput === undefined) {
-      return;
-    }
-
-    const intent = userInputToIntent(userInput, inputState);
-    if (intent === undefined) {
-      return;
-    }
-
-    const effectResult = intentToEffect(intent, state);
-    if (effectResult === undefined) {
-      return;
-    }
-
-    setFeedback(undefined);
-    executeEffect(effectResult);
-  });
-
-  // ===========================================================================
-  // Exit
-  // ===========================================================================
-  const { exit } = useApp();
-  useEffect(() => {
-    if (exitStatus === undefined) {
-      return;
-    }
-
-    if (exitStatus !== '') {
-      onError?.(new Error(exitStatus));
-    }
-
-    exit();
-  }, [exitStatus, exit, onError]);
-
-  if (exitStatus !== undefined) {
-    return null;
-  }
+  const handleExitStatus = useCallback(
+    (nextExitStatus: string): void => {
+      if (nextExitStatus !== '') {
+        onError?.(new Error(nextExitStatus));
+      }
+    },
+    [onError],
+  );
 
   // ===========================================================================
   // Render
   // ===========================================================================
   return (
-    <Box flexDirection="column" height={terminalRows}>
-      <Box flexDirection="column" flexGrow={1} flexShrink={1}>
-        {view.rows.length === 0 ? (
-          <Text dimColor>Empty.</Text>
-        ) : (
-          view.rows.map((row) => (
-            <ViewRowComponent key={row.id} row={row} config={config} />
-          ))
-        )}
-      </Box>
-
-      <FeedbackBar
-        display={feedbackDisplay}
-        type={feedbackType}
-        config={config}
-      />
-      <StatusBar inputState={inputState} config={config} />
-    </Box>
+    <ScreenRenderer
+      view={view}
+      feedback={feedback}
+      feedbackApi={feedbackApi}
+      config={config}
+      inputState={inputState}
+      handleInput={handleInput}
+      onRowsChange={handleRowsChange}
+      exitStatus={exitStatus}
+      onExitStatus={handleExitStatus}
+    />
   );
 }

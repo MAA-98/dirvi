@@ -12,6 +12,7 @@ import {
   getXdgConfigHome,
 } from './infrastructure/get-xdg-paths.js';
 import { createAppApiApplicator } from './application/app.js';
+import { InkScreen } from './ui/InkScreen.js';
 
 const program = new Command();
 
@@ -56,11 +57,7 @@ const dirviConfigDirectory = join(getXdgConfigHome(), 'dirvi');
 const initPath = join(dirviConfigDirectory, 'init.mjs');
 
 const dirviDataDirectory = join(getXdgDataHome(), 'dirvi');
-const packagesDirectory = join(
-  dirviDataDirectory,
-  'site',
-  'pack'
-);
+const packagesDirectory = join(dirviDataDirectory, 'site', 'pack');
 
 // =============================================================================
 // Commands
@@ -76,9 +73,10 @@ program
     // belongs to the selected app.
     const options = program.opts<{ input?: string }>();
 
+    const packageLoader = createPackageLoader(packagesDirectory);
     const init = await loadInit({
-      packageLoader: createPackageLoader(packagesDirectory),
-      initPath
+      packageLoader,
+      initPath,
     });
 
     const initialApp = init.apps.find((app) => app.id === init.initialAppId);
@@ -124,8 +122,9 @@ program
     try {
       const app = render(
         <Shell
+          screenRenderer={InkScreen}
           config={init.config}
-          appApiCombinator={activeApp}
+          appApiApplicator={activeApp}
           {...(stdoutIsInteractive ? {} : { stdout })}
           clipboard={clipboard}
           onError={(error) => {

@@ -2,6 +2,7 @@ import { AppApiApplicator } from 'dirvi-apis';
 
 import { AppSetup } from './AppSetup.js';
 import type { Config } from '../domain/config.js';
+import type { AppScreenRenderer } from './app-screen.js';
 
 /**
  * Dependencies and output callbacks required by {@link Shell}.
@@ -10,6 +11,11 @@ import type { Config } from '../domain/config.js';
  * on a platform-specific infrastructure implementation.
  */
 export type ShellAppProps = {
+  /**
+   * Host-specific React implementation of the active application screen.
+   */
+  readonly screenRenderer: AppScreenRenderer;
+
   /**
    * Resolved startup configuration.
    *
@@ -23,7 +29,7 @@ export type ShellAppProps = {
    * Higher order function that will get a result given a function that has
    * app api as input.
    */
-  readonly appApiCombinator: AppApiApplicator;
+  readonly appApiApplicator: AppApiApplicator;
 
   /** Writes non-interactive application output. */
   readonly stdout?: (message: string) => void;
@@ -46,15 +52,17 @@ export type ShellAppProps = {
  * AppSetup receives the concrete AppApi and mounts the app-specific tree UI.
  */
 export function Shell({
+  screenRenderer,
   config,
-  appApiCombinator,
+  appApiApplicator,
   stdout,
   clipboard,
   onError,
 }: ShellAppProps) {
   // Result type is specified here to be AppSetup
-  return appApiCombinator((appApi) => (
+  return appApiApplicator((appApi) => (
     <AppSetup
+      screenRenderer={screenRenderer}
       loadedConfig={config}
       appApi={appApi}
       {...(stdout === undefined ? {} : { stdout })}

@@ -202,8 +202,7 @@ function getLastRegisteredAppId(apps: ReadonlyMap<string, App>): string {
 
   if (lastAppId === undefined) {
     throw new Error(
-      'Internal error: Check some app is registered before searching ' +
-      'ids.',
+      'Internal error: Check some app is registered before searching ' + 'ids.',
     );
   }
 

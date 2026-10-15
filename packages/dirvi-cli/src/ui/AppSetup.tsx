@@ -8,10 +8,12 @@ import {
 } from 'dirvi-lib';
 import type { AppApi, SerializableKey, State } from 'dirvi-lib';
 
+import type { AppScreenRenderer } from './app-screen.js';
 import { App } from './App.js';
 import type { Config } from '../domain/config.js';
 
 type LoadingAppProps<Id extends SerializableKey, Value, ViewKey = string> = {
+  screenRenderer: AppScreenRenderer;
   appApi: AppApi<Id, Value, ViewKey>;
   loadedConfig: Config;
   stdout?: (message: string) => void;
@@ -20,6 +22,7 @@ type LoadingAppProps<Id extends SerializableKey, Value, ViewKey = string> = {
 };
 
 export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
+  screenRenderer,
   appApi,
   loadedConfig,
   stdout,
@@ -148,6 +151,7 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
 
   return (
     <App
+      screenRenderer={screenRenderer}
       appApi={appApi}
       config={config}
       initialState={initialState}

@@ -18,9 +18,7 @@ const execFileAsync = promisify(execFile);
  * The version is included deliberately: different versions of one npm package
  * are distinct installed artifacts and may be loaded together.
  */
-function getNpmAppPackageDirectoryName(
-  reference: AppPackageReference,
-): string {
+function getNpmAppPackageDirectoryName(reference: AppPackageReference): string {
   return `${reference.packageName.replace(/^@/, '').replace('/', '__')}@${reference.version}`;
 }
 
@@ -57,15 +55,13 @@ function getAppPackageDirectory(
  * @param packagesDirectory - The directory corresponding to:
  * <dirvi data>/site/pack/dirvi/opt
  */
-export function createPackageLoader(
-  packagesDirectory: string,
-): PackageLoader {
+export function createPackageLoader(packagesDirectory: string): PackageLoader {
   const loadingPluginsByPath = new Map<string, Promise<AppPlugin>>();
 
   return {
     loadAppPlugin: (referenceInput) => {
       const reference = AppPackageReference.parse(referenceInput);
-      
+
       const appPackageDirectory = getAppPackageDirectory(
         packagesDirectory,
         reference,
