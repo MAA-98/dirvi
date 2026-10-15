@@ -1,9 +1,10 @@
-import { App } from 'dirvi-apis';
+import type { AppPlugin } from 'dirvi-apis';
 
+import { createApp, type App } from './app.js';
 import type { Config, ConfigPatch } from '../domain/config.js';
 import { ConfigSchema, defaultConfig, merge } from '../domain/config.js';
 import type { AppPackageReference } from './app-pack-ref.js';
-import type { AppPackageInstaller } from './app-pack-installer.js';
+import type { PackageLoader } from '../domain/package-loader.js';
 
 /**
  * The startup configuration API exposed to init.mjs as the global `dirvi`.
@@ -17,15 +18,17 @@ export type InitApi = {
   };
 
   readonly apps: {
-    install: (reference: AppPackageReference) => Promise<App>;
+    install: (reference: AppPackageReference) => Promise<AppPlugin>;
     /**
      * Registers an application made available by init.mjs.
      */
-    use: (appPlugin: App) => void;
+    register: (id: string, appPlugin: AppPlugin) => void;
     /**
-     * Selects the app that should initially be opened by the shell.
+     * Optionally selects the app initially opened by the shell.
+     *
+     * If omitted, the runtime falls back to the most recently registered app.
      */
-    startupApp: (appId: string) => void;
+    initialAppId: (appId: string) => void;
   };
 };
 
@@ -33,7 +36,8 @@ export type InitApi = {
  * Everything registered while init.mjs was evaluated.
  *
  * Config is shared tree-UI configuration. App selection is distinct from Config
- * value.
+ * value. initialAppId is always the ID of one app in apps: either the app
+ * explicitly selected by init.mjs or the most recently registered app.
  */
 export type Init = {
   readonly config: Config;
@@ -59,12 +63,12 @@ export type InitRuntime = {
  * The mutable state is not exposed directly to the config script.
  */
 export function createInitRuntime(
-  appPackageInstaller: Readonly<AppPackageInstaller>,
+  appPackageLoader: Readonly<PackageLoader>,
 ): InitRuntime {
   let config = defaultConfig;
   let initialAppId: string | undefined;
-  const appPlugins = new Map<string, App>();
-  const pendingAppInstallations = new Set<Promise<App>>();
+  const apps = new Map<string, App>();
+  const pendingAppPlugins = new Set<Promise<AppPlugin>>();
   let finished = false;
 
   return {
@@ -93,39 +97,40 @@ export function createInitRuntime(
             );
           }
 
-          const installation = appPackageInstaller.install(ref);
+          const promisedAppPlugins = appPackageLoader.loadAppPlugin(ref);
+          pendingAppPlugins.add(promisedAppPlugins);
 
-          pendingAppInstallations.add(installation);
-
-          return installation.finally(() => {
-            pendingAppInstallations.delete(installation);
+          return promisedAppPlugins.finally(() => {
+            pendingAppPlugins.delete(promisedAppPlugins);
           });
         },
 
-        use: (appPlugin) => {
+        register: (id, appPlugin) => {
           if (finished) {
             throw new Error(
-              'Initialization has finished. Register apps while init.mjs is being evaluated.',
+              'Initialization has finished. Register apps while ' +
+                'init.mjs is being evaluated.',
             );
           }
 
-          if (appPlugin.id.trim().length === 0) {
-            throw new Error('App plugin ID must not be empty.');
+          if (id.trim().length === 0) {
+            throw new Error('App ID must not be empty.');
           }
 
-          if (appPlugins.has(appPlugin.id)) {
+          if (apps.has(id)) {
             throw new Error(
-              `An app plugin with ID "${appPlugin.id}" is already registered.`,
+              `An app with ID "${id}" was registered multiple times.`,
             );
           }
 
-          appPlugins.set(appPlugin.id, appPlugin);
+          apps.set(id, createApp(id, appPlugin));
         },
 
-        startupApp: (appId) => {
+        initialAppId: (appId) => {
           if (finished) {
             throw new Error(
-              'Initialization has finished. Select an initial app while init.mjs is being evaluated.',
+              'Initialization has finished. Select an initial app while ' +
+                'init.mjs is being evaluated.',
             );
           }
 
@@ -139,27 +144,68 @@ export function createInitRuntime(
     },
 
     finish: () => {
-      if (pendingAppInstallations.size > 0) {
+      if (finished) {
+        throw new Error('Initialization has already finished.');
+      }
+
+      if (pendingAppPlugins.size > 0) {
         throw new Error(
-          'Initialization contains unfinished app installations. Await dirvi.apps.install(...).',
+          'Initialization contains unfinished app installations. Await ' +
+            'dirvi.apps.install(...).',
         );
       }
+
+      if (apps.size === 0) {
+        throw new Error(
+          'Initialization did not register any apps. Call ' +
+            'dirvi.apps.register(id, appPlugin) at least once in init.mjs.',
+        );
+      }
+
+      if (initialAppId !== undefined) {
+        if (!apps.has(initialAppId)) {
+          throw new Error(
+            `Startup app "${initialAppId}" has not been registered.`,
+          );
+        }
+        finished = true;
+        return {
+          config,
+          apps: [...apps.values()],
+          initialAppId: initialAppId,
+        };
+      }
+
+      const lastRegisteredAppId = getLastRegisteredAppId(apps);
+
       finished = true;
-      if (initialAppId === undefined) {
-        throw new Error(
-          'Initialization did not select a startup app. Call dirvi.apps.startupApp(appId) in init.mjs.',
-        );
-      }
-      if (!appPlugins.has(initialAppId)) {
-        throw new Error(
-          `Startup app "${initialAppId}" has not been registered. Call dirvi.apps.use(appPlugin) first.`,
-        );
-      }
+
       return {
         config,
-        apps: [...appPlugins.values()],
-        initialAppId,
+        apps: [...apps.values()],
+        initialAppId: lastRegisteredAppId,
       };
     },
   };
+}
+
+/**
+ * Returns the most recently registered app ID.
+ *
+ * Map iteration follows registration insertion order. This is a convenience
+ * fallback only; init.mjs should set initialAppId explicitly when startup
+ * selection is semantically important.
+ */
+function getLastRegisteredAppId(apps: ReadonlyMap<string, App>): string {
+  const appIds = [...apps.keys()];
+  const lastAppId = appIds.at(-1);
+
+  if (lastAppId === undefined) {
+    throw new Error(
+      'Internal error: Check some app is registered before searching ' +
+      'ids.',
+    );
+  }
+
+  return lastAppId;
 }

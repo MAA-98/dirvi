@@ -169,7 +169,7 @@ module.exports = {
         'section of your package.json. If this module is development only - add it to the ' +
         'from.pathNot re of the not-to-dev-dep rule in the dependency-cruiser configuration',
       from: {
-        path: '^(packages)',
+        path: '^(?:packages|plugins)',
         pathNot: '[.](?:spec|test)[.](?:js|mjs|cjs|jsx|ts|mts|cts|tsx)$',
       },
       to: {
@@ -355,6 +355,14 @@ module.exports = {
 
     reporterOptions: {
       dot: {
+        filters: {
+          // The SVG is an architecture graph. Show only repository source modules,
+          // not Node built-ins, npm packages, or generated/external declarations.
+          includeOnly: {
+            path: '^(?:packages|plugins)/',
+          },
+        },
+
         // Pattern of modules to consolidate to. The default pattern in this configuration
         // collapses everything in node_modules to one folder deep so you see
         // the external modules, but not their innards.
@@ -374,7 +382,7 @@ module.exports = {
       archi: {
         // Pattern of modules to consolidate to.
         collapsePattern:
-          '^(?:packages|src|lib(s?)|app(s?)|bin|test(s?)|spec(s?))/[^/]+|node_modules/(?:@[^/]+/[^/]+|[^/]+)',
+          '^(?:packages|plugins|src|lib(s?)|app(s?)|bin|test(s?)|spec(s?))/[^/]+|node_modules/(?:@[^/]+/[^/]+|[^/]+)',
 
         // Options to tweak the appearance of your graph. If you don't specify a
         // theme for 'archi' dependency-cruiser will use the one specified in the

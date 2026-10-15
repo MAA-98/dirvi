@@ -18,9 +18,9 @@
     "git:add": "pnpm format && git add -A",
     "login": "npm login",
     "publish": "pnpm build && pnpm --filter dirvi-lib publish --access public && pnpm --filter dirvi-apis publish --access public && pnpm --filter @mak-98/dirvi-cli publish --access public && pnpm --filter @mak-98/posix-fs-dirvi-app --access public",
-    "deps": "depcruise packages",
-    "deps:check": "depcruise --validate .dependency-cruiser.cjs packages",
-    "deps:svg": "depcruise packages --output-type dot | dot -T svg > dependency-graph.svg",
+    "deps": "depcruise packages plugins",
+    "deps:check": "depcruise --validate .dependency-cruiser.cjs packages plugins",
+    "deps:svg": "depcruise --config .dependency-cruiser.cjs packages plugins --output-type dot | dot -T svg > dependency-graph.svg",
     "deps:svg:lib": "depcruise packages/dirvi-lib --output-type dot | dot -T svg > dependency-graph-lib.svg",
     "deps:svg:cli": "depcruise packages/dirvi-cli --output-type dot | dot -T svg > dependency-graph-cli.svg",
     "loc": "find . -type d -name node_modules -prune -o -type d -name src -print -exec find {} -type f -print0 \\; | xargs -0 wc -l | tail -n 1"

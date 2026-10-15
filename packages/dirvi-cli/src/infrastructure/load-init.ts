@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 
 import type { Init, InitApi } from '../application/init-runtime.js';
 import { createInitRuntime } from '../application/init-runtime.js';
-import type { AppPackageInstaller } from '../application/app-pack-installer.js';
+import type { PackageLoader } from '../domain/package-loader.js';
 
 /**
  * Evaluates the user's init.mjs startup script and returns its resolved
@@ -29,10 +29,10 @@ import type { AppPackageInstaller } from '../application/app-pack-installer.js';
  * configuration registered by the script is invalid.
  */
 export async function loadInit({
-  appPackageInstaller,
+  packageLoader,
   initPath,
 }: {
-  appPackageInstaller: Readonly<AppPackageInstaller>;
+  packageLoader: Readonly<PackageLoader>;
   initPath: string;
 }): Promise<Init> {
   // A missing init.mjs means no script registrations. Other access failures are
@@ -41,12 +41,12 @@ export async function loadInit({
     await access(initPath);
   } catch (error: unknown) {
     if (isFileNotFoundError(error)) {
-      return createInitRuntime(appPackageInstaller).finish();
+      return createInitRuntime(packageLoader).finish();
     }
     throw error;
   }
 
-  const runtime = createInitRuntime(appPackageInstaller);
+  const runtime = createInitRuntime(packageLoader);
   // Preserve an existing property descriptor so this loader does not leak its
   // startup API into the process after init.mjs evaluation completes.
   const previousDirvi = Object.getOwnPropertyDescriptor(globalThis, 'dirvi');

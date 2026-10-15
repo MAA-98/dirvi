@@ -1,17 +1,11 @@
-import type { App } from 'dirvi-apis/plugin';
+import type { AppPlugin } from 'dirvi-apis/plugin';
 
 import { loadNodePosixAppApi } from './infrastructure/load-node-posix-app-api.js';
-
-export type PosixAppOpenInput = {
-  readonly directory?: string;
-};
 
 /**
  * A dirvi app that exposes a POSIX filesystem as a navigable tree.
  */
-export const posixAppPlugin: App = {
-  id: 'posix',
-
+export const posixAppPlugin: AppPlugin = {
   createAppApiApplicator: (input) => {
     const appApi = loadNodePosixAppApi(input);
 

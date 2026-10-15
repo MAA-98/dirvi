@@ -1,4 +1,4 @@
-import { App } from 'dirvi-apis';
+import type { AppPlugin } from 'dirvi-apis';
 
 import { execFile } from 'node:child_process';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -7,19 +7,45 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
-import type { AppPackageInstaller } from '../application/app-pack-installer.js';
-import type { AppPackageReference } from '../application/app-pack-ref.js';
+import { AppPackageReference } from '../application/app-pack-ref.js';
+import type { PackageLoader } from '../domain/package-loader.js';
 
 const execFileAsync = promisify(execFile);
 
-export type NodeAppPackageInstallerOptions = {
-  /**
-   * The directory corresponding to:
-   *
-   *   <dirvi data>/site/pack/dirvi/opt
-   */
-  readonly appPackagesDirectory: string;
-};
+/**
+ * Produces a filesystem-safe directory name for one exact npm app reference.
+ *
+ * The version is included deliberately: different versions of one npm package
+ * are distinct installed artifacts and may be loaded together.
+ */
+function getNpmAppPackageDirectoryName(
+  reference: AppPackageReference,
+): string {
+  return `${reference.packageName.replace(/^@/, '').replace('/', '__')}@${reference.version}`;
+}
+
+/**
+ * Returns the installation directory for one app package reference.
+ *
+ * Layout:
+ *
+ *   <dirvi data>/site/pack/apps/opt/npm/<package-name>@<exact-version>
+ */
+function getAppPackageDirectory(
+  packagesDirectory: string,
+  reference: AppPackageReference,
+): string {
+  switch (reference.source) {
+    case 'npm':
+      return join(
+        packagesDirectory,
+        'apps',
+        'opt',
+        'npm',
+        getNpmAppPackageDirectoryName(reference),
+      );
+  }
+}
 
 /**
  * Installs Node-based Dirvi app packages into Dirvi's dedicated package store.
@@ -27,44 +53,49 @@ export type NodeAppPackageInstallerOptions = {
  * Every app gets a small npm project of its own. That lets Node resolve the
  * plugin package and all of its transitive dependencies without adding apps
  * to dirvi-cli's own dependency graph.
+ *
+ * @param packagesDirectory - The directory corresponding to:
+ * <dirvi data>/site/pack/dirvi/opt
  */
-export function createNodeAppPackageInstaller(
-  options: NodeAppPackageInstallerOptions,
-): AppPackageInstaller {
-  const installations = new Map<string, Promise<App>>();
+export function createPackageLoader(
+  packagesDirectory: string,
+): PackageLoader {
+  const loadingPluginsByPath = new Map<string, Promise<AppPlugin>>();
 
   return {
-    install: (reference) => {
-      assertAppPackageReference(reference);
+    loadAppPlugin: (referenceInput) => {
+      const reference = AppPackageReference.parse(referenceInput);
+      
+      const appPackageDirectory = getAppPackageDirectory(
+        packagesDirectory,
+        reference,
+      );
 
-      const existingInstallation = installations.get(reference.packageName);
-
-      if (existingInstallation !== undefined) {
-        return existingInstallation;
+      const alreadyLoading = loadingPluginsByPath.get(appPackageDirectory);
+      if (alreadyLoading !== undefined) {
+        return alreadyLoading;
       }
 
-      const installation = installAppPackage(options, reference);
+      const installation = loadAppPluginFromDirectory(
+        packagesDirectory,
+        reference,
+      );
 
-      installations.set(reference.packageName, installation);
+      loadingPluginsByPath.set(appPackageDirectory, installation);
 
       return installation.finally(() => {
-        if (installations.get(reference.packageName) === installation) {
-          installations.delete(reference.packageName);
+        if (loadingPluginsByPath.get(appPackageDirectory) === installation) {
+          loadingPluginsByPath.delete(appPackageDirectory);
         }
       });
     },
   };
 }
 
-async function installAppPackage(
-  options: NodeAppPackageInstallerOptions,
+async function loadAppPluginFromDirectory(
+  appPackageDirectory: string,
   reference: AppPackageReference,
-): Promise<App> {
-  const appPackageDirectory = join(
-    options.appPackagesDirectory,
-    getAppPackageDirectoryName(reference.packageName),
-  );
-
+): Promise<AppPlugin> {
   await ensureAppPackageDirectory(appPackageDirectory);
 
   if (!(await hasInstalledVersion(appPackageDirectory, reference))) {
@@ -167,7 +198,7 @@ async function installWithNpm(
 async function loadInstalledAppPlugin(
   appPackageDirectory: string,
   reference: AppPackageReference,
-): Promise<App> {
+): Promise<AppPlugin> {
   const requireFromAppPackageDirectory = createRequire(
     join(appPackageDirectory, 'package.json'),
   );
@@ -190,45 +221,18 @@ async function loadInstalledAppPlugin(
   return parseAppPlugin(loadedModule.default, reference);
 }
 
-function parseAppPlugin(value: unknown, reference: AppPackageReference): App {
-  if (
-    !isRecord(value) ||
-    typeof value.id !== 'string' ||
-    value.id.trim().length === 0 ||
-    typeof value.open !== 'function'
-  ) {
+function parseAppPlugin(
+  value: unknown,
+  reference: AppPackageReference,
+): AppPlugin {
+  if (!isRecord(value) || typeof value.createAppApiApplicator !== 'function') {
     throw new Error(
-      `Dirvi app package "${reference.packageName}" must default-export an AppPlugin.`,
+      `Dirvi app package "${reference.packageName}" must default-export an ` +
+        'AppPlugin with createAppApiApplicator(input).',
     );
   }
 
-  return value as App;
-}
-
-function assertAppPackageReference(reference: AppPackageReference): void {
-  if (
-    !/^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/.test(
-      reference.packageName,
-    )
-  ) {
-    throw new Error(
-      `Invalid npm package name "${reference.packageName}" for a Dirvi app.`,
-    );
-  }
-
-  if (
-    !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(
-      reference.version,
-    )
-  ) {
-    throw new Error(
-      `Dirvi app package "${reference.packageName}" must use an exact version.`,
-    );
-  }
-}
-
-function getAppPackageDirectoryName(packageName: string): string {
-  return packageName.replace(/^@/, '').replace('/', '__');
+  return value as AppPlugin;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -6,11 +6,12 @@ import { render } from 'ink';
 
 import { Shell } from './ui/Shell.js';
 import { loadInit } from './infrastructure/load-init.js';
-import { createNodeAppPackageInstaller } from './infrastructure/node-app-package-installer.js';
+import { createPackageLoader } from './infrastructure/create-package-loader.js';
 import {
   getXdgDataHome,
   getXdgConfigHome,
 } from './infrastructure/get-xdg-paths.js';
+import { createAppApiApplicator } from './application/app.js';
 
 const program = new Command();
 
@@ -55,13 +56,10 @@ const dirviConfigDirectory = join(getXdgConfigHome(), 'dirvi');
 const initPath = join(dirviConfigDirectory, 'init.mjs');
 
 const dirviDataDirectory = join(getXdgDataHome(), 'dirvi');
-const npmAppsDirectory = join(
+const packagesDirectory = join(
   dirviDataDirectory,
   'site',
-  'pack',
-  'apps',
-  'opt',
-  'npm',
+  'pack'
 );
 
 // =============================================================================
@@ -79,10 +77,8 @@ program
     const options = program.opts<{ input?: string }>();
 
     const init = await loadInit({
-      appPackageInstaller: createNodeAppPackageInstaller({
-        appPackagesDirectory: npmAppsDirectory,
-      }),
-      initPath,
+      packageLoader: createPackageLoader(packagesDirectory),
+      initPath
     });
 
     const initialApp = init.apps.find((app) => app.id === init.initialAppId);
@@ -91,7 +87,7 @@ program
         `Startup app "${init.initialAppId}" was selected but is not registered.`,
       );
     }
-    const activeApp = initialApp.createAppApiApplicator(options.input);
+    const activeApp = createAppApiApplicator(initialApp, options.input);
 
     let appError: Error | undefined;
 

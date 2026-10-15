@@ -1,13 +1,12 @@
 import type { AppApi, SerializableKey } from './imports.js';
 
 /**
- * An app is a plugin for dirvi, which is referred to by its ID.
+ * App plugin for dirvi, creates the app api and exposes it with an applicator.
  *
  * To start the app an optional input string may be provided. This is a
  * host-neutral startup value left to be interpreted by the app.
  */
-export type App = {
-  readonly id: string;
+export type AppPlugin = {
   readonly createAppApiApplicator: (
     input: string | undefined,
   ) => AppApiApplicator;
