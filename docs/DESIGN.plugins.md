@@ -1,9 +1,9 @@
-# Design Choices: Plugin Applications
+# Design Choices: Config and Plugins
 
-This is a record of design decisions and their justifications. Previous design choices
-influence the next, so this is to be interpreted chronologically.
+This is a record of design decisions and their justifications. Previous design 
+choices influence the next, so this is to be interpreted chronologically.
 
-## Extensible configurations
+## Extensible configs
 
 **Requirement:**
 
@@ -28,6 +28,7 @@ configuration facade at:
 
 ```js
 globalThis.dirvi;
+dirvi;
 ```
 
 The facade is available only while `init.mjs` is being evaluated. It exposes
@@ -37,19 +38,17 @@ application state, or host infrastructure.
 For example, an initialization script may change shared UI options:
 
 ```js
-globalThis.dirvi.options.set({
+dirvi.options.set({
   indentSize: 4,
   firstIndent: '│ ',
 });
 ```
 
 The startup lifecycle is:
+- dirvi starts
+- evaluates `init.mjs`
+- exposes `globalThis.dirvi`/`dirvi` temporarily
+- `init.mjs` changes configuration through the exposed API
+- host consumes the resolved configuration
+- host enters the terminal UI
 
-```text
-dirvi starts
-  → evaluates init.mjs
-  → exposes globalThis.dirvi temporarily
-  → init.mjs changes configuration through the exposed API
-  → host consumes the resolved configuration
-  → host enters the terminal UI
-```

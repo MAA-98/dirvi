@@ -68,7 +68,7 @@ const npmAppsDirectory = join(
 // Commands
 // =============================================================================
 program
-  .name('direx')
+  .name('dirvi')
   .description('View and manage directories.')
   .version('0.11.0-beta.1')
   .helpOption('--help')
@@ -79,11 +79,9 @@ program
     const options = program.opts<{ input?: string }>();
 
     const init = await loadInit({
-      deps: {
         appPackageInstaller: createNodeAppPackageInstaller({
           appPackagesDirectory: npmAppsDirectory,
         }),
-      },
       initPath,
     });
 
@@ -120,7 +118,7 @@ program
 
       child.once('error', (error) => {
         process.stderr.write(
-          `direx: unable to copy to clipboard: ${error.message}\n`,
+          `dirvi: unable to copy to clipboard: ${error.message}\n`,
         );
       });
 
@@ -162,6 +160,6 @@ try {
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
 
-  process.stderr.write(`direx error: ${message}\n`);
+  process.stderr.write(`dirvi error: ${message}\n`);
   process.exitCode = 1;
 }

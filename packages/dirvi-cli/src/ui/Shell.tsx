@@ -1,4 +1,4 @@
-import { AppApiCombinator } from 'dirvi-apis';
+import { AppApiApplicator } from 'dirvi-apis';
 
 import { AppSetup } from './AppSetup.js';
 import type { Config } from '../domain/config.js';
@@ -23,7 +23,7 @@ export type ShellAppProps = {
    * Higher order function that will get a result given a function that has
    * app api as input.
    */
-  readonly appApiCombinator: AppApiCombinator;
+  readonly appApiCombinator: AppApiApplicator;
 
   /** Writes non-interactive application output. */
   readonly stdout?: (message: string) => void;

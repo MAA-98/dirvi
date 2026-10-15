@@ -4,20 +4,19 @@ import { pathToFileURL } from 'node:url';
 import type {
   Init,
   InitApi,
-  InitRuntimeDependencies,
 } from '../application/init-runtime.js';
 import { createInitRuntime } from '../application/init-runtime.js';
+import type { AppPackageInstaller } from '../application/app-pack-installer.js';
 
 /**
  * Evaluates the user's init.mjs startup script and returns its resolved
  * configuration.
  *
- * While init.mjs is evaluated, this loader temporarily exposes the
- * configuration runtime API as `globalThis.dirvi`. The script can configure
- * dirvi by calling that API:
+ * While init.mjs is evaluated, this loader provides the global `dirvi` API.
+ * The script configures dirvi by calling that API:
  *
  * ```js
- * globalThis.dirvi.options.set({
+ * dirvi.options.set({
  *   indentSize: 4,
  * });
  * ```
@@ -33,25 +32,32 @@ import { createInitRuntime } from '../application/init-runtime.js';
  * configuration registered by the script is invalid.
  */
 export async function loadInit({
-  deps,
+  appPackageInstaller,
   initPath,
 }: {
-  deps: InitRuntimeDependencies;
+  appPackageInstaller: Readonly<AppPackageInstaller>;
   initPath: string;
 }): Promise<Init> {
-  if (!(await initFileExists(initPath))) {
-    return createInitRuntime(deps).finish();
+  // A missing init.mjs means no script registrations. Other access failures are
+  // startup errors and must not be treated as a missing configuration file.
+  try {
+    await access(initPath);
+  } catch (error: unknown) {
+    if (isFileNotFoundError(error)) {
+      return createInitRuntime(appPackageInstaller).finish();
+    }
+    throw error;
   }
 
-  const runtime = createInitRuntime(deps);
+  const runtime = createInitRuntime(appPackageInstaller);
   // Preserve an existing property descriptor so this loader does not leak its
   // startup API into the process after init.mjs evaluation completes.
   const previousDirvi = Object.getOwnPropertyDescriptor(globalThis, 'dirvi');
-  // Use a non-writable property so configuration code can call the supported
-  // API but cannot replace the host-provided `globalThis.dirvi` binding.
+
   Object.defineProperty(globalThis, 'dirvi', {
     configurable: true,
     value: runtime.api,
+    // init.mjs may call the global `dirvi` API but cannot replace it.
     writable: false,
   });
 
@@ -75,28 +81,8 @@ export async function loadInit({
 }
 
 /**
- * Determines whether the optional init.mjs entrypoint exists.
- *
- * Only a missing file is treated as "use defaults". Permission errors, an
- * unreadable parent directory, and other filesystem failures remain startup
- * errors rather than being silently interpreted as absent configuration.
- */
-async function initFileExists(initPath: string): Promise<boolean> {
-  try {
-    await access(initPath);
-    return true;
-  } catch (error: unknown) {
-    if (isFileNotFoundError(error)) {
-      return false;
-    }
-
-    throw error;
-  }
-}
-
-/**
- * Restores `globalThis.dirvi` to exactly the state it had before init.mjs was
- * evaluated.
+ * Restores the global `dirvi` property to exactly the state it had before
+ * init.mjs was evaluated.
  *
  * Restoring the full property descriptor preserves a pre-existing getter,
  * setter, writability, configurability, or value. If no property existed,
@@ -113,7 +99,6 @@ function restoreGlobalDirvi(
   Object.defineProperty(globalThis, 'dirvi', previousDirvi);
 }
 
-/** Returns true only for the filesystem "entry does not exist" condition. */
 function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoException {
   return (
     error instanceof Error &&

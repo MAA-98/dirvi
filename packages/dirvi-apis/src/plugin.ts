@@ -10,10 +10,13 @@ export type App = {
   readonly id: string;
   readonly createAppApiCombinator: (
     input: string | undefined,
-  ) => AppApiCombinator;
+  ) => AppApiApplicator;
 };
 
-export type AppApiCombinator = <Result>(
+/**
+ * Creates and applies the AppApi to a given consumer of it.
+ */
+export type AppApiApplicator = <Result>(
   appApiConsumer: AppApiConsumer<Result>,
 ) => Result;
 

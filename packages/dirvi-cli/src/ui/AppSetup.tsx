@@ -31,7 +31,7 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
   const [error, setError] = useState<Error>();
 
   // Load the initial configuration and keep it synchronized with changes made
-  // by another process or another running direx instance.
+  // by another process or another running dirvi instance.
   // useEffect(() => {
   //   let mounted = true;
   //   let latestLoad = 0;
