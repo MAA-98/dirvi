@@ -59,7 +59,7 @@ export type InitRuntime = {
  * The mutable state is not exposed directly to the config script.
  */
 export function createInitRuntime(
-  appPackageInstaller: Readonly<AppPackageInstaller>
+  appPackageInstaller: Readonly<AppPackageInstaller>,
 ): InitRuntime {
   let config = defaultConfig;
   let initialAppId: string | undefined;

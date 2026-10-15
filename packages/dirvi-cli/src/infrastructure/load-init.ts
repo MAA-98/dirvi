@@ -1,10 +1,7 @@
 import { access } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 
-import type {
-  Init,
-  InitApi,
-} from '../application/init-runtime.js';
+import type { Init, InitApi } from '../application/init-runtime.js';
 import { createInitRuntime } from '../application/init-runtime.js';
 import type { AppPackageInstaller } from '../application/app-pack-installer.js';
 

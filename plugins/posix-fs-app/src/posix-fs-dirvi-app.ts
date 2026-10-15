@@ -12,7 +12,7 @@ export type PosixAppOpenInput = {
 export const posixAppPlugin: App = {
   id: 'posix',
 
-  createAppApiCombinator: (input) => {
+  createAppApiApplicator: (input) => {
     const appApi = loadNodePosixAppApi(input);
 
     return (appApiConsumer) => {

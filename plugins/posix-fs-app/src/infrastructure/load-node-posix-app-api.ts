@@ -20,7 +20,7 @@ import {
   PosixTreeNodeApi,
 } from '../domain/posix-tree.js';
 import { UnixAbsolutePath } from '../domain/unix-path.js';
-import type { AppApi } from 'dirvi-lib';
+import type { AppApi } from 'dirvi-apis';
 import { createAppStateApis } from 'dirvi-lib';
 
 // ---*--- App Data ---*---

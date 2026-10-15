@@ -8,7 +8,7 @@ import type { AppApi, SerializableKey } from './imports.js';
  */
 export type App = {
   readonly id: string;
-  readonly createAppApiCombinator: (
+  readonly createAppApiApplicator: (
     input: string | undefined,
   ) => AppApiApplicator;
 };

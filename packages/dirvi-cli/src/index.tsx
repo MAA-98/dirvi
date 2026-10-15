@@ -79,9 +79,9 @@ program
     const options = program.opts<{ input?: string }>();
 
     const init = await loadInit({
-        appPackageInstaller: createNodeAppPackageInstaller({
-          appPackagesDirectory: npmAppsDirectory,
-        }),
+      appPackageInstaller: createNodeAppPackageInstaller({
+        appPackagesDirectory: npmAppsDirectory,
+      }),
       initPath,
     });
 
@@ -91,7 +91,7 @@ program
         `Startup app "${init.initialAppId}" was selected but is not registered.`,
       );
     }
-    const activeApp = initialApp.createAppApiCombinator(options.input);
+    const activeApp = initialApp.createAppApiApplicator(options.input);
 
     let appError: Error | undefined;
 

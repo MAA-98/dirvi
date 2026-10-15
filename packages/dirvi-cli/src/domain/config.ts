@@ -53,18 +53,18 @@ export function merge<Value>(current: Value, patch: DeepPartial<Value>): Value {
   if (!isRecord(current) || !isRecord(patch)) {
     return patch as Value;
   }
-  
+
   const result: Record<string, unknown> = { ...current };
-  
+
   for (const [key, patchValue] of Object.entries(patch)) {
     const currentValue = result[key];
-    
+
     result[key] =
       isRecord(currentValue) && isRecord(patchValue)
         ? merge(currentValue, patchValue)
         : patchValue;
   }
-  
+
   return result as Value;
 }
 

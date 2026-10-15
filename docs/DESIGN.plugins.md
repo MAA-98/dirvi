@@ -1,6 +1,6 @@
 # Design Choices: Config and Plugins
 
-This is a record of design decisions and their justifications. Previous design 
+This is a record of design decisions and their justifications. Previous design
 choices influence the next, so this is to be interpreted chronologically.
 
 ## Extensible configs
@@ -45,10 +45,10 @@ dirvi.options.set({
 ```
 
 The startup lifecycle is:
+
 - dirvi starts
 - evaluates `init.mjs`
 - exposes `globalThis.dirvi`/`dirvi` temporarily
 - `init.mjs` changes configuration through the exposed API
 - host consumes the resolved configuration
 - host enters the terminal UI
-
