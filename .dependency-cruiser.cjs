@@ -286,7 +286,7 @@ module.exports = {
     // dependency-cruiser's current working directory). When not provided
     // defaults to './tsconfig.json'.
     tsConfig: {
-      fileName: 'tsconfig.json',
+      fileName: 'tsconfig.dependency-cruiser.json',
     },
 
     // Webpack configuration to use to get resolve options from.
@@ -371,13 +371,41 @@ module.exports = {
         // Options to tweak the appearance of your graph. See
         // https://github.com/sverweij/dependency-cruiser/blob/main/doc/options-reference.md#reporteroptions
         // If you don't specify a theme dependency-cruiser falls back to a built-in one.
-        // theme: {
-        //   graph: {
-        //     // splines: 'ortho' - straight lines; slow on big graphs
-        //     // splines: 'true' - bezier curves; fast but not as nice as ortho
-        //     splines: 'true'
-        //   },
-        // },
+        theme: {
+          graph: {
+            // Makes long cross-package edges much easier to trace than curves.
+            splines: 'ortho',
+
+            // The default graph is very compact. Give modules and ranks more air.
+            nodesep: '0.35',
+            ranksep: '0.65',
+            pad: '0.25',
+          },
+          dependencies: [
+            {
+              // import type { X } from './x.js'
+              criteria: {
+                dependencyTypes: ['type-only'],
+              },
+              attributes: {
+                color: '#3178C6',
+                fontcolor: '#3178C6',
+                penwidth: '1',
+              },
+            },
+            {
+              // A TypeScript dependency required only before JavaScript output.
+              criteria: {
+                dependencyTypes: ['pre-compilation-only'],
+              },
+              attributes: {
+                color: '#3178C6',
+                fontcolor: '#3178C6',
+                penwidth: '1',
+              },
+            },
+          ],
+        },
       },
       archi: {
         // Pattern of modules to consolidate to.

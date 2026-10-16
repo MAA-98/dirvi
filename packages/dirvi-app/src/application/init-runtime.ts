@@ -1,49 +1,9 @@
 import type { AppPlugin } from 'dirvi-apis';
 
-import { createApp, type App } from './app.js';
-import type { Config, ConfigPatch } from '../domain/config.js';
+import { createApp, type App } from '../domain/app.js';
 import { ConfigSchema, defaultConfig, merge } from '../domain/config.js';
-import type { AppPackageReference } from './app-pack-ref.js';
-import type { PackageLoader } from '../domain/package-loader.js';
-
-/**
- * The startup configuration API exposed to init.mjs as the global `dirvi`.
- *
- * This is intentionally a narrow facade. It is the public scripting boundary,
- * rather than an escape hatch into UI state or infrastructure implementations.
- */
-export type InitApi = {
-  readonly options: {
-    set: (patch: ConfigPatch) => void;
-  };
-
-  readonly apps: {
-    install: (reference: AppPackageReference) => Promise<AppPlugin>;
-    /**
-     * Registers an application made available by init.mjs.
-     */
-    register: (id: string, appPlugin: AppPlugin) => void;
-    /**
-     * Optionally selects the app initially opened by the shell.
-     *
-     * If omitted, the runtime falls back to the most recently registered app.
-     */
-    initialAppId: (appId: string) => void;
-  };
-};
-
-/**
- * Everything registered while init.mjs was evaluated.
- *
- * Config is shared tree-UI configuration. App selection is distinct from Config
- * value. initialAppId is always the ID of one app in apps: either the app
- * explicitly selected by init.mjs or the most recently registered app.
- */
-export type Init = {
-  readonly config: Config;
-  readonly apps: readonly App[];
-  readonly initialAppId: string;
-};
+import type { PackageLoader } from './package-loader.js';
+import type { Init, InitApi } from '../domain/init-runtime.js';
 
 /**
  * Collects startup configuration registrations while init.mjs is evaluated.
@@ -202,7 +162,7 @@ function getLastRegisteredAppId(apps: ReadonlyMap<string, App>): string {
 
   if (lastAppId === undefined) {
     throw new Error(
-      'Internal error: Check some app is registered before searching ' + 'ids.',
+      'Internal error: Check some app is registered before searching ids.',
     );
   }
 

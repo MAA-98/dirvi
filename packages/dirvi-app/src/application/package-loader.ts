@@ -1,4 +1,4 @@
-import type { AppPackageReference } from '../application/app-pack-ref.js';
+import type { AppPackageReference } from '../domain/app-pack-ref.js';
 import type { AppPlugin } from 'dirvi-apis';
 
 /**

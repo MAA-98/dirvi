@@ -1,3 +1,5 @@
+import { useRef } from 'react';
+
 import type {
   CursorApi,
   NavBranch,
@@ -5,9 +7,9 @@ import type {
   SerializableKey,
   State,
 } from 'dirvi-lib';
-import { View, ViewRow } from '../view.js';
-import { useRef } from 'react';
-import { STATUS_BAR_HEIGHT } from '../components/StatusBar.js';
+import { View, type ViewRow } from '../view.js';
+
+const STATUS_BAR_HEIGHT = 1;
 
 // Hooks that keeps Ref of the viewport's start, and returns View sliced to
 // only the rows that should be visible.

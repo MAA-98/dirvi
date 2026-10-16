@@ -1,37 +1,36 @@
-import { Text } from 'ink';
 import { useEffect, useMemo, useState } from 'react';
 
+import type { AppApi, SerializableKey, State } from 'dirvi-lib';
 import {
   createEffectToAction,
   createIntentToEffect,
   createReducer,
 } from 'dirvi-lib';
-import type { AppApi, SerializableKey, State } from 'dirvi-lib';
 
-import type { AppScreenRenderer } from './app-screen.js';
-import { App } from './App.js';
+import type { LoadingScreenRenderer } from './loading-screen-renderer.js';
+import type { AppScreenRenderer } from './app-screen-renderer.js';
 import type { Config } from '../domain/config.js';
+import { App } from './App.js';
 
 type LoadingAppProps<Id extends SerializableKey, Value, ViewKey = string> = {
-  screenRenderer: AppScreenRenderer;
+  appScreenRenderer: AppScreenRenderer;
+  loadingScreenRenderer: LoadingScreenRenderer;
   appApi: AppApi<Id, Value, ViewKey>;
   loadedConfig: Config;
   stdout?: (message: string) => void;
   clipboard?: (value: string) => void;
-  onError?: (error: Error) => void;
 };
 
 export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
-  screenRenderer,
+  appScreenRenderer,
+  loadingScreenRenderer,
   appApi,
   loadedConfig,
   stdout,
   clipboard,
-  onError,
 }: LoadingAppProps<Id, Value, ViewKey>) {
   const [initialState, setInitialState] = useState<State<Id, Value>>();
   const [config, setConfig] = useState<Config>(loadedConfig);
-  const [error, setError] = useState<Error>();
 
   // Load the initial configuration and keep it synchronized with changes made
   // by another process or another running dirvi instance.
@@ -85,7 +84,7 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
         if (!mounted) {
           return;
         }
-
+        
         setInitialState({
           root,
           folds: appApi.foldsApi.create(appApi.rootId, {
@@ -103,14 +102,13 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
           return;
         }
 
-        setError(nextError);
-        onError?.(nextError);
+        throw nextError
       });
 
     return () => {
       mounted = false;
     };
-  }, [appApi, onError]);
+  }, [appApi]);
 
   // --- Pure function deps ---
 
@@ -140,18 +138,14 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
   );
 
   // --- JSX ---
-
-  if (error !== undefined) {
-    return <Text color="red">{error.message}</Text>;
-  }
-
+  const LoadingScreenRenderer = loadingScreenRenderer;
   if (initialState === undefined) {
-    return <Text dimColor>Loading.</Text>;
+    return (<LoadingScreenRenderer/>);
   }
 
   return (
     <App
-      screenRenderer={screenRenderer}
+      screenRenderer={appScreenRenderer}
       appApi={appApi}
       config={config}
       initialState={initialState}
@@ -160,7 +154,6 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
       effectToAction={effectToAction}
       {...(stdout === undefined ? {} : { stdout })}
       {...(clipboard === undefined ? {} : { clipboard })}
-      {...(onError === undefined ? {} : { onError })}
     />
   );
 }

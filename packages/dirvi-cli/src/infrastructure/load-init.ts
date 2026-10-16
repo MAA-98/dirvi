@@ -1,9 +1,8 @@
 import { access } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 
-import type { Init, InitApi } from '../application/init-runtime.js';
-import { createInitRuntime } from '../application/init-runtime.js';
-import type { PackageLoader } from '../domain/package-loader.js';
+import type { Init, InitApi, PackageLoader } from '@mak-98/dirvi-app';
+import { createInitRuntime } from '@mak-98/dirvi-app';
 
 /**
  * Evaluates the user's init.mjs startup script and returns its resolved

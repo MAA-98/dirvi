@@ -10,7 +10,7 @@ import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { z } from 'zod';
 
-import { viewNameSchema } from './view-name-schema.js';
+import { viewNameSchema } from '@mak-98/dirvi-app';
 import type {
   SerializableKey,
   State,

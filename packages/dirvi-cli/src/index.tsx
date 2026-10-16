@@ -4,15 +4,16 @@ import { join } from 'node:path';
 import { Command } from 'commander';
 import { render } from 'ink';
 
-import { Shell } from './ui/Shell.js';
+import { createAppApiApplicator, Shell } from '@mak-98/dirvi-app';
+
 import { loadInit } from './infrastructure/load-init.js';
 import { createPackageLoader } from './infrastructure/create-package-loader.js';
 import {
   getXdgDataHome,
   getXdgConfigHome,
 } from './infrastructure/get-xdg-paths.js';
-import { createAppApiApplicator } from './application/app.js';
-import { InkScreen } from './ui/InkScreen.js';
+import { InkAppScreen } from './ui/InkAppScreen.js';
+import { InkLoadingScreen } from './ui/InkLoadingScreen.js';
 
 const program = new Command();
 
@@ -122,14 +123,12 @@ program
     try {
       const app = render(
         <Shell
-          screenRenderer={InkScreen}
+          appScreenRenderer={InkAppScreen}
+          loadingScreenRenderer={InkLoadingScreen}
           config={init.config}
           appApiApplicator={activeApp}
           {...(stdoutIsInteractive ? {} : { stdout })}
           clipboard={clipboard}
-          onError={(error) => {
-            appError = error;
-          }}
         />,
         { stdout: uiOutput },
       );

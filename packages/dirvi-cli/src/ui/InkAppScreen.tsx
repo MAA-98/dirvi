@@ -1,17 +1,15 @@
 import { Box, Text, useApp, useInput, useWindowSize } from 'ink';
 
-import type { AppScreenRenderer } from './app-screen.js';
+import type { AppScreenRenderer, Config, View } from '@mak-98/dirvi-app';
 import { ViewRowComponent } from './components/ViewRowComponent.js';
 import { FeedbackBar } from './components/FeedbackBar.js';
 import { STATUS_BAR_HEIGHT, StatusBar } from './components/StatusBar.js';
 import { inkInputToUserInput } from '../infrastructure/ink-input-to-user-input.js';
 import { createFeedbackDisplay } from './helpers/feedback-display.js';
-import { View } from './view.js';
 import { Feedback, FeedbackApi, FeedbackType, InputModeState, UserInput } from 'dirvi-lib';
-import { Config } from '../domain/config.js';
 import { useEffect, useMemo } from 'react';
 
-export const InkScreen: AppScreenRenderer = ({
+export const InkAppScreen: AppScreenRenderer = ({
   view,
   feedback,
   feedbackApi,
@@ -20,7 +18,6 @@ export const InkScreen: AppScreenRenderer = ({
   handleInput,
   onRowsChange,
   exitStatus,
-  onExitStatus,
 }: {
   view: View;
   feedback: Feedback | undefined;
@@ -30,7 +27,6 @@ export const InkScreen: AppScreenRenderer = ({
   handleInput: (userInput: UserInput) => void;
   onRowsChange: (rows: number) => void;
   exitStatus: string | undefined;
-  onExitStatus: (exitStatus: string) => void;
 }) => {
   const feedbackType: FeedbackType =
     feedback === undefined ? 'message' : feedbackApi.getType(feedback);
@@ -82,9 +78,8 @@ export const InkScreen: AppScreenRenderer = ({
       return;
     }
 
-    onExitStatus(exitStatus);
     exit();
-  }, [exit, exitStatus, onExitStatus]);
+  }, [exit, exitStatus]);
 
   if (exitStatus !== undefined) {
     return null;

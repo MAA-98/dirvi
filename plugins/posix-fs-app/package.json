@@ -1,6 +1,6 @@
 {
   "name": "@mak-98/posix-fs-dirvi-app",
-  "version": "0.11.0-beta.1",
+  "version": "0.11.0-beta.2",
   "description": "POSIX filesystem app for dirvi.",
   "license": "GPL-3.0-or-later",
   "type": "module",
@@ -21,7 +21,8 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "format": "prettier src --write"
+    "format": "prettier src --write",
+    "publish": "pnpm --filter @mak-98/posix-fs-dirvi-app publish --access public"
   },
   "dependencies": {
     "dirvi-apis": "workspace:*",

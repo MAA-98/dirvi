@@ -17,7 +17,7 @@ import type {
 
 import type { Config } from '../domain/config.js';
 import { useView } from './hooks/useView.js';
-import type { AppScreenRenderer } from './app-screen.js';
+import type { AppScreenRenderer } from './app-screen-renderer.js';
 
 function toError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
@@ -57,14 +57,9 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   const navEntry: NavBranch<Id> = useMemo(() => {
     const navigation = appApi.navNodeApi.from(state.root, state.folds);
 
-    /*
-     * State's root invariant requires an open branch. A missing navigation
-     * root therefore means an invalid State was constructed or decoded.
-     */
     if (navigation === undefined) {
       throw new Error('Tree-surfer state root must be a loaded branch.');
     }
-
     return navigation;
   }, [appApi.navNodeApi, state.root, state.folds]);
 
@@ -325,8 +320,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   // ===========================================================================
   // Input hook
   // ===========================================================================
-  const handleInput = useCallback(
-    (userInput: UserInput) => {
+  const handleInput = useCallback((userInput: UserInput) => {
       const intent = userInputToIntent(userInput, inputState);
       if (intent === undefined) {
         return;
@@ -344,18 +338,6 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   );
 
   // ===========================================================================
-  // Exit status
-  // ===========================================================================
-  const handleExitStatus = useCallback(
-    (nextExitStatus: string): void => {
-      if (nextExitStatus !== '') {
-        onError?.(new Error(nextExitStatus));
-      }
-    },
-    [onError],
-  );
-
-  // ===========================================================================
   // Render
   // ===========================================================================
   return (
@@ -368,7 +350,6 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
       handleInput={handleInput}
       onRowsChange={handleRowsChange}
       exitStatus={exitStatus}
-      onExitStatus={handleExitStatus}
     />
   );
 }

@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@mak-98/dirvi-apis": ["packages/dirvi-apis/src/index.ts"],
+      "@mak-98/dirvi-apis/*": ["packages/dirvi-apis/src/*"],
+
+      "@mak-98/dirvi-app": ["packages/dirvi-app/src/index.ts"],
+      "@mak-98/dirvi-app/*": ["packages/dirvi-app/src/*"],
+
+      "@mak-98/dirvi-cli": ["packages/dirvi-cli/src/index.ts"],
+      "@mak-98/dirvi-cli/*": ["packages/dirvi-cli/src/*"],
+
+      "@mak-98/dirvi-lib": ["packages/dirvi-lib/src/index.ts"],
+      "@mak-98/dirvi-lib/*": ["packages/dirvi-lib/src/*"],
+      "dirvi-lib": ["packages/dirvi-lib/src/index.ts"],
+      "dirvi-lib/*": ["packages/dirvi-lib/src/*"]
+    }
+  }
+}

@@ -1,5 +1,3 @@
-import type { AppPlugin } from 'dirvi-apis';
-
 import { execFile } from 'node:child_process';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
@@ -7,8 +5,9 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
-import { AppPackageReference } from '../application/app-pack-ref.js';
-import type { PackageLoader } from '../domain/package-loader.js';
+import type { AppPlugin } from 'dirvi-apis';
+import type { PackageLoader } from '@mak-98/dirvi-app';
+import { AppPackageReference } from '@mak-98/dirvi-app';
 
 const execFileAsync = promisify(execFile);
 

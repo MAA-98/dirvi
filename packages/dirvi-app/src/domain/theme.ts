@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { foregroundColorNames } from 'chalk';
 
 // =============================================================================
 // Terminal colors
@@ -11,13 +10,40 @@ const HexColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/, {
 
 const Ansi256ColorSchema = z.number().int().min(0).max(255);
 
-// Background colors are the same set, just altered names. You can check
-// `backgroundColorNames`
-const colorNameSet = new Set<string>(foregroundColorNames);
+/**
+ * Named ANSI foreground colors supported by Dirvi themes.
+ *
+ * Renderers translate these symbolic names into their own color APIs. The CLI
+ * renderer currently maps them to terminal colors; another renderer does not
+ * need to depend on Chalk to interpret the same theme.
+ */
+export const basicColorNames = [
+  'black',
+  'red',
+  'green',
+  'yellow',
+  'blue',
+  'cyan',
+  'magenta',
+  'white',
+  
+  // Common aliases for blackBright.
+  'gray',
+  'grey',
+  
+  'blackBright',
+  'redBright',
+  'greenBright',
+  'yellowBright',
+  'blueBright',
+  'cyanBright',
+  'magentaBright',
+  'whiteBright',
+] as const;
 
-const BasicColorSchema = z.string().refine((value) => colorNameSet.has(value), {
-  message: 'Expected a Chalk basic color name',
-});
+export type BasicColorName = (typeof basicColorNames)[number];
+
+const BasicColorSchema = z.enum(basicColorNames);
 
 export const ColorConfigSchema = z
   .object({

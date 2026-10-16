@@ -8,7 +8,7 @@ import type {
 } from 'dirvi-lib';
 
 import type { Config } from '../domain/config.js';
-import type { View } from './view.js';
+import { View } from './view.js';
 
 /**
  * State and callbacks required by a React host screen.
@@ -27,7 +27,6 @@ export type AppScreenProps = {
   readonly onRowsChange: (rows: number) => void;
 
   readonly exitStatus: string | undefined;
-  readonly onExitStatus: (exitStatus: string) => void;
 };
 
 /**

@@ -1,8 +1,9 @@
-import { AppApiApplicator } from 'dirvi-apis';
+import type { AppApiApplicator } from 'dirvi-apis';
 
-import { AppSetup } from './AppSetup.js';
+import type { AppScreenRenderer } from './app-screen-renderer.js';
+import type { LoadingScreenRenderer } from './loading-screen-renderer.js';
 import type { Config } from '../domain/config.js';
-import type { AppScreenRenderer } from './app-screen.js';
+import { AppSetup } from './AppSetup.js';
 
 /**
  * Dependencies and output callbacks required by {@link Shell}.
@@ -14,7 +15,8 @@ export type ShellAppProps = {
   /**
    * Host-specific React implementation of the active application screen.
    */
-  readonly screenRenderer: AppScreenRenderer;
+  readonly appScreenRenderer: AppScreenRenderer;
+  readonly loadingScreenRenderer: LoadingScreenRenderer;
 
   /**
    * Resolved startup configuration.
@@ -36,9 +38,6 @@ export type ShellAppProps = {
 
   /** Copies a value to the platform clipboard. */
   readonly clipboard?: (value: string) => void;
-
-  /** Receives errors that should be reported by the composition root. */
-  readonly onError?: (error: Error) => void;
 };
 
 /**
@@ -52,22 +51,22 @@ export type ShellAppProps = {
  * AppSetup receives the concrete AppApi and mounts the app-specific tree UI.
  */
 export function Shell({
-  screenRenderer,
+  appScreenRenderer,
+  loadingScreenRenderer,
   config,
   appApiApplicator,
   stdout,
   clipboard,
-  onError,
 }: ShellAppProps) {
   // Result type is specified here to be AppSetup
   return appApiApplicator((appApi) => (
     <AppSetup
-      screenRenderer={screenRenderer}
+      appScreenRenderer={appScreenRenderer}
+      loadingScreenRenderer={loadingScreenRenderer}
       loadedConfig={config}
       appApi={appApi}
       {...(stdout === undefined ? {} : { stdout })}
       {...(clipboard === undefined ? {} : { clipboard })}
-      {...(onError === undefined ? {} : { onError })}
     />
   ));
 }

@@ -1,7 +1,7 @@
 import { Box, Text } from 'ink';
-import type { ViewRow } from '../view.js';
-import type { Config } from '../../domain/config.js';
-import { colorConfigToInkColor } from '../helpers/color-resolver.js';
+
+import type { Config, ViewRow } from '@mak-98/dirvi-app';
+import { colorConfigToInkColor } from '@mak-98/dirvi-app';
 
 type ViewRowComponentProps = {
   row: ViewRow;
