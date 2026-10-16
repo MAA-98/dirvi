@@ -1,11 +1,12 @@
 export type { Theme } from './domain/theme.js';
 export type { Config } from './domain/config.js';
-export type { Init, InitApi } from './domain/init-runtime.js';
+export type { Init, PublicInitApi } from './domain/public-init-api.js';
 export { AppPackageReference } from './domain/app-pack-ref.js';
-export { createAppApiApplicator } from './domain/app.js';
 
 export type { PackageLoader } from './application/package-loader.js';
+export type { DirviApi } from './domain/dirvi-api.js';
 export { createInitRuntime } from './application/init-runtime.js';
+export { createDirviApi } from './application/create-dirvi-api.js';
 
 export type { ViewRow } from './ui/view.js';
 export { View } from './ui/view.js';

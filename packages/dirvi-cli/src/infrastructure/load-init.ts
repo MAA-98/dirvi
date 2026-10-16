@@ -1,7 +1,7 @@
 import { access } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 
-import type { Init, InitApi, PackageLoader } from '@mak-98/dirvi-app';
+import type { Init, PublicInitApi, PackageLoader } from '@mak-98/dirvi-app';
 import { createInitRuntime } from '@mak-98/dirvi-app';
 
 /**
@@ -88,7 +88,7 @@ function restoreGlobalDirvi(
   previousDirvi: PropertyDescriptor | undefined,
 ): void {
   if (previousDirvi === undefined) {
-    delete (globalThis as { dirvi?: InitApi }).dirvi;
+    delete (globalThis as { dirvi?: PublicInitApi }).dirvi;
     return;
   }
 

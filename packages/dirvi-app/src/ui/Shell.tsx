@@ -1,8 +1,9 @@
-import type { AppApiApplicator } from 'dirvi-apis';
+import { useState } from 'react';
 
+import type { DirviApi } from '../domain/dirvi-api.js';
+import type { AppInput } from '../domain/app.js';
 import type { AppScreenRenderer } from './app-screen-renderer.js';
 import type { LoadingScreenRenderer } from './loading-screen-renderer.js';
-import type { Config } from '../domain/config.js';
 import { AppSetup } from './AppSetup.js';
 
 /**
@@ -18,20 +19,8 @@ export type ShellAppProps = {
   readonly appScreenRenderer: AppScreenRenderer;
   readonly loadingScreenRenderer: LoadingScreenRenderer;
 
-  /**
-   * Resolved startup configuration.
-   *
-   * The composition root evaluates init.mjs before rendering the UI, so
-   * configuration is already validated and does not change while this shell
-   * is running.
-   */
-  readonly config: Config;
-
-  /**
-   * Higher order function that will get a result given a function that has
-   * app api as input.
-   */
-  readonly appApiApplicator: AppApiApplicator;
+  readonly dirviApi: DirviApi;
+  readonly initialAppInput: AppInput;
 
   /** Writes non-interactive application output. */
   readonly stdout?: (message: string) => void;
@@ -53,17 +42,20 @@ export type ShellAppProps = {
 export function Shell({
   appScreenRenderer,
   loadingScreenRenderer,
-  config,
-  appApiApplicator,
+  dirviApi,
+  initialAppInput,
   stdout,
   clipboard,
 }: ShellAppProps) {
+  const [appApiApplicator, setAppApiApplicator] = useState(() =>
+    dirviApi.openApp(dirviApi.initialAppId, initialAppInput),
+  );
   // Result type is specified here to be AppSetup
   return appApiApplicator((appApi) => (
     <AppSetup
       appScreenRenderer={appScreenRenderer}
       loadingScreenRenderer={loadingScreenRenderer}
-      loadedConfig={config}
+      loadedConfig={dirviApi.config}
       appApi={appApi}
       {...(stdout === undefined ? {} : { stdout })}
       {...(clipboard === undefined ? {} : { clipboard })}

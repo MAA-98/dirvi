@@ -3,7 +3,7 @@ import type { AppPlugin } from 'dirvi-apis';
 import { createApp, type App } from '../domain/app.js';
 import { ConfigSchema, defaultConfig, merge } from '../domain/config.js';
 import type { PackageLoader } from './package-loader.js';
-import type { Init, InitApi } from '../domain/init-runtime.js';
+import type { Init, PublicInitApi } from '../domain/public-init-api.js';
 
 /**
  * Collects startup configuration registrations while init.mjs is evaluated.
@@ -12,7 +12,7 @@ import type { Init, InitApi } from '../domain/init-runtime.js';
  * evaluation completes to seal registration and obtain the validated Config.
  */
 export type InitRuntime = {
-  readonly api: InitApi;
+  readonly api: PublicInitApi;
   readonly finish: () => Init;
 };
 

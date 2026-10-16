@@ -10,7 +10,7 @@ import { App } from './app.js';
  * This is intentionally a narrow facade. It is the public scripting boundary,
  * rather than an escape hatch into UI state or infrastructure implementations.
  */
-export type InitApi = {
+export type PublicInitApi = {
   readonly options: {
     set: (patch: ConfigPatch) => void;
   };

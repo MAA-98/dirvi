@@ -37,6 +37,8 @@ export function createApp(id: string, plugin: AppPlugin): App {
   };
 }
 
+export type AppInput = string | undefined;
+
 /**
  * Creates the app API applicator for a configured app without exposing the
  * `AppPlugin`.
@@ -45,7 +47,7 @@ export function createApp(id: string, plugin: AppPlugin): App {
  */
 export function createAppApiApplicator(
   app: App,
-  input: string | undefined,
+  input: AppInput,
 ): AppApiApplicator {
   return app[appPlugin].createAppApiApplicator(input);
 }

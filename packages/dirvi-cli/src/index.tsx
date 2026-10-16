@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { Command } from 'commander';
 import { render } from 'ink';
 
-import { createAppApiApplicator, Shell } from '@mak-98/dirvi-app';
+import { createDirviApi, Shell } from '@mak-98/dirvi-app';
 
 import { loadInit } from './infrastructure/load-init.js';
 import { createPackageLoader } from './infrastructure/create-package-loader.js';
@@ -79,14 +79,8 @@ program
       packageLoader,
       initPath,
     });
-
-    const initialApp = init.apps.find((app) => app.id === init.initialAppId);
-    if (initialApp === undefined) {
-      throw new Error(
-        `Startup app "${init.initialAppId}" was selected but is not registered.`,
-      );
-    }
-    const activeApp = createAppApiApplicator(initialApp, options.input);
+    
+    const dirviApi = createDirviApi(init);
 
     let appError: Error | undefined;
 
@@ -125,8 +119,8 @@ program
         <Shell
           appScreenRenderer={InkAppScreen}
           loadingScreenRenderer={InkLoadingScreen}
-          config={init.config}
-          appApiApplicator={activeApp}
+          dirviApi={dirviApi}
+          initialAppInput={options.input}
           {...(stdoutIsInteractive ? {} : { stdout })}
           clipboard={clipboard}
         />,
