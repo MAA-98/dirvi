@@ -6,7 +6,13 @@ import { FeedbackBar } from './components/FeedbackBar.js';
 import { STATUS_BAR_HEIGHT, StatusBar } from './components/StatusBar.js';
 import { inkInputToUserInput } from '../infrastructure/ink-input-to-user-input.js';
 import { createFeedbackDisplay } from './helpers/feedback-display.js';
-import { Feedback, FeedbackApi, FeedbackType, InputModeState, UserInput } from 'dirvi-lib';
+import {
+  Feedback,
+  FeedbackApi,
+  FeedbackType,
+  InputModeState,
+  UserInput,
+} from 'dirvi-lib';
 import { useEffect, useMemo } from 'react';
 
 export const InkAppScreen: AppScreenRenderer = ({
@@ -105,4 +111,4 @@ export const InkAppScreen: AppScreenRenderer = ({
       <StatusBar inputState={inputState} config={config} />
     </Box>
   );
-}
+};

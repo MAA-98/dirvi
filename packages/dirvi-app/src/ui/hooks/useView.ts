@@ -21,10 +21,7 @@ export function useView<Id extends SerializableKey, Value>(
   rowCount: number,
 ): View {
   const viewportStartRef = useRef(0);
-  const viewportHeight = Math.max(
-    0,
-    rowCount - STATUS_BAR_HEIGHT,
-  );
+  const viewportHeight = Math.max(0, rowCount - STATUS_BAR_HEIGHT);
 
   if (viewportHeight === 0) {
     return { rows: [] };

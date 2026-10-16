@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from 'react';
 
 import { createFeedbackApi, userInputToIntent } from 'dirvi-lib';
 import type {
@@ -12,7 +19,7 @@ import type {
   SerializableKey,
   State,
   Feedback,
-  UserInput
+  UserInput,
 } from 'dirvi-lib';
 
 import type { Config } from '../domain/config.js';
@@ -320,7 +327,8 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   // ===========================================================================
   // Input hook
   // ===========================================================================
-  const handleInput = useCallback((userInput: UserInput) => {
+  const handleInput = useCallback(
+    (userInput: UserInput) => {
       const intent = userInputToIntent(userInput, inputState);
       if (intent === undefined) {
         return;

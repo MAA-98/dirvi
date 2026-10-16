@@ -26,11 +26,11 @@ export const basicColorNames = [
   'cyan',
   'magenta',
   'white',
-  
+
   // Common aliases for blackBright.
   'gray',
   'grey',
-  
+
   'blackBright',
   'redBright',
   'greenBright',

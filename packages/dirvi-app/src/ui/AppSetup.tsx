@@ -84,7 +84,7 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
         if (!mounted) {
           return;
         }
-        
+
         setInitialState({
           root,
           folds: appApi.foldsApi.create(appApi.rootId, {
@@ -102,7 +102,7 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
           return;
         }
 
-        throw nextError
+        throw nextError;
       });
 
     return () => {
@@ -140,7 +140,7 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
   // --- JSX ---
   const LoadingScreenRenderer = loadingScreenRenderer;
   if (initialState === undefined) {
-    return (<LoadingScreenRenderer/>);
+    return <LoadingScreenRenderer />;
   }
 
   return (
