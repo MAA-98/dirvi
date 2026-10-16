@@ -1,12 +1,12 @@
 import { access } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 
-import type { Init, PublicInitApi, PackageLoader } from '@mak-98/dirvi-app';
+import type { Initialization, PublicInitApi } from '@mak-98/dirvi-app';
 import { createInitRuntime } from '@mak-98/dirvi-app';
 
 /**
  * Evaluates the user's init.mjs startup script and returns its resolved
- * configuration.
+ * configuration object `Initialization`.
  *
  * While init.mjs is evaluated, this loader provides the global `dirvi` API.
  * The script configures dirvi by calling that API:
@@ -27,25 +27,21 @@ import { createInitRuntime } from '@mak-98/dirvi-app';
  * @throws {Error} When init.mjs cannot be read, imported, executed, or when
  * configuration registered by the script is invalid.
  */
-export async function loadInit({
-  packageLoader,
-  initPath,
-}: {
-  packageLoader: Readonly<PackageLoader>;
-  initPath: string;
-}): Promise<Init> {
+export async function getInitialization(
+  initPath: string,
+): Promise<Initialization> {
   // A missing init.mjs means no script registrations. Other access failures are
   // startup errors and must not be treated as a missing configuration file.
   try {
     await access(initPath);
   } catch (error: unknown) {
     if (isFileNotFoundError(error)) {
-      return createInitRuntime(packageLoader).finish();
+      return createInitRuntime().finish();
     }
     throw error;
   }
 
-  const runtime = createInitRuntime(packageLoader);
+  const runtime = createInitRuntime();
   // Preserve an existing property descriptor so this loader does not leak its
   // startup API into the process after init.mjs evaluation completes.
   const previousDirvi = Object.getOwnPropertyDescriptor(globalThis, 'dirvi');

@@ -4,9 +4,9 @@ import { join } from 'node:path';
 import { Command } from 'commander';
 import { render } from 'ink';
 
-import { createDirviApi, Shell } from '@mak-98/dirvi-app';
+import { Shell } from '@mak-98/dirvi-app';
 
-import { loadInit } from './infrastructure/load-init.js';
+import { getInitialization } from './infrastructure/get-initialization.js';
 import { createPackageLoader } from './infrastructure/create-package-loader.js';
 import {
   getXdgDataHome,
@@ -74,13 +74,8 @@ program
     // belongs to the selected app.
     const options = program.opts<{ input?: string }>();
 
+    const initialization = await getInitialization(initPath);
     const packageLoader = createPackageLoader(packagesDirectory);
-    const init = await loadInit({
-      packageLoader,
-      initPath,
-    });
-    
-    const dirviApi = createDirviApi(init);
 
     let appError: Error | undefined;
 
@@ -119,8 +114,9 @@ program
         <Shell
           appScreenRenderer={InkAppScreen}
           loadingScreenRenderer={InkLoadingScreen}
-          dirviApi={dirviApi}
           initialAppInput={options.input}
+          initialization={initialization}
+          packageLoader={packageLoader}
           {...(stdoutIsInteractive ? {} : { stdout })}
           clipboard={clipboard}
         />,

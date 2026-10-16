@@ -11,12 +11,14 @@ import type { LoadingScreenRenderer } from './loading-screen-renderer.js';
 import type { AppScreenRenderer } from './app-screen-renderer.js';
 import type { Config } from '../domain/config.js';
 import { App } from './App.js';
+import { ShellApi } from '../domain/shell-api.js';
 
 type LoadingAppProps<Id extends SerializableKey, Value, ViewKey = string> = {
   appScreenRenderer: AppScreenRenderer;
   loadingScreenRenderer: LoadingScreenRenderer;
-  appApi: AppApi<Id, Value, ViewKey>;
   loadedConfig: Config;
+  shellApi: ShellApi;
+  appApi: AppApi<Id, Value, ViewKey>;
   stdout?: (message: string) => void;
   clipboard?: (value: string) => void;
 };

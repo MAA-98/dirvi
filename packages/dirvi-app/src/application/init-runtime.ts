@@ -1,9 +1,8 @@
-import type { AppPlugin } from 'dirvi-apis';
-
-import { createApp, type App } from '../domain/app.js';
+import type { Initialization } from '../domain/initialization.js';
 import { ConfigSchema, defaultConfig, merge } from '../domain/config.js';
-import type { PackageLoader } from './package-loader.js';
-import type { Init, PublicInitApi } from '../domain/public-init-api.js';
+import type { PublicInitApi } from '../domain/public-init-api.js';
+import { ExCommand } from '../domain/ex-command.js';
+import { AppPackageReference } from '../domain/app-pack-ref.js';
 
 /**
  * Collects startup configuration registrations while init.mjs is evaluated.
@@ -13,7 +12,7 @@ import type { Init, PublicInitApi } from '../domain/public-init-api.js';
  */
 export type InitRuntime = {
   readonly api: PublicInitApi;
-  readonly finish: () => Init;
+  readonly finish: () => Initialization;
 };
 
 /**
@@ -22,13 +21,11 @@ export type InitRuntime = {
  * Each runtime owns its own mutable configuration while registration is open.
  * The mutable state is not exposed directly to the config script.
  */
-export function createInitRuntime(
-  appPackageLoader: Readonly<PackageLoader>,
-): InitRuntime {
+export function createInitRuntime(): InitRuntime {
   let config = defaultConfig;
   let initialAppId: string | undefined;
-  const apps = new Map<string, App>();
-  const pendingAppPlugins = new Set<Promise<AppPlugin>>();
+  const apps = new Map<string, AppPackageReference>();
+  const exCommands = new Map<string, ExCommand>();
   let finished = false;
 
   return {
@@ -50,22 +47,7 @@ export function createInitRuntime(
       },
 
       apps: {
-        install: (ref) => {
-          if (finished) {
-            throw new Error(
-              'Initialization has finished. Install apps while init.mjs is being evaluated.',
-            );
-          }
-
-          const promisedAppPlugins = appPackageLoader.loadAppPlugin(ref);
-          pendingAppPlugins.add(promisedAppPlugins);
-
-          return promisedAppPlugins.finally(() => {
-            pendingAppPlugins.delete(promisedAppPlugins);
-          });
-        },
-
-        register: (id, appPlugin) => {
+        register: (id, appReference) => {
           if (finished) {
             throw new Error(
               'Initialization has finished. Register apps while ' +
@@ -83,7 +65,7 @@ export function createInitRuntime(
             );
           }
 
-          apps.set(id, createApp(id, appPlugin));
+          apps.set(id, appReference);
         },
 
         initialAppId: (appId) => {
@@ -101,6 +83,32 @@ export function createInitRuntime(
           initialAppId = appId;
         },
       },
+
+      ex: {
+        register: (name, execute) => {
+          if (finished) {
+            throw new Error(
+              'Initialization has finished. Register Ex commands while ' +
+                'init.mjs is being evaluated.',
+            );
+          }
+
+          if (name.trim().length === 0) {
+            throw new Error('Ex command name must not be empty.');
+          }
+
+          if (exCommands.has(name)) {
+            throw new Error(
+              `An Ex command named "${name}" was registered multiple times.`,
+            );
+          }
+
+          exCommands.set(name, {
+            name,
+            execute,
+          });
+        },
+      },
     },
 
     finish: () => {
@@ -108,17 +116,10 @@ export function createInitRuntime(
         throw new Error('Initialization has already finished.');
       }
 
-      if (pendingAppPlugins.size > 0) {
-        throw new Error(
-          'Initialization contains unfinished app installations. Await ' +
-            'dirvi.apps.install(...).',
-        );
-      }
-
       if (apps.size === 0) {
         throw new Error(
           'Initialization did not register any apps. Call ' +
-            'dirvi.apps.register(id, appPlugin) at least once in init.mjs.',
+            'dirvi.apps.register(id, appReference) at least once in init.mjs.',
         );
       }
 
@@ -131,19 +132,21 @@ export function createInitRuntime(
         finished = true;
         return {
           config,
-          apps: [...apps.values()],
           initialAppId: initialAppId,
+          registeredApps: new Map(apps),
+          exCommands: [...exCommands.values()],
         };
       }
 
-      const lastRegisteredAppId = getLastRegisteredAppId(apps);
+      const lastRegisteredAppRef = getLastRegisteredAppId(apps);
 
       finished = true;
 
       return {
         config,
-        apps: [...apps.values()],
-        initialAppId: lastRegisteredAppId,
+        initialAppId: lastRegisteredAppRef,
+        registeredApps: new Map(apps),
+        exCommands: [...exCommands.values()],
       };
     },
   };
@@ -156,7 +159,9 @@ export function createInitRuntime(
  * fallback only; init.mjs should set initialAppId explicitly when startup
  * selection is semantically important.
  */
-function getLastRegisteredAppId(apps: ReadonlyMap<string, App>): string {
+function getLastRegisteredAppId(
+  apps: ReadonlyMap<string, AppPackageReference>,
+): string {
   const appIds = [...apps.keys()];
   const lastAppId = appIds.at(-1);
 

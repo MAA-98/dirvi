@@ -1,8 +1,6 @@
-import { AppPlugin } from 'dirvi-apis';
-
 import { AppPackageReference } from './app-pack-ref.js';
-import { Config, ConfigPatch } from './config.js';
-import { App } from './app.js';
+import { ConfigPatch } from './config.js';
+import { ShellApi } from './shell-api.js';
 
 /**
  * The startup configuration API exposed to init.mjs as the global `dirvi`.
@@ -16,29 +14,34 @@ export type PublicInitApi = {
   };
 
   readonly apps: {
-    install: (reference: AppPackageReference) => Promise<AppPlugin>;
-    /**
-     * Registers an application made available by init.mjs.
-     */
-    register: (id: string, appPlugin: AppPlugin) => void;
     /**
      * Optionally selects the app initially opened by the shell.
      *
      * If omitted, the runtime falls back to the most recently registered app.
      */
     initialAppId: (appId: string) => void;
+    /**
+     * Registers an application made available by init.mjs.
+     */
+    register: (id: string, appReference: AppPackageReference) => void;
   };
-};
 
-/**
- * Everything registered while init.mjs was evaluated.
- *
- * Config is shared tree-UI configuration. App selection is distinct from Config
- * value. initialAppId is always the ID of one app in apps: either the app
- * explicitly selected by init.mjs or the most recently registered app.
- */
-export type Init = {
-  readonly config: Config;
-  readonly apps: readonly App[];
-  readonly initialAppId: string;
+  readonly ex: {
+    /**
+     * Registers an Ex command invoked as `:${name}`.
+     *
+     * The closure receives the live DirviApi when the user invokes the command,
+     * not while init.mjs is being evaluated. E.g.
+     *
+     * ```js
+     * dirvi.ex.register('hello', (api) => {
+     *     // Do something with api
+     * });
+     * ```
+     */
+    register: (
+      name: string,
+      execute: (shell: ShellApi) => void | Promise<void>,
+    ) => void;
+  };
 };
