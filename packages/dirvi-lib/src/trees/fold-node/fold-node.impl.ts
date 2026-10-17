@@ -312,7 +312,7 @@ export function createFoldsApi<Id extends SerializableKey>(
   }
 
   function foldTreeToModel(tree: FoldTree<Id>): FoldNodeModel<Id> {
-    return foldTreeApi.match<FoldNodeModel<Id>>(tree, {
+    return foldTreeApi.matchByKind<FoldNodeModel<Id>>(tree, {
       leaf: () => {
         throw new Error('Fold trees must contain loaded branch nodes');
       },

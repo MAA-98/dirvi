@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { AppApiApplicator } from 'dirvi-apis';
 
@@ -110,7 +110,7 @@ export function Shell({
     <AppSetup
       appScreenRenderer={appScreenRenderer}
       loadingScreenRenderer={loadingScreenRenderer}
-      loadedConfig={initialization.config}
+      initialization={initialization}
       shellApi={shellApi}
       appApi={appApi}
       {...(stdout === undefined ? {} : { stdout })}

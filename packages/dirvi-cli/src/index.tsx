@@ -6,7 +6,7 @@ import { render } from 'ink';
 
 import { Shell } from '@mak-98/dirvi-app';
 
-import { getInitialization } from './infrastructure/get-initialization.js';
+import { createInitialization } from './infrastructure/create-initialization.js';
 import { createPackageLoader } from './infrastructure/create-package-loader.js';
 import {
   getXdgDataHome,
@@ -74,7 +74,7 @@ program
     // belongs to the selected app.
     const options = program.opts<{ input?: string }>();
 
-    const initialization = await getInitialization(initPath);
+    const initialization = await createInitialization(initPath);
     const packageLoader = createPackageLoader(packagesDirectory);
 
     let appError: Error | undefined;

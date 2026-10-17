@@ -133,7 +133,7 @@ export type TreeNodeKind = 'leaf' | 'unloaded-branch' | 'loaded-branch';
  * @example
  *
  * ```ts
- * const label = api.match(node, {
+ * const label = api.matchByKind(node, {
  *   leaf: ({ value }) => value.label,
  *
  *   unloadedBranch: ({ value }) => `${value.label} (loading…)`,
@@ -150,7 +150,7 @@ export type TreeNodeKind = 'leaf' | 'unloaded-branch' | 'loaded-branch';
  * });
  * ```
  */
-export type TreeNodeMatch<
+export type MatchByKind<
   Id extends SerializableKey,
   Value,
   Result,
@@ -287,9 +287,9 @@ export type TreeNodeApi<Id extends SerializableKey, Value> = Readonly<{
    * states.
    * @returns The value returned by the selected case handler.
    */
-  match<Result>(
+  matchByKind<Result>(
     node: TreeNode<Id, Value>,
-    handlers: TreeNodeMatch<Id, Value, Result>,
+    handlers: MatchByKind<Id, Value, Result>,
   ): Result;
 
   /**

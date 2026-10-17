@@ -29,7 +29,7 @@ import { UnixPath, UnixPathSchema } from './unix-path.js';
 type Assert<True extends true> = True;
 
 // -----------------------------------------------------------------------------
-// PosixName
+// PosixName: Id extends SerializableKey
 // -----------------------------------------------------------------------------
 
 export const PosixNameSchema = serializableKeySchema.pipe(
@@ -328,7 +328,7 @@ export const PosixNavApi = createNavNodeApi(
   PosixFoldsApi,
   PosixCursorApi,
   {
-    compareEntries(left, right) {
+    compareSiblings(left, right) {
       return left.id.localeCompare(right.id);
     },
   },

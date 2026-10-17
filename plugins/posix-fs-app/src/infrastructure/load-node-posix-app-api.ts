@@ -110,7 +110,6 @@ export function loadNodePosixAppApi(
   }
 
   return {
-    appId: 'posix',
     name: unixAbsPath,
     rootId,
     loadBranches,
@@ -131,12 +130,12 @@ export function loadNodePosixAppApi(
     subscribeToResync: createFsResyncSubscription(join(unixAbsPath)),
 
     // The key for the Posix app instance is just the directory working in:
-    viewKey: unixAbsPath,
-    viewApi: createFileViewApi({
-      directory: posixAppViewsDirectory,
-      encodeKey,
-      stateCodec: posixStateCodec,
-    }),
+    // viewKey: unixAbsPath,
+    // viewApi: createFileViewApi({
+    //   directory: posixAppViewsDirectory,
+    //   encodeKey,
+    //   stateCodec: posixStateCodec,
+    // }),
 
     foldsApi: PosixFoldsApi,
     navNodeApi: PosixNavApi,

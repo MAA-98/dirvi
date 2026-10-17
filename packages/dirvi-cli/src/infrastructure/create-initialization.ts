@@ -27,7 +27,7 @@ import { createInitRuntime } from '@mak-98/dirvi-app';
  * @throws {Error} When init.mjs cannot be read, imported, executed, or when
  * configuration registered by the script is invalid.
  */
-export async function getInitialization(
+export async function createInitialization(
   initPath: string,
 ): Promise<Initialization> {
   // A missing init.mjs means no script registrations. Other access failures are

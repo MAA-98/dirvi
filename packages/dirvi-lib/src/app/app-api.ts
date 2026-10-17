@@ -32,12 +32,6 @@ export type AppApi<
   ViewKey = string,
 > = Readonly<{
   /**
-   * Name used to distinguish the application, for example `posix` for a
-   * POSIX-directory application.
-   */
-  appId: string;
-
-  /**
    * Name used to distinguish a particular application instance.
    */
   name: string;
@@ -94,9 +88,9 @@ export type AppApi<
    */
   navNodeApi: NavNodeApi<Id, Value>;
 
-  viewKey: ViewKey;
-
-  viewApi: ViewApi<State<Id, Value>, ViewKey>;
+  // viewKey: ViewKey;
+  //
+  // viewApi: ViewApi<State<Id, Value>, ViewKey>;
 }>;
 
 export type AppStateApis<Id extends SerializableKey, Value> = Readonly<{

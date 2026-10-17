@@ -1,7 +1,7 @@
 import type {
   TreeNode,
   TreeNodeApi,
-  TreeNodeMatch,
+  MatchByKind,
   TreeNodeKind,
 } from './tree-node.types.js';
 import type { SerializableKey, TreeNodeModel } from './tree-node.model.js';
@@ -217,9 +217,9 @@ export function createTreeNodeApi<
       return 'loaded-branch';
     },
 
-    match<Result>(
+    matchByKind<Result>(
       node: TreeNode<Id, Value>,
-      handlers: TreeNodeMatch<Id, Value, Result>,
+      handlers: MatchByKind<Id, Value, Result>,
     ): Result {
       const data = toData(node);
 

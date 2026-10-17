@@ -34,7 +34,7 @@ export type CreateNavNodeApiOptions<
    * distinct sibling entries. If two entries compare equal, their order falls
    * back to the source TreeNode child iteration order.
    */
-  compareEntries: NavEntryComparator<Id, Value>;
+  compareSiblings?: NavEntryComparator<Id, Value> | undefined;
 }>;
 
 /**
@@ -57,15 +57,17 @@ export function createNavNodeApi<Id extends SerializableKey, Value>(
     left: TreeNode<Id, Value>,
     right: TreeNode<Id, Value>,
   ): number {
-    return options.compareEntries(
-      {
-        id: treeNodeApi.id(left),
-        value: treeNodeApi.value(left),
-      },
-      {
-        id: treeNodeApi.id(right),
-        value: treeNodeApi.value(right),
-      },
+    return (
+      options.compareSiblings?.(
+        {
+          id: treeNodeApi.id(left),
+          value: treeNodeApi.value(left),
+        },
+        {
+          id: treeNodeApi.id(right),
+          value: treeNodeApi.value(right),
+        },
+      ) ?? 0
     );
   }
 
@@ -129,7 +131,7 @@ export function createNavNodeApi<Id extends SerializableKey, Value>(
     foldRoot: Folds<Id>,
     entryPath: readonly Id[],
   ): NavEntry<Id> {
-    return treeNodeApi.match(entry, {
+    return treeNodeApi.matchByKind(entry, {
       leaf: ({ id }) => ({
         id,
       }),
@@ -150,7 +152,7 @@ export function createNavNodeApi<Id extends SerializableKey, Value>(
     root: TreeNode<Id, Value>,
     foldRoot: Folds<Id>,
   ): NavBranch<Id> | undefined {
-    return treeNodeApi.match<NavBranch<Id> | undefined>(root, {
+    return treeNodeApi.matchByKind<NavBranch<Id> | undefined>(root, {
       leaf: () => undefined,
 
       unloadedBranch: ({ id }) => ({

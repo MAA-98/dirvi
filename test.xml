@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!DOCTYPE library SYSTEM "library.dtd">
+
+<!-- A document-level comment. -->
+<?dirvi display="tree"?>
+
+<library version="1.0">
+    <book id="bk-001" available="true">
+        <title>Dirvi and Trees</title>
+        <author>
+            <name>Example Author</name>
+            <email>author@example.com</email>
+        </author>
+        <summary><![CDATA[
+A short <summary> containing markup-like text.
+    ]]></summary>
+    </book>
+
+    <!-- Mixed content verifies that source order is preserved. -->
+    <note priority="high">Before <emphasis>important text</emphasis> after.</note>
+
+    <empty-element />
+</library>

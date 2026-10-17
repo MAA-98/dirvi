@@ -12,11 +12,12 @@ import type { AppScreenRenderer } from './app-screen-renderer.js';
 import type { Config } from '../domain/config.js';
 import { App } from './App.js';
 import { ShellApi } from '../domain/shell-api.js';
+import { Initialization } from '../domain/initialization.js';
 
 type LoadingAppProps<Id extends SerializableKey, Value, ViewKey = string> = {
   appScreenRenderer: AppScreenRenderer;
   loadingScreenRenderer: LoadingScreenRenderer;
-  loadedConfig: Config;
+  initialization: Initialization;
   shellApi: ShellApi;
   appApi: AppApi<Id, Value, ViewKey>;
   stdout?: (message: string) => void;
@@ -27,12 +28,12 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
   appScreenRenderer,
   loadingScreenRenderer,
   appApi,
-  loadedConfig,
+  initialization,
   stdout,
   clipboard,
 }: LoadingAppProps<Id, Value, ViewKey>) {
   const [initialState, setInitialState] = useState<State<Id, Value>>();
-  const [config, setConfig] = useState<Config>(loadedConfig);
+  const [config, setConfig] = useState<Config>(initialization.config);
 
   // Load the initial configuration and keep it synchronized with changes made
   // by another process or another running dirvi instance.

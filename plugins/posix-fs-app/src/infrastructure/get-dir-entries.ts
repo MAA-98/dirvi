@@ -1,11 +1,11 @@
-import { TreeNode, TreeNodeApi } from 'dirvi-lib';
+import type { TreeNode } from 'dirvi-lib';
 import {
-  PosixEntry,
-  PosixName,
+  type PosixEntry,
+  type PosixName,
   PosixNameSchema,
   PosixTreeNode,
 } from '../domain/posix-tree.js';
-import { UnixAbsolutePath, UnixPathSchema } from '../domain/unix-path.js';
+import { type UnixAbsolutePath, UnixPathSchema } from '../domain/unix-path.js';
 import { readdir, readlink } from 'node:fs/promises';
 import { join } from 'node:path';
 
