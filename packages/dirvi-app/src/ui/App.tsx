@@ -226,53 +226,53 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           return;
 
         case 'saveView': {
-          void appApi.viewApi
-            .save(appApi.viewKey, effect.name, stateRef.current)
-            .then(() => {
-              setInputState({
-                inputMode: 'normal',
-                normalBuffer: '',
-              });
-              feedbackApi.addMessage(`Saved view: ${effect.name}`);
-            })
-            .catch((error: unknown) => {
-              feedbackApi.addMessage(
-                `Unable to save view: ${toError(error).message}`,
-              );
-            });
+          // void appApi.viewApi
+          //   .save(appApi.viewKey, effect.name, stateRef.current)
+          //   .then(() => {
+          //     setInputState({
+          //       inputMode: 'normal',
+          //       normalBuffer: '',
+          //     });
+          //     feedbackApi.addMessage(`Saved view: ${effect.name}`);
+          //   })
+          //   .catch((error: unknown) => {
+          //     feedbackApi.addMessage(
+          //       `Unable to save view: ${toError(error).message}`,
+          //     );
+          //   });
 
           return;
         }
 
         case 'loadView': {
-          void appApi.viewApi
-            .load(appApi.viewKey, effect.name)
-            .then((loadedState) => {
-              if (loadedState === undefined) {
-                throw new Error(`View not found: ${effect.name}`);
-              }
-
-              // The saved buffer may be stale because the filesystem could have
-              // changed since the view was saved.
-              return appApi.stateApi.resync(loadedState, appApi.loadBranches);
-            })
-            .then((newState) => {
-              const oldState = stateRef.current;
-
-              dispatch({
-                kind: 'setState',
-                oldState,
-                newState,
-              });
-
-              setInputState({
-                inputMode: 'normal',
-                normalBuffer: '',
-              });
-            })
-            .catch((error: unknown) => {
-              onError?.(toError(error));
-            });
+          // void appApi.viewApi
+          //   .load(appApi.viewKey, effect.name)
+          //   .then((loadedState) => {
+          //     if (loadedState === undefined) {
+          //       throw new Error(`View not found: ${effect.name}`);
+          //     }
+          //
+          //     // The saved buffer may be stale because the filesystem could have
+          //     // changed since the view was saved.
+          //     return appApi.stateApi.resync(loadedState, appApi.loadBranches);
+          //   })
+          //   .then((newState) => {
+          //     const oldState = stateRef.current;
+          //
+          //     dispatch({
+          //       kind: 'setState',
+          //       oldState,
+          //       newState,
+          //     });
+          //
+          //     setInputState({
+          //       inputMode: 'normal',
+          //       normalBuffer: '',
+          //     });
+          //   })
+          //   .catch((error: unknown) => {
+          //     onError?.(toError(error));
+          //   });
 
           return;
         }

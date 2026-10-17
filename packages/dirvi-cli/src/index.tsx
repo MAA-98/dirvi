@@ -66,7 +66,7 @@ const packagesDirectory = join(dirviDataDirectory, 'site', 'pack');
 program
   .name('dirvi')
   .description('View and manage directories.')
-  .version('0.11.0-beta.1')
+  .version('0.11.0-beta.2')
   .helpOption('--help')
   .option('-i, --input <value>', 'Input for the dirvi app at startup.')
   .action(async () => {
