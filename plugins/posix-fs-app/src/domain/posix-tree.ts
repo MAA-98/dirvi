@@ -32,22 +32,33 @@ type Assert<True extends true> = True;
 // PosixName: Id extends SerializableKey
 // -----------------------------------------------------------------------------
 
-export const PosixNameSchema = serializableKeySchema.pipe(
+/**
+ * A JavaScript-string representation of a non-special POSIX filename.
+ *
+ * Validates invariants needed for a tree entry ID, not full POSIX compatibility.
+ */
+export const PosixFilenameSchema = serializableKeySchema.pipe(
   z
     .string()
     .min(1, 'Entry name cannot be empty.')
+    .refine((value) => !value.includes('\0'), {
+      message: 'Entry name must not contain a NUL character.',
+    })
     .refine((value) => !value.includes('/'), {
       message: "Entry name must not contain '/'.",
     })
     .refine((value) => value !== '.' && value !== '..', {
-      message: "Entry name cannot be '.' or '..'.",
+      message: "Entry name must not be '.' or '..'.",
     }),
 );
 
-export type PosixName = z.output<typeof PosixNameSchema>;
+/**
+ * `Id` type used for posix-fs-dirvi-app.
+ */
+export type PosixId = z.output<typeof PosixFilenameSchema>;
 
 type PosixNameIsSerializableKey = Assert<
-  PosixName extends SerializableKey ? true : false
+  PosixId extends SerializableKey ? true : false
 >;
 
 // -----------------------------------------------------------------------------
@@ -57,7 +68,7 @@ type PosixNameIsSerializableKey = Assert<
 /**
  * POSIX-specific meaning attached to a tree node.
  */
-export type PosixEntry =
+export type PosixValue =
   | Readonly<{
       kind: 'file';
     }>
@@ -88,7 +99,7 @@ const PosixDirectoryEntrySchema = z
   })
   .strict();
 
-export const PosixEntrySchema: z.ZodType<PosixEntry> = z.discriminatedUnion(
+export const PosixValueSchema: z.ZodType<PosixValue> = z.discriminatedUnion(
   'kind',
   [PosixFileEntrySchema, PosixSymlinkEntrySchema, PosixDirectoryEntrySchema],
 );
@@ -101,36 +112,36 @@ export const PosixEntrySchema: z.ZodType<PosixEntry> = z.discriminatedUnion(
  * An opaque tree whose IDs are POSIX entry names and whose values describe
  * POSIX entry semantics.
  */
-export type PosixTreeNode = TreeNode<PosixName, PosixEntry>;
+export type PosixTreeNode = TreeNode<PosixId, PosixValue>;
 
-export const PosixTreeNodeApi = createTreeNodeApi<PosixName, PosixEntry>();
+export const PosixTreeNodeApi = createTreeNodeApi<PosixId, PosixValue>();
 
 // -----------------------------------------------------------------------------
 // POSIX domain constructors
 // -----------------------------------------------------------------------------
 
 export const PosixTreeNode = {
-  file(name: PosixName): PosixTreeNode {
+  file(name: PosixId): PosixTreeNode {
     return PosixTreeNodeApi.createLeaf(name, {
       kind: 'file',
     });
   },
 
-  symlink(name: PosixName, target: UnixPath): PosixTreeNode {
+  symlink(name: PosixId, target: UnixPath): PosixTreeNode {
     return PosixTreeNodeApi.createLeaf(name, {
       kind: 'symlink',
       target,
     });
   },
 
-  unloadedDirectory(name: PosixName): PosixTreeNode {
+  unloadedDirectory(name: PosixId): PosixTreeNode {
     return PosixTreeNodeApi.createUnloadedBranch(name, {
       kind: 'directory',
     });
   },
 
   loadedDirectory(
-    name: PosixName,
+    name: PosixId,
     children: Iterable<PosixTreeNode>,
   ): PosixTreeNode | undefined {
     return PosixTreeNodeApi.createLoadedBranch(
@@ -202,7 +213,7 @@ export const PosixTreeNode = {
  * It intentionally exposes `id`, `value`, and `children`, because serialized
  * data must have a concrete public format.
  */
-export type PosixTreeNodeModel = TreeNodeModel<PosixName, PosixEntry>;
+export type PosixTreeNodeModel = TreeNodeModel<PosixId, PosixValue>;
 
 /**
  * Validates both the generic tree model shape and the POSIX-specific
@@ -217,7 +228,7 @@ export const PosixTreeNodeModelSchema: z.ZodType<PosixTreeNodeModel> = z.lazy(
       // Leaf: file
       z
         .object({
-          id: PosixNameSchema,
+          id: PosixFilenameSchema,
           value: PosixFileEntrySchema,
         })
         .strict(),
@@ -225,7 +236,7 @@ export const PosixTreeNodeModelSchema: z.ZodType<PosixTreeNodeModel> = z.lazy(
       // Leaf: symlink
       z
         .object({
-          id: PosixNameSchema,
+          id: PosixFilenameSchema,
           value: PosixSymlinkEntrySchema,
         })
         .strict(),
@@ -233,7 +244,7 @@ export const PosixTreeNodeModelSchema: z.ZodType<PosixTreeNodeModel> = z.lazy(
       // Unloaded branch: directory
       z
         .object({
-          id: PosixNameSchema,
+          id: PosixFilenameSchema,
           value: PosixDirectoryEntrySchema,
           children: z.null(),
         })
@@ -242,7 +253,7 @@ export const PosixTreeNodeModelSchema: z.ZodType<PosixTreeNodeModel> = z.lazy(
       // Loaded branch: directory
       z
         .object({
-          id: PosixNameSchema,
+          id: PosixFilenameSchema,
           value: PosixDirectoryEntrySchema,
           children: z.array(PosixTreeNodeModelSchema),
         })
@@ -283,7 +294,7 @@ export function encodePosixTreeNode(node: PosixTreeNode): PosixTreeNodeModel {
 /**
  * Fold definitions for one POSIX directory tree.
  */
-export type PosixFolds = Folds<PosixName>;
+export type PosixFolds = Folds<PosixId>;
 
 /**
  * Folds internally store sparse trees whose values are direct child IDs hidden
@@ -291,27 +302,27 @@ export type PosixFolds = Folds<PosixName>;
  * POSIX domain module.
  */
 const PosixFoldTreeNodeApi = createTreeNodeApi<
-  PosixName,
-  readonly PosixName[]
+  PosixId,
+  readonly PosixId[]
 >();
 
 export const PosixFoldsApi = createFoldsApi(PosixFoldTreeNodeApi);
 
-export type PosixFoldsModel = FoldsModel<PosixName>;
+export type PosixFoldsModel = FoldsModel<PosixId>;
 
 export const PosixFoldsModelSchema: z.ZodType<PosixFoldsModel> =
-  createFoldsModelSchema(PosixNameSchema);
+  createFoldsModelSchema(PosixFilenameSchema);
 
 // -----------------------------------------------------------------------------
 // PosixCursor
 // -----------------------------------------------------------------------------
 
 export const PosixCursorSchema: z.ZodType<PosixCursor> =
-  createCursorSchema(PosixNameSchema);
+  createCursorSchema(PosixFilenameSchema);
 
-export type PosixCursor = Cursor<PosixName>;
+export type PosixCursor = Cursor<PosixId>;
 
-export const PosixCursorApi = createCursorApi<PosixName>();
+export const PosixCursorApi = createCursorApi<PosixId>();
 
 // -----------------------------------------------------------------------------
 // PosixNavNode
@@ -321,7 +332,7 @@ export const PosixCursorApi = createCursorApi<PosixName>();
  * NavNode should now be parameterized by node value, not the recursive
  * application node shape.
  */
-export type PosixNavNode = NavNode<PosixName>;
+export type PosixNavNode = NavNode<PosixId>;
 
 export const PosixNavApi = createNavNodeApi(
   PosixTreeNodeApi,
@@ -342,11 +353,11 @@ export const PosixNavApi = createNavNodeApi(
  * State should now be parameterized by application value, not a recursive
  * structural node type.
  */
-export type PosixState = State<PosixName, PosixEntry>;
+export type PosixState = State<PosixId, PosixValue>;
 
 export const PosixStateApi = createStateApi(PosixTreeNodeApi, PosixCursorApi);
 
-export type PosixStateModel = StateModel<PosixName, PosixEntry>;
+export type PosixStateModel = StateModel<PosixId, PosixValue>;
 
 /**
  * The state schema should operate on a serializable tree *model*, then decode

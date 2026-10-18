@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { Command } from 'commander';
 import { render } from 'ink';
 
-import { Shell } from '@mak-98/dirvi-app';
+import { type InitialAppOptions, Shell } from '@mak-98/dirvi-app';
 
 import { createInitialization } from './infrastructure/create-initialization.js';
 import { createPackageLoader } from './infrastructure/create-package-loader.js';
@@ -56,7 +56,6 @@ process.on('exit', restoreTerminal);
 const dirviConfigDirectory = join(getXdgConfigHome(), 'dirvi');
 /** Executable ESM startup script evaluated during dirvi initialization. */
 const initPath = join(dirviConfigDirectory, 'init.mjs');
-
 const dirviDataDirectory = join(getXdgDataHome(), 'dirvi');
 const packagesDirectory = join(dirviDataDirectory, 'site', 'pack');
 
@@ -65,14 +64,15 @@ const packagesDirectory = join(dirviDataDirectory, 'site', 'pack');
 // =============================================================================
 program
   .name('dirvi')
-  .description('View and manage directories.')
-  .version('0.11.0-beta.2')
+  .description('View and manage trees.')
+  .version('0.11.0-beta.3')
   .helpOption('--help')
-  .option('-i, --input <value>', 'Input for the dirvi app at startup.')
+  .option('-i, --input <value>', 'Input for the app at startup.')
+  .option('-a, --app <id>', 'App name to open at startup.')
   .action(async () => {
     // Input is a generic startup value supplied by the host; its interpretation
     // belongs to the selected app.
-    const options = program.opts<{ input?: string }>();
+    const options = program.opts<InitialAppOptions>();
 
     const initialization = await createInitialization(initPath);
     const packageLoader = createPackageLoader(packagesDirectory);
@@ -112,9 +112,9 @@ program
     try {
       const app = render(
         <Shell
-          appScreenRenderer={InkAppScreen}
           loadingScreenRenderer={InkLoadingScreen}
-          initialAppInput={options.input}
+          appScreenRenderer={InkAppScreen}
+          initialAppOptions={options}
           initialization={initialization}
           packageLoader={packageLoader}
           {...(stdoutIsInteractive ? {} : { stdout })}
@@ -137,7 +137,7 @@ program
   });
 
 // =============================================================================
-// App Runner
+// Program Start
 // =============================================================================
 try {
   await program.parseAsync(process.argv);

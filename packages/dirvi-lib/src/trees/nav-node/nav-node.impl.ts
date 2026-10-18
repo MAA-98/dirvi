@@ -34,7 +34,7 @@ export type CreateNavNodeApiOptions<
    * distinct sibling entries. If two entries compare equal, their order falls
    * back to the source TreeNode child iteration order.
    */
-  compareSiblings?: NavEntryComparator<Id, Value> | undefined;
+  compareSiblings?: NavEntryComparator<Id, Value>;
 }>;
 
 /**

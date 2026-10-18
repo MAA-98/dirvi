@@ -10,7 +10,8 @@ import {
   xmlFoldsApi,
   xmlNavApi,
 } from '../domain/xml-tree.js';
-import { loadNodeXmlDocument } from './load-node-xml-document.js';
+import { readFile } from 'node:fs/promises';
+import { parseXmlDocument } from './parse-xml-document.js';
 
 /**
  * Creates the AppApi for one XML document.
@@ -32,7 +33,10 @@ export function loadNodeXmlAppApi(
      */
     rootId: 0,
 
-    createRoot: () => loadNodeXmlDocument(xmlAbsolutePath),
+    createRoot: async () => {
+      const source = await readFile(xmlAbsolutePath, 'utf8');
+      return parseXmlDocument(source);
+    },
 
     /*
      * XML documents are parsed completely when their root is created. No XML
@@ -64,7 +68,7 @@ export function loadNodeXmlAppApi(
   };
 }
 
-function createXmlFileResyncSubscription(
+export function createXmlFileResyncSubscription(
   xmlAbsolutePath: string,
 ): (listener: () => void) => () => void {
   const listeners = new Set<() => void>();

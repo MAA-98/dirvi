@@ -8,6 +8,7 @@ export { AppPackageReference } from './domain/app-pack-ref.js';
 
 export type { PackageLoader } from './application/package-loader.js';
 export { createInitRuntime } from './application/init-runtime.js';
+export { createAppApi } from './application/create-app-api.js';
 
 export type { ViewRow } from './ui/view.js';
 export { View } from './ui/view.js';
@@ -20,3 +21,4 @@ export type {
   AppScreenRenderer,
 } from './ui/app-screen-renderer.js';
 export { Shell } from './ui/Shell.js';
+export type { InitialAppOptions } from './ui/Shell.js';

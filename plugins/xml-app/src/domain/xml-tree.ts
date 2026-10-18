@@ -32,7 +32,7 @@ type Assert<True extends true> = True;
  */
 export type Position = number;
 
-export const XmlNodeIdSchema = z
+export const XmlIdSchema = z
   .number()
   .int()
   .nonnegative() satisfies z.ZodType<Position>;
@@ -289,7 +289,7 @@ export const xmlFoldsApi = createFoldsApi(xmlFoldTreeNodeApi);
 // -----------------------------------------------------------------------------
 
 export const xmlCursorSchema: z.ZodType<XmlCursor> =
-  createCursorSchema(XmlNodeIdSchema);
+  createCursorSchema(XmlIdSchema);
 
 export type XmlCursor = Cursor<Position>;
 

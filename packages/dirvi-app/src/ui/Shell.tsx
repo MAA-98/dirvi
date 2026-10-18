@@ -2,13 +2,28 @@ import { useEffect, useMemo, useState } from 'react';
 
 import type { AppApiApplicator } from 'dirvi-apis';
 
-import type { AppInput } from '../domain/app.js';
 import type { AppScreenRenderer } from './app-screen-renderer.js';
 import type { LoadingScreenRenderer } from './loading-screen-renderer.js';
 import { AppSetup } from './AppSetup.js';
 import type { Initialization } from '../domain/initialization.js';
 import type { PackageLoader } from '../application/package-loader.js';
 import { ShellApi } from '../domain/shell-api.js';
+import { createAppApiApplicator } from '../application/create-app-api.js';
+
+export type InitialAppOptions = Readonly<{
+  /**
+   * Requested app ID at startup.
+   *
+   * The Shell will later use this to override or select the app chosen by
+   * initialization.
+   */
+  readonly app?: string;
+
+  /**
+   * Host-provided startup input interpreted by the selected app.
+   */
+  readonly input?: string;
+}>;
 
 /**
  * Dependencies and output callbacks required by {@link Shell}.
@@ -22,8 +37,8 @@ export type ShellAppProps = {
    */
   readonly loadingScreenRenderer: LoadingScreenRenderer;
   readonly appScreenRenderer: AppScreenRenderer;
-
-  readonly initialAppInput: AppInput;
+  
+  readonly initialAppOptions: InitialAppOptions;
   readonly initialization: Initialization;
   readonly packageLoader: PackageLoader;
 
@@ -47,17 +62,16 @@ export type ShellAppProps = {
 export function Shell({
   loadingScreenRenderer,
   appScreenRenderer,
-  initialAppInput,
+  initialAppOptions,
   initialization,
   packageLoader,
   stdout,
   clipboard,
 }: ShellAppProps) {
-  const appReference = initialization.registeredApps.get(
+  const initialAppReference = initialization.registeredApps.get(
     initialization.initialAppId,
   );
-
-  if (appReference === undefined) {
+  if (initialAppReference === undefined) {
     throw new Error(
       `Startup app "${initialization.initialAppId}" has not been registered.`,
     );
@@ -81,7 +95,13 @@ export function Shell({
         setAppError(undefined);
 
         const appPlugin = await packageLoader.loadAppPlugin(appReference);
-        const loadedAppApiApplicator = appPlugin.createAppApiApplicator(input);
+
+        const appDefinitionApplicator =
+          appPlugin.createAppDefinitionApplicator(input);
+
+        const loadedAppApiApplicator = createAppApiApplicator(
+          appDefinitionApplicator,
+        );
 
         setAppApiApplicator(() => loadedAppApiApplicator);
       },
@@ -90,11 +110,11 @@ export function Shell({
 
   useEffect(() => {
     void shellApi
-      .openApp(initialization.initialAppId, initialAppInput)
+      .openApp(initialization.initialAppId, initialAppOptions.input)
       .catch((error: unknown) => {
         setAppError(error instanceof Error ? error : new Error(String(error)));
       });
-  }, [initialAppInput, initialization.initialAppId, shellApi]);
+  }, [initialAppOptions.input, initialization.initialAppId, shellApi]);
 
   if (appError !== undefined) {
     throw appError;

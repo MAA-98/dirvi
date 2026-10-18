@@ -2,22 +2,13 @@ import { basename, join } from 'node:path';
 import { watch, type FSWatcher } from 'node:fs';
 import { getUnixAbsPath } from './get-unix-abs-path.js';
 import { getDirEntries } from './get-dir-entries.js';
-import envPaths from 'env-paths';
-import { createFileViewApi } from './create-file-view-api.js';
-import type { StateCodec } from './create-file-view-api.js';
-import { createHash } from 'node:crypto';
 import {
-  PosixCursorApi,
-  PosixEntry,
+  PosixValue,
   PosixFoldsApi,
-  PosixName,
-  PosixNameSchema,
+  PosixId,
+  PosixFilenameSchema,
   PosixNavApi,
-  PosixState,
-  PosixStateModel,
-  PosixStateModelSchema,
   PosixTreeNode,
-  PosixTreeNodeApi,
 } from '../domain/posix-tree.js';
 import { UnixAbsolutePath } from '../domain/unix-path.js';
 import type { AppApi } from 'dirvi-apis';
@@ -26,69 +17,69 @@ import { createAppStateApis } from 'dirvi-lib';
 // ---*--- App Data ---*---
 
 // Paths for app data:
-const environmentPaths = envPaths('dirvi');
-const posixAppDataDirectory = join(environmentPaths.data, 'apps', 'posix');
-const posixAppViewsDirectory = join(posixAppDataDirectory, 'views');
-
-// Helpers for saving app data:
-function encodeKey(key: UnixAbsolutePath): string {
-  return createHash('sha256').update(key).digest('hex');
-}
-
-/**
- * Persists public POSIX state models while keeping TreeNode and Folds runtime
- * representations opaque.
- */
-const posixStateCodec: StateCodec<PosixName, PosixEntry, PosixStateModel> = {
-  schema: PosixStateModelSchema,
-  encode: encodePosixState,
-  decode: decodePosixState,
-};
-
-/**
- * Converts opaque POSIX runtime state into its serializable persistence model.
- */
-function encodePosixState(state: PosixState): PosixStateModel {
-  return {
-    root: PosixTreeNodeApi.toModel(state.root),
-    folds: PosixFoldsApi.toModel(state.folds),
-    cursor: PosixCursorApi.getPath(state.cursor),
-  };
-}
-
-/**
- * Restores opaque POSIX runtime state from a schema-validated model.
- *
- * `TreeNodeApi.fromModel` performs the structural sibling-ID uniqueness check
- * which cannot be fully expressed by the JSON/Zod model schema.
- */
-function decodePosixState(model: PosixStateModel): PosixState | undefined {
-  const root = PosixTreeNodeApi.fromModel(model.root);
-
-  /*
-   * State requires an open root branch. The POSIX domain additionally requires
-   * files and symlinks to be leaves, and directories to be branches.
-   */
-  if (
-    root === undefined ||
-    !PosixTreeNode.isValid(root) ||
-    PosixTreeNodeApi.kind(root) !== 'loaded-branch'
-  ) {
-    return undefined;
-  }
-
-  const folds = PosixFoldsApi.fromModel(model.folds);
-
-  if (folds === undefined) {
-    return undefined;
-  }
-
-  return {
-    root,
-    folds,
-    cursor: PosixCursorApi.getPath(model.cursor),
-  };
-}
+// const environmentPaths = envPaths('dirvi');
+// const posixAppDataDirectory = join(environmentPaths.data, 'apps', 'posix');
+// const posixAppViewsDirectory = join(posixAppDataDirectory, 'views');
+//
+// // Helpers for saving app data:
+// function encodeKey(key: UnixAbsolutePath): string {
+//   return createHash('sha256').update(key).digest('hex');
+// }
+//
+// /**
+//  * Persists public POSIX state models while keeping TreeNode and Folds runtime
+//  * representations opaque.
+//  */
+// const posixStateCodec: StateCodec<PosixId, PosixValue, PosixStateModel> = {
+//   schema: PosixStateModelSchema,
+//   encode: encodePosixState,
+//   decode: decodePosixState,
+// };
+//
+// /**
+//  * Converts opaque POSIX runtime state into its serializable persistence model.
+//  */
+// function encodePosixState(state: PosixState): PosixStateModel {
+//   return {
+//     root: PosixTreeNodeApi.toModel(state.root),
+//     folds: PosixFoldsApi.toModel(state.folds),
+//     cursor: PosixCursorApi.getPath(state.cursor),
+//   };
+// }
+//
+// /**
+//  * Restores opaque POSIX runtime state from a schema-validated model.
+//  *
+//  * `TreeNodeApi.fromModel` performs the structural sibling-ID uniqueness check
+//  * which cannot be fully expressed by the JSON/Zod model schema.
+//  */
+// function decodePosixState(model: PosixStateModel): PosixState | undefined {
+//   const root = PosixTreeNodeApi.fromModel(model.root);
+//
+//   /*
+//    * State requires an open root branch. The POSIX domain additionally requires
+//    * files and symlinks to be leaves, and directories to be branches.
+//    */
+//   if (
+//     root === undefined ||
+//     !PosixTreeNode.isValid(root) ||
+//     PosixTreeNodeApi.kind(root) !== 'loaded-branch'
+//   ) {
+//     return undefined;
+//   }
+//
+//   const folds = PosixFoldsApi.fromModel(model.folds);
+//
+//   if (folds === undefined) {
+//     return undefined;
+//   }
+//
+//   return {
+//     root,
+//     folds,
+//     cursor: PosixCursorApi.getPath(model.cursor),
+//   };
+// }
 
 // --- Creating Posix App API ---
 
@@ -99,12 +90,12 @@ function decodePosixState(model: PosixStateModel): PosixState | undefined {
  */
 export function loadNodePosixAppApi(
   directory?: string,
-): AppApi<PosixName, PosixEntry, UnixAbsolutePath> {
+): AppApi<PosixId, PosixValue, UnixAbsolutePath> {
   const unixAbsPath = getUnixAbsPath(directory ?? process.cwd());
-  const rootId = PosixNameSchema.parse(basename(unixAbsPath));
-  const apis = createAppStateApis<PosixName, PosixEntry>();
+  const rootId = PosixFilenameSchema.parse(basename(unixAbsPath));
+  const apis = createAppStateApis<PosixId, PosixValue>();
 
-  function loadBranches(path: readonly PosixName[]) {
+  function loadBranches(path: readonly PosixId[]) {
     const address = join(unixAbsPath, ...path);
     return getDirEntries(address);
   }
@@ -146,7 +137,7 @@ export function loadNodePosixAppApi(
 // `recursive: true` is supported by macOS and Windows, but
 // recursive watching is not supported on all Node/POSIX
 // platforms: Linux unsupported.
-function createFsResyncSubscription(
+export function createFsResyncSubscription(
   directory: string,
 ): (listener: () => void) => () => void {
   const listeners = new Set<() => void>();
