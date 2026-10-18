@@ -26,11 +26,11 @@
   },
   "dependencies": {
     "dirvi-apis": "workspace:*",
-    "dirvi-lib": "workspace:*",
     "zod": "^4.4.3",
     "env-paths": "^4.0.0"
   },
   "devDependencies": {
+    "dirvi-lib": "workspace:*",
     "@types/node": "^22.0.0",
     "typescript": "^5.0.0"
   }

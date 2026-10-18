@@ -132,9 +132,6 @@ importers:
       dirvi-apis:
         specifier: workspace:*
         version: link:../../packages/dirvi-apis
-      dirvi-lib:
-        specifier: workspace:*
-        version: link:../../packages/dirvi-lib
       env-paths:
         specifier: ^4.0.0
         version: 4.0.0
@@ -145,6 +142,9 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.1
+      dirvi-lib:
+        specifier: workspace:*
+        version: link:../../packages/dirvi-lib
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -157,9 +157,6 @@ importers:
       dirvi-apis:
         specifier: workspace:*
         version: link:../../packages/dirvi-apis
-      dirvi-lib:
-        specifier: workspace:*
-        version: link:../../packages/dirvi-lib
       env-paths:
         specifier: ^4.0.0
         version: 4.0.0
@@ -170,6 +167,9 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.1
+      dirvi-lib:
+        specifier: workspace:*
+        version: link:../../packages/dirvi-lib
       typescript:
         specifier: ^5.0.0
         version: 5.9.3

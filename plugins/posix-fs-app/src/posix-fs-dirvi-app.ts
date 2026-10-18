@@ -1,17 +1,17 @@
-import type { AppPlugin } from 'dirvi-apis/plugin';
+import { basename, join } from 'node:path';
 
-import { createFsResyncSubscription } from './infrastructure/load-node-posix-app-api.js';
+import type { AppPlugin } from 'dirvi-apis';
+import type { TreeNodeApi } from 'dirvi-lib';
+
+import type { PosixValue, PosixId } from './domain/posix-tree.js';
 import {
-  PosixValue,
   posixFilenameSchema,
-  PosixId,
   posixValueSchema,
   createConstructors,
 } from './domain/posix-tree.js';
-import { basename, join } from 'node:path';
+import { createFsResyncSubscription } from './infrastructure/load-node-posix-app-api.js';
 import { getUnixAbsPath } from './infrastructure/get-unix-abs-path.js';
 import { getDirEntries } from './infrastructure/get-dir-entries.js';
-import { TreeNodeApi } from 'dirvi-lib';
 
 /**
  * Creates applicator of AppDefinition.

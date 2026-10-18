@@ -2,11 +2,12 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 import type { AppPlugin } from 'dirvi-apis/plugin';
+import type { TreeNodeApi } from 'dirvi-lib';
 
+import type { Position, XmlNodeValue } from './domain/xml-tree.js';
+import { xmlIdSchema, xmlValueSchema } from './domain/xml-tree.js';
 import { createXmlFileResyncSubscription } from './infrastructure/create-xml-file-resync.js';
-import { type Position, XmlIdSchema, XmlNodeValue, XmlValueSchema } from './domain/xml-tree.js';
 import { parseXmlDocument } from './infrastructure/parse-xml-document.js';
-import { TreeNodeApi } from 'dirvi-lib';
 
 /**
  * Creates applicator of `AppDefinition<Position, XmlValue>`.
@@ -27,8 +28,8 @@ export const xmlAppPlugin: AppPlugin = {
     const appDefinition = {
       displayName: `XML: ${input}`,
       rootId: 0,
-      idSchema: XmlIdSchema,
-      valueSchema: XmlValueSchema,
+      idSchema: xmlIdSchema,
+      valueSchema: xmlValueSchema,
       createRoot: async (
         treeNodeApi: TreeNodeApi<Position, XmlNodeValue>
       ) => {

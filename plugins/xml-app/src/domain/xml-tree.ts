@@ -23,7 +23,7 @@ type PositionIsSerializableKey = Assert<
   Position extends SerializableKey ? true : false
 >;
 
-export const XmlIdSchema = z
+export const xmlIdSchema = z
   .number()
   .int()
   .nonnegative() satisfies z.ZodType<Position>;
@@ -142,7 +142,7 @@ export const XmlProcessingInstructionValueSchema = z.object({
   data: z.string(),
 }) satisfies z.ZodType<XmlProcessingInstructionValue>;
 
-export const XmlValueSchema = z.discriminatedUnion('kind', [
+export const xmlValueSchema = z.discriminatedUnion('kind', [
   XmlDocumentValueSchema,
   XmlElementValueSchema,
   XmlTextValueSchema,

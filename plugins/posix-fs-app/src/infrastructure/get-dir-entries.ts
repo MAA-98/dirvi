@@ -1,13 +1,16 @@
+import { readdir, readlink } from 'node:fs/promises';
+import { join } from 'node:path';
+
 import type { TreeNode, TreeNodeApi } from 'dirvi-lib';
+
 import {
   type PosixValue,
   type PosixId,
   posixFilenameSchema,
-  PosixTreeNode, createConstructors,
+  PosixTreeNode,
+  createConstructors,
 } from '../domain/posix-tree.js';
 import { type UnixAbsolutePath, UnixPathSchema } from '../domain/unix-path.js';
-import { readdir, readlink } from 'node:fs/promises';
-import { join } from 'node:path';
 
 export async function getDirEntries(
   treeNodeApi: TreeNodeApi<PosixId, PosixValue>,
@@ -16,7 +19,7 @@ export async function getDirEntries(
   const directoryEntries = await readdir(address, {
     withFileTypes: true,
   });
-  const constructors = createConstructors(treeNodeApi)
+  const constructors = createConstructors(treeNodeApi);
 
   return Promise.all(
     directoryEntries.map(async (directoryEntry): Promise<PosixTreeNode> => {

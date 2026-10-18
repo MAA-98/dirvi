@@ -1,8 +1,13 @@
 import { parseXml } from '@rgrove/parse-xml';
 
-import { TreeNodeApi } from 'dirvi-lib';
+import type { TreeNodeApi } from 'dirvi-lib';
 
-import { createConstructors, Position, XmlNodeValue, XmlTreeNode } from '../domain/xml-tree.js';
+import type {
+  Position,
+  XmlNodeValue,
+  XmlTreeNode,
+} from '../domain/xml-tree.js';
+import { createConstructors } from '../domain/xml-tree.js';
 import { getXmlEntries } from './get-xml-entries.js';
 
 /**

@@ -10,7 +10,6 @@ import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { z } from 'zod';
 
-import { viewNameSchema } from './view-name-schema.js';
 import type {
   SerializableKey,
   State,
@@ -18,6 +17,8 @@ import type {
   ViewApi,
   ViewSummary,
 } from 'dirvi-lib';
+
+import { viewNameSchema } from './view-name-schema.js';
 
 /**
  * Application-specific conversion between opaque runtime state and its public

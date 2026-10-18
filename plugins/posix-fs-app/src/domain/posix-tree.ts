@@ -1,23 +1,9 @@
 import { z } from 'zod';
-import {
-  serializableKeySchema,
-  createNavNodeApi,
-  createStateApi,
-  NavNode,
+
+import type {
   SerializableKey,
-  State,
   TreeNode,
-  createTreeNodeApi,
-  TreeNodeModel,
-  Folds,
-  createFoldsApi,
-  FoldsModel,
-  createFoldsModelSchema,
-  createCursorSchema,
-  Cursor,
-  createCursorApi,
-  createStateModelSchema,
-  StateModel, type TreeNodeApi,
+  TreeNodeApi,
 } from 'dirvi-lib';
 
 import { UnixPath, UnixPathSchema } from './unix-path.js';
@@ -37,9 +23,7 @@ type Assert<True extends true> = True;
  *
  * Validates invariants needed for a tree entry ID, not full POSIX compatibility.
  */
-export const posixFilenameSchema = serializableKeySchema.pipe(
-  z
-    .string()
+export const posixFilenameSchema = z.string()
     .min(1, 'Entry name cannot be empty.')
     .refine((value) => !value.includes('\0'), {
       message: 'Entry name must not contain a NUL character.',
@@ -49,8 +33,7 @@ export const posixFilenameSchema = serializableKeySchema.pipe(
     })
     .refine((value) => value !== '.' && value !== '..', {
       message: "Entry name must not be '.' or '..'.",
-    }),
-);
+    });
 
 /**
  * `Id` type used for posix-fs-dirvi-app.

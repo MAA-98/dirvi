@@ -9,12 +9,14 @@ import {
 } from '@rgrove/parse-xml';
 import type { XmlNode } from '@rgrove/parse-xml';
 
-import { createConstructors, XmlNodeValue, XmlTreeNode } from '../domain/xml-tree.js';
-import {
-  type Position,
-  XmlTreeNode as XmlTreeNodeDomain,
+import type { TreeNodeApi } from 'dirvi-lib';
+
+import type {
+  XmlNodeValue,
+  XmlTreeNode,
 } from '../domain/xml-tree.js';
-import { TreeNodeApi } from 'dirvi-lib';
+import { createConstructors } from '../domain/xml-tree.js';
+import type { Position } from '../domain/xml-tree.js';
 
 /**
  * Allocates unique XML tree IDs while one parsed document is converted.
