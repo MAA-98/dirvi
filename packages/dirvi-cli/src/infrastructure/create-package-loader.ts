@@ -220,10 +220,13 @@ function parseAppPlugin(
   value: unknown,
   reference: AppPackageReference,
 ): AppPlugin2 {
-  if (!isRecord(value) || typeof value.createAppApiApplicator !== 'function') {
+  if (
+    !isRecord(value) ||
+    typeof value.createAppDefinitionApplicator !== 'function'
+  ) {
     throw new Error(
       `Dirvi app package "${reference.packageName}" must default-export an ` +
-        'AppPlugin with createAppApiApplicator(input).',
+        'AppPlugin with createAppDefinitionApplicator(input).',
     );
   }
 
