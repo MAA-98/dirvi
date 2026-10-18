@@ -1,18 +1,4 @@
-import { basename, join } from 'node:path';
 import { watch, type FSWatcher } from 'node:fs';
-import { getUnixAbsPath } from './get-unix-abs-path.js';
-import { getDirEntries } from './get-dir-entries.js';
-import {
-  PosixValue,
-  PosixFoldsApi,
-  PosixId,
-  PosixFilenameSchema,
-  PosixNavApi,
-  PosixTreeNode,
-} from '../domain/posix-tree.js';
-import { UnixAbsolutePath } from '../domain/unix-path.js';
-import type { AppApi } from 'dirvi-apis';
-import { createAppStateApis } from 'dirvi-lib';
 
 // ---*--- App Data ---*---
 
@@ -80,59 +66,6 @@ import { createAppStateApis } from 'dirvi-lib';
 //     cursor: PosixCursorApi.getPath(model.cursor),
 //   };
 // }
-
-// --- Creating Posix App API ---
-
-/**
- * Creates the AppApi for the POSIX app.
- *
- * @param directory - optional directory path for loading the app not at the cwd.
- */
-export function loadNodePosixAppApi(
-  directory?: string,
-): AppApi<PosixId, PosixValue, UnixAbsolutePath> {
-  const unixAbsPath = getUnixAbsPath(directory ?? process.cwd());
-  const rootId = PosixFilenameSchema.parse(basename(unixAbsPath));
-  const apis = createAppStateApis<PosixId, PosixValue>();
-
-  function loadBranches(path: readonly PosixId[]) {
-    const address = join(unixAbsPath, ...path);
-    return getDirEntries(address);
-  }
-
-  return {
-    name: unixAbsPath,
-    rootId,
-    loadBranches,
-    createRoot: async () => {
-      // Start with root branches already loaded
-      const rootBranches = await loadBranches([]);
-      const root = PosixTreeNode.loadedDirectory(rootId, rootBranches);
-
-      if (root === undefined) {
-        throw new Error(
-          'Cannot create POSIX root: duplicate directory entry names',
-        );
-      }
-
-      return root;
-    },
-
-    subscribeToResync: createFsResyncSubscription(join(unixAbsPath)),
-
-    // The key for the Posix app instance is just the directory working in:
-    // viewKey: unixAbsPath,
-    // viewApi: createFileViewApi({
-    //   directory: posixAppViewsDirectory,
-    //   encodeKey,
-    //   stateCodec: posixStateCodec,
-    // }),
-
-    foldsApi: PosixFoldsApi,
-    navNodeApi: PosixNavApi,
-    ...apis,
-  };
-}
 
 // `recursive: true` is supported by macOS and Windows, but
 // recursive watching is not supported on all Node/POSIX

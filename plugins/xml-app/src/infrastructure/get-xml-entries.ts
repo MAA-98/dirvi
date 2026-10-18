@@ -9,11 +9,12 @@ import {
 } from '@rgrove/parse-xml';
 import type { XmlNode } from '@rgrove/parse-xml';
 
-import type { XmlTreeNode } from '../domain/xml-tree.js';
+import { createConstructors, XmlNodeValue, XmlTreeNode } from '../domain/xml-tree.js';
 import {
   type Position,
   XmlTreeNode as XmlTreeNodeDomain,
 } from '../domain/xml-tree.js';
+import { TreeNodeApi } from 'dirvi-lib';
 
 /**
  * Allocates unique XML tree IDs while one parsed document is converted.
@@ -31,16 +32,22 @@ export type CreatePosition = () => Position;
  * source-document order.
  */
 export function getXmlEntries(
+  treeNodeApi: TreeNodeApi<Position, XmlNodeValue>,
   xmlNodes: readonly XmlNode[],
   createPosition: CreatePosition,
 ): XmlTreeNode[] {
   return xmlNodes.map((xmlNode) => {
     const id = createPosition();
+    const constructors = createConstructors(treeNodeApi);
 
     if (xmlNode instanceof XmlElement) {
-      const children = getXmlEntries(xmlNode.children, createPosition);
+      const children = getXmlEntries(
+        treeNodeApi,
+        xmlNode.children,
+        createPosition,
+      );
 
-      const node = XmlTreeNodeDomain.element(
+      const node = constructors.element(
         id,
         xmlNode.name,
         Object.entries(xmlNode.attributes).map(([name, value]) => ({
@@ -60,19 +67,19 @@ export function getXmlEntries(
     }
 
     if (xmlNode instanceof XmlText) {
-      return XmlTreeNodeDomain.text(id, xmlNode.text);
+      return constructors.text(id, xmlNode.text);
     }
 
     if (xmlNode instanceof XmlCdata) {
-      return XmlTreeNodeDomain.cdata(id, xmlNode.text);
+      return constructors.cdata(id, xmlNode.text);
     }
 
     if (xmlNode instanceof XmlComment) {
-      return XmlTreeNodeDomain.comment(id, xmlNode.content);
+      return constructors.comment(id, xmlNode.content);
     }
 
     if (xmlNode instanceof XmlProcessingInstruction) {
-      return XmlTreeNodeDomain.processingInstruction(
+      return constructors.processingInstruction(
         id,
         xmlNode.name,
         xmlNode.content,
@@ -80,7 +87,7 @@ export function getXmlEntries(
     }
 
     if (xmlNode instanceof XmlDeclaration) {
-      return XmlTreeNodeDomain.declaration(
+      return constructors.declaration(
         id,
         xmlNode.version,
         xmlNode.encoding,
@@ -89,7 +96,7 @@ export function getXmlEntries(
     }
 
     if (xmlNode instanceof XmlDocumentType) {
-      return XmlTreeNodeDomain.doctype(
+      return constructors.doctype(
         id,
         xmlNode.name,
         xmlNode.publicId,

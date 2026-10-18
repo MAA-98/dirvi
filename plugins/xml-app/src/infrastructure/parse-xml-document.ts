@@ -1,7 +1,8 @@
 import { parseXml } from '@rgrove/parse-xml';
 
-import type { XmlTreeNode } from '../domain/xml-tree.js';
-import { XmlTreeNode as XmlTreeNodeDomain } from '../domain/xml-tree.js';
+import { TreeNodeApi } from 'dirvi-lib';
+
+import { createConstructors, Position, XmlNodeValue, XmlTreeNode } from '../domain/xml-tree.js';
 import { getXmlEntries } from './get-xml-entries.js';
 
 /**
@@ -10,14 +11,17 @@ import { getXmlEntries } from './get-xml-entries.js';
  * The synthetic document root always receives ID 0. Descendants receive
  * monotonically allocated IDs in parser encounter order.
  */
-export function parseXmlDocument(source: string): XmlTreeNode {
+export function parseXmlDocument(
+  treeNodeApi: TreeNodeApi<Position, XmlNodeValue>,
+  source: string,
+): XmlTreeNode {
   const document = parseXml(source);
 
   let nextPosition = 1;
 
-  const root = XmlTreeNodeDomain.document(
+  const root = createConstructors(treeNodeApi).document(
     0,
-    getXmlEntries(document.children, () => {
+    getXmlEntries(treeNodeApi, document.children, () => {
       const position = nextPosition;
       nextPosition += 1;
 

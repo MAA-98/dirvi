@@ -1,7 +1,8 @@
 import { Config } from './config.js';
-import { App } from './app.js';
 import { ExCommand } from './ex-command.js';
 import { AppPackageReference } from './app-pack-ref.js';
+
+export type AppInput = string | undefined;
 
 /**
  * Object set through initialization, i.e. evaluating init.mjs.

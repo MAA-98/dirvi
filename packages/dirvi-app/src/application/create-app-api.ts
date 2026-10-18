@@ -46,13 +46,13 @@ export function createAppApi<
   return {
     name: appDefinition.displayName,
     rootId: appDefinition.rootId,
-    createRoot: appDefinition.createRoot,
-    loadBranches: appDefinition.loadChildren,
+    createRoot: () => appDefinition.createRoot(treeNodeApi),
+    loadBranches: (path) => appDefinition.loadChildren(treeNodeApi, path),
     subscribeToResync: appDefinition.subscribeToResync,
     treeNodeApi,
     foldsApi,
     cursorApi,
     stateApi,
     navNodeApi,
-  }
+  };
 }

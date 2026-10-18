@@ -1,18 +1,5 @@
 import { z } from 'zod';
-import {
-  createCursorApi,
-  createCursorSchema,
-  createFoldsApi,
-  createNavNodeApi, createStateApi,
-  createTreeNodeApi, FoldsModel, State, StateModel, TreeNodeModel,
-} from 'dirvi-lib';
-import type {
-  Cursor,
-  Folds,
-  NavNode,
-  SerializableKey,
-  TreeNode,
-} from 'dirvi-lib';
+import type { SerializableKey, TreeNode, TreeNodeApi } from 'dirvi-lib';
 
 // -----------------------------------------------------------------------------
 // Utility
@@ -32,14 +19,14 @@ type Assert<True extends true> = True;
  */
 export type Position = number;
 
+type PositionIsSerializableKey = Assert<
+  Position extends SerializableKey ? true : false
+>;
+
 export const XmlIdSchema = z
   .number()
   .int()
   .nonnegative() satisfies z.ZodType<Position>;
-
-type PositionIsSerializableKey = Assert<
-  Position extends SerializableKey ? true : false
->;
 
 // -----------------------------------------------------------------------------
 // XmlNodeValue: node-attached value
@@ -113,6 +100,8 @@ export type XmlNodeValue =
   | XmlCdataValue
   | XmlProcessingInstructionValue;
 
+export type XmlTreeNode = TreeNode<Position, XmlNodeValue>;
+
 // Schema ----------------------------------------------------------------------
 
 export const XmlAttributeSchema = z.object({
@@ -153,7 +142,7 @@ export const XmlProcessingInstructionValueSchema = z.object({
   data: z.string(),
 }) satisfies z.ZodType<XmlProcessingInstructionValue>;
 
-export const XmlNodeValueSchema = z.discriminatedUnion('kind', [
+export const XmlValueSchema = z.discriminatedUnion('kind', [
   XmlDocumentValueSchema,
   XmlElementValueSchema,
   XmlTextValueSchema,
@@ -163,155 +152,102 @@ export const XmlNodeValueSchema = z.discriminatedUnion('kind', [
 ]) satisfies z.ZodType<XmlNodeValue>;
 
 // -----------------------------------------------------------------------------
-// XmlTreeNode: opaque domain tree
-// -----------------------------------------------------------------------------
-
-/**
- * An opaque tree whose IDs are parser-assigned positions and whose values
- * describe XML node semantics.
- */
-export type XmlTreeNode = TreeNode<Position, XmlNodeValue>;
-
-export const xmlTreeNodeApi = createTreeNodeApi<Position, XmlNodeValue>();
-
-// -----------------------------------------------------------------------------
 // XML domain constructors
 // -----------------------------------------------------------------------------
 
-export const XmlTreeNode = {
-  document(
-    id: Position,
-    children: Iterable<XmlTreeNode>,
-  ): XmlTreeNode | undefined {
-    return xmlTreeNodeApi.createLoadedBranch(
-      id,
-      { kind: 'document' },
-      children,
-    );
-  },
+export function createConstructors(
+  xmlTreeNodeApi: TreeNodeApi<Position, XmlNodeValue>,
+) {
+  return {
+    document(
+      id: Position,
+      children: Iterable<XmlTreeNode>,
+    ): XmlTreeNode | undefined {
+      return xmlTreeNodeApi.createLoadedBranch(
+        id,
+        { kind: 'document' },
+        children,
+      );
+    },
 
-  declaration(
-    id: Position,
-    version: string,
-    encoding: string | null,
-    standalone: 'yes' | 'no' | null,
-  ): XmlTreeNode {
-    return xmlTreeNodeApi.createLeaf(id, {
-      kind: 'declaration',
-      version,
-      encoding,
-      standalone,
-    });
-  },
+    declaration(
+      id: Position,
+      version: string,
+      encoding: string | null,
+      standalone: 'yes' | 'no' | null,
+    ): XmlTreeNode {
+      return xmlTreeNodeApi.createLeaf(id, {
+        kind: 'declaration',
+        version,
+        encoding,
+        standalone,
+      });
+    },
 
-  doctype(
-    id: Position,
-    name: string,
-    publicId: string | null,
-    systemId: string | null,
-    internalSubset: string | null,
-  ): XmlTreeNode {
-    return xmlTreeNodeApi.createLeaf(id, {
-      kind: 'doctype',
-      name,
-      publicId,
-      systemId,
-      internalSubset,
-    });
-  },
-  
-  element(
-    id: Position,
-    name: string,
-    attributes: readonly XmlAttribute[],
-    children: Iterable<XmlTreeNode>,
-  ): XmlTreeNode | undefined {
-    return xmlTreeNodeApi.createLoadedBranch(
-      id,
-      {
-        kind: 'element',
+    doctype(
+      id: Position,
+      name: string,
+      publicId: string | null,
+      systemId: string | null,
+      internalSubset: string | null,
+    ): XmlTreeNode {
+      return xmlTreeNodeApi.createLeaf(id, {
+        kind: 'doctype',
         name,
-        attributes,
-      },
-      children,
-    );
-  },
+        publicId,
+        systemId,
+        internalSubset,
+      });
+    },
 
-  text(id: Position, text: string): XmlTreeNode {
-    return xmlTreeNodeApi.createLeaf(id, {
-      kind: 'text',
-      text,
-    });
-  },
+    element(
+      id: Position,
+      name: string,
+      attributes: readonly XmlAttribute[],
+      children: Iterable<XmlTreeNode>,
+    ): XmlTreeNode | undefined {
+      return xmlTreeNodeApi.createLoadedBranch(
+        id,
+        {
+          kind: 'element',
+          name,
+          attributes,
+        },
+        children,
+      );
+    },
 
-  comment(id: Position, text: string): XmlTreeNode {
-    return xmlTreeNodeApi.createLeaf(id, {
-      kind: 'comment',
-      text,
-    });
-  },
+    text(id: Position, text: string): XmlTreeNode {
+      return xmlTreeNodeApi.createLeaf(id, {
+        kind: 'text',
+        text,
+      });
+    },
 
-  cdata(id: Position, text: string): XmlTreeNode {
-    return xmlTreeNodeApi.createLeaf(id, {
-      kind: 'cdata',
-      text,
-    });
-  },
+    comment(id: Position, text: string): XmlTreeNode {
+      return xmlTreeNodeApi.createLeaf(id, {
+        kind: 'comment',
+        text,
+      });
+    },
 
-  processingInstruction(
-    id: Position,
-    target: string,
-    data: string,
-  ): XmlTreeNode {
-    return xmlTreeNodeApi.createLeaf(id, {
-      kind: 'processing-instruction',
-      target,
-      data,
-    });
-  },
-} as const;
+    cdata(id: Position, text: string): XmlTreeNode {
+      return xmlTreeNodeApi.createLeaf(id, {
+        kind: 'cdata',
+        text,
+      });
+    },
 
-// -----------------------------------------------------------------------------
-// XmlFolds
-// -----------------------------------------------------------------------------
-
-export type XmlFolds = Folds<Position>;
-
-const xmlFoldTreeNodeApi = createTreeNodeApi<
-  Position,
-  readonly Position[]
->();
-
-export const xmlFoldsApi = createFoldsApi(xmlFoldTreeNodeApi);
-
-// -----------------------------------------------------------------------------
-// XmlCursor
-// -----------------------------------------------------------------------------
-
-export const xmlCursorSchema: z.ZodType<XmlCursor> =
-  createCursorSchema(XmlIdSchema);
-
-export type XmlCursor = Cursor<Position>;
-
-export const xmlCursorApi = createCursorApi<Position>();
-
-// -----------------------------------------------------------------------------
-// XmlNavNode
-// -----------------------------------------------------------------------------
-
-export type XmlNavNode = NavNode<Position>;
-
-export const xmlNavApi = createNavNodeApi(
-  xmlTreeNodeApi,
-  xmlFoldsApi,
-  xmlCursorApi,
-  {},
-);
-
-// -----------------------------------------------------------------------------
-// XmlState
-// -----------------------------------------------------------------------------
-
-export type XmlState = State<Position, XmlNodeValue>;
-
-export const xmlStateApi = createStateApi(xmlTreeNodeApi, xmlCursorApi);
+    processingInstruction(
+      id: Position,
+      target: string,
+      data: string,
+    ): XmlTreeNode {
+      return xmlTreeNodeApi.createLeaf(id, {
+        kind: 'processing-instruction',
+        target,
+        data,
+      });
+    },
+  } as const;
+}

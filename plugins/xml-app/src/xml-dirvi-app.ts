@@ -1,37 +1,23 @@
-import type {
-  AppPlugin, AppPlugin2,
-} from 'dirvi-apis/plugin';
-
-import { createXmlFileResyncSubscription, loadNodeXmlAppApi } from './infrastructure/load-node-xml-app-api.js';
-import { Position, XmlIdSchema, XmlNodeValueSchema } from './domain/xml-tree.js';
 import { readFile } from 'node:fs/promises';
-import { parseXmlDocument } from './infrastructure/parse-xml-document.js';
 import { resolve } from 'node:path';
-import { createNavNodeApi } from 'dirvi-lib';
+
+import type { AppPlugin } from 'dirvi-apis/plugin';
+
+import { createXmlFileResyncSubscription } from './infrastructure/create-xml-file-resync.js';
+import { type Position, XmlIdSchema, XmlNodeValue, XmlValueSchema } from './domain/xml-tree.js';
+import { parseXmlDocument } from './infrastructure/parse-xml-document.js';
+import { TreeNodeApi } from 'dirvi-lib';
 
 /**
- * A dirvi app that exposes a POSIX filesystem as a navigable tree.
+ * Creates applicator of `AppDefinition<Position, XmlValue>`.
+ *
+ * This style is used, instead of just creating the `AppDefinition`, for the
+ * user of the package to be able to apply the AppDefinition without specifying
+ * the generics.
+ *
+ * @param input - the path of the XML file to open.
  */
 export const xmlAppPlugin: AppPlugin = {
-  createAppApiApplicator: (input) => {
-    if (input === undefined) {
-      throw new Error('xml-app: No file path to XML file given.');
-    }
-
-    const appApi = loadNodeXmlAppApi(input);
-
-    return (appApiConsumer) => {
-      return appApiConsumer(appApi);
-    };
-  },
-};
-
-/**
- * Creates applicator of AppDefinition.
- *
- * @param input - the absolute path to the XML file to open.
- */
-export const xmlAppPlugin2: AppPlugin2 = {
   createAppDefinitionApplicator: (input) => {
     if (input === undefined) {
       throw new Error('xml-dirvi-app: No file path to XML file given.');
@@ -42,12 +28,17 @@ export const xmlAppPlugin2: AppPlugin2 = {
       displayName: `XML: ${input}`,
       rootId: 0,
       idSchema: XmlIdSchema,
-      valueSchema: XmlNodeValueSchema,
-      createRoot: async () => {
+      valueSchema: XmlValueSchema,
+      createRoot: async (
+        treeNodeApi: TreeNodeApi<Position, XmlNodeValue>
+      ) => {
         const source = await readFile(input, 'utf8');
-        return parseXmlDocument(source);
+        return parseXmlDocument(treeNodeApi, source);
       },
-      loadChildren: async (path: readonly Position[]) => {
+      loadChildren: async (
+        treeNodeApi: TreeNodeApi<Position, XmlNodeValue>,
+        path: readonly Position[]
+      ) => {
         // TODO Later: load from the file
         throw new Error(
           'Cannot load XML branches: parsed XML documents have no unloaded branches.',

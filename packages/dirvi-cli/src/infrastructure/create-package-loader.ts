@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
-import type { AppPlugin, AppPlugin2 } from 'dirvi-apis';
+import type { AppPlugin } from 'dirvi-apis';
 import type { PackageLoader } from '@mak-98/dirvi-app';
 import { AppPackageReference } from '@mak-98/dirvi-app';
 
@@ -55,7 +55,7 @@ function getAppPackageDirectory(
  * <dirvi data>/site/pack/dirvi/opt
  */
 export function createPackageLoader(packagesDirectory: string): PackageLoader {
-  const loadingPluginsByPath = new Map<string, Promise<AppPlugin2>>();
+  const loadingPluginsByPath = new Map<string, Promise<AppPlugin>>();
 
   return {
     loadAppPlugin: (referenceInput) => {
@@ -90,7 +90,7 @@ export function createPackageLoader(packagesDirectory: string): PackageLoader {
 async function loadAppPluginFromDirectory(
   appPackageDirectory: string,
   reference: AppPackageReference,
-): Promise<AppPlugin2> {
+): Promise<AppPlugin> {
   await ensureAppPackageDirectory(appPackageDirectory);
 
   if (!(await hasInstalledVersion(appPackageDirectory, reference))) {
@@ -193,7 +193,7 @@ async function installWithNpm(
 async function loadInstalledAppPlugin(
   appPackageDirectory: string,
   reference: AppPackageReference,
-): Promise<AppPlugin2> {
+): Promise<AppPlugin> {
   const requireFromAppPackageDirectory = createRequire(
     join(appPackageDirectory, 'package.json'),
   );
@@ -219,7 +219,7 @@ async function loadInstalledAppPlugin(
 function parseAppPlugin(
   value: unknown,
   reference: AppPackageReference,
-): AppPlugin2 {
+): AppPlugin {
   if (
     !isRecord(value) ||
     typeof value.createAppDefinitionApplicator !== 'function'
@@ -230,7 +230,7 @@ function parseAppPlugin(
     );
   }
 
-  return value as AppPlugin2;
+  return value as AppPlugin;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
