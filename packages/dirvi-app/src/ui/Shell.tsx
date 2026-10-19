@@ -97,7 +97,10 @@ export function Shell({
 
   useEffect(() => {
     void shellApi
-      .openApp(initialization.initialAppId, initialAppOptions.input)
+      .openApp(
+        initialAppOptions.app ?? initialization.initialAppId,
+        initialAppOptions.input,
+      )
       .catch((error: unknown) => {
         setAppError(error instanceof Error ? error : new Error(String(error)));
       });
