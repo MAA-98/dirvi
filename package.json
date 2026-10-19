@@ -1,6 +1,6 @@
 {
   "name": "dirvi",
-  "version": "0.11.0-beta.4",
+  "version": "0.11.0-beta.5",
   "description": "A Vim-inspired terminal UI for browsing directories.",
   "private": true,
   "type": "module",
