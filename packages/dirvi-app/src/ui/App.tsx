@@ -25,6 +25,7 @@ import type {
 import type { Config } from '../domain/config.js';
 import { useView } from './hooks/useView.js';
 import type { AppScreenRenderer } from './app-screen-renderer.js';
+import { AppPackageReference } from '../domain/app-pack-ref.js';
 
 function toError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
@@ -34,6 +35,7 @@ type AppProps<Id extends SerializableKey, Value, ViewKey = string> = {
   screenRenderer: AppScreenRenderer;
   appApi: AppApi<Id, Value, ViewKey>;
   config: Config;
+  registeredApps: ReadonlyMap<string, AppPackageReference>;
   initialState: State<Id, Value>;
   reducer: Reducer<Id, Value>;
   intentToEffect: IntentToEffect<Id, Value>;
@@ -47,6 +49,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   screenRenderer,
   appApi,
   config,
+  registeredApps,
   initialState,
   reducer,
   intentToEffect,
@@ -148,6 +151,23 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
       }
 
       switch (effect.effectType) {
+        case 'quit':
+          setExitStatus(effect.exitMessage);
+          return;
+
+        case 'listApps': {
+          const appIds = [...registeredApps.keys()];
+          const lines = appIds.map((id) => `${id}`);
+
+          setInputState({
+            inputMode: 'normal',
+            normalBuffer: '',
+          });
+          feedbackApi.addMessage(['Apps:', ...lines].join('\n'));
+
+          return;
+        }
+
         case 'dispatchEffectAction':
           const effectActionResult = effectToAction(
             effect.action,
@@ -315,13 +335,9 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
             'error',
           );
           return;
-
-        case 'quit':
-          setExitStatus(effect.exitMessage);
-          return;
       }
     },
-    [appApi, effectToAction, feedbackApi, navEntry, onError, state, stdout],
+    [appApi, effectToAction, feedbackApi, navEntry, state, stdout, registeredApps],
   );
 
   // ===========================================================================

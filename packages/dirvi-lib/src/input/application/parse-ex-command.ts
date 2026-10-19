@@ -4,6 +4,30 @@ import type { Effect } from '../domain/index.js';
 const DEFAULT_VIEW_NAME = 'default';
 const DEFAULT_FOLD_TREE_NAME = 'default';
 
+function parseAppCommand<Id extends SerializableKey, Value>(
+  commandArgs: readonly string[],
+): Effect<Id, Value> {
+  const [subcommand, name] = commandArgs;
+  
+  switch (subcommand) {
+    case 'list':
+      return commandArgs.length === 1
+        ? {
+            effectType: 'listApps',
+          }
+        : {
+            effectType: 'unrecognizedCommand',
+            commandLine: `app ${commandArgs.join(' ')}`,
+          };
+      
+    default:
+      return {
+        effectType: 'unrecognizedCommand',
+        commandLine: `app ${commandArgs.join(' ')}`,
+      };
+  }
+}
+
 function parseFoldCommand<Id extends SerializableKey, Value>(
   commandArgs: readonly string[],
 ): Effect<Id, Value> {
@@ -119,7 +143,7 @@ function parseFoldCommand<Id extends SerializableKey, Value>(
  * @typeParam Id - The sibling-unique tree-node ID type.
  * @typeParam Value - Application-owned data stored in each tree node.
  */
-export function parseCommand<Id extends SerializableKey, Value>(
+export function parseExCommand<Id extends SerializableKey, Value>(
   commandLine: string,
 ): Effect<Id, Value> | undefined {
   const command = commandLine.trim().replace(/^:/, '');
@@ -136,6 +160,9 @@ export function parseCommand<Id extends SerializableKey, Value>(
         effectType: 'quit',
         exitMessage: '',
       };
+      
+    case 'app':
+      return parseAppCommand<Id, Value>(commandArgs);
 
     case 'fold':
       return parseFoldCommand<Id, Value>(commandArgs);

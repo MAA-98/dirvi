@@ -7,7 +7,7 @@ import type {
 } from '../../trees/index.js';
 import type { Effect, EffectAction, Intent } from '../domain/index.js';
 
-import { parseCommand } from './parse-command.js';
+import { parseExCommand } from './parse-ex-command.js';
 import { parseNormalCommand } from './parse-normal-command.js';
 
 /**
@@ -84,7 +84,7 @@ export function createIntentToEffect<Id extends SerializableKey, Value>(
 
       case 'executeCommandLine':
         return (
-          parseCommand(intent.commandLine) ?? {
+          parseExCommand(intent.commandLine) ?? {
             effectType: 'setInputState',
             inputState: {
               inputMode: 'normal',

@@ -2,12 +2,22 @@ import type { InputModeState } from './input-mode-state.js';
 import type { SerializableKey, TreeNode } from '../../trees/index.js';
 
 /**
- * An effect produced by interpreting an intent against the current state.
+ * An effect is some execution to be done in `App`, that could affect any part
+ * of dirvi.
+ *
+ * It is produced by interpreting an intent against the current state.
  *
  * @typeParam Id - The sibling-unique tree-node ID type.
  * @typeParam Value - Application-owned data stored in each tree node.
  */
 export type Effect<Id extends SerializableKey, Value> =
+  | Readonly<{
+      effectType: 'quit';
+      exitMessage: string;
+    }>
+  | Readonly<{
+      effectType: 'listApps';
+    }>
   | Readonly<{
       effectType: 'dispatchEffectAction';
       action: EffectAction<Id, Value>;
@@ -30,10 +40,6 @@ export type Effect<Id extends SerializableKey, Value> =
     }>
   | Readonly<{
       effectType: 'listFolds';
-    }>
-  | Readonly<{
-      effectType: 'quit';
-      exitMessage: string;
     }>
   | Readonly<{
       effectType: 'setInputState';

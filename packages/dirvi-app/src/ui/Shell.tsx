@@ -68,15 +68,6 @@ export function Shell({
   stdout,
   clipboard,
 }: ShellAppProps) {
-  const initialAppReference = initialization.registeredApps.get(
-    initialization.initialAppId,
-  );
-  if (initialAppReference === undefined) {
-    throw new Error(
-      `Startup app "${initialization.initialAppId}" has not been registered.`,
-    );
-  }
-
   const [appApiApplicator, setAppApiApplicator] = useState<
     AppApiApplicator | undefined
   >(undefined);
@@ -95,12 +86,8 @@ export function Shell({
         setAppError(undefined);
 
         const appPlugin = await packageLoader.loadAppPlugin(appReference);
-
-        const appDefinitionApplicator =
-          appPlugin.createAppDefinitionApplicator(input);
-
         const loadedAppApiApplicator = createAppApiApplicator(
-          appDefinitionApplicator,
+          appPlugin.createAppDefinitionApplicator(input),
         );
 
         setAppApiApplicator(() => loadedAppApiApplicator);
@@ -118,6 +105,14 @@ export function Shell({
 
   if (appError !== undefined) {
     throw appError;
+  }
+  const initialAppReference = initialization.registeredApps.get(
+    initialization.initialAppId,
+  );
+  if (initialAppReference === undefined) {
+    throw new Error(
+      `Startup app "${initialization.initialAppId}" has not been registered.`,
+    );
   }
 
   if (appApiApplicator === undefined) {

@@ -28,6 +28,9 @@ configuration facade at:
 
 ```js
 globalThis.dirvi;
+```
+and can also be accessed with:
+```js
 dirvi;
 ```
 
