@@ -19,6 +19,11 @@ export type Effect<Id extends SerializableKey, Value> =
       effectType: 'listApps';
     }>
   | Readonly<{
+      effectType: 'switchApp';
+      appId: string;
+      input: string | undefined;
+    }>
+  | Readonly<{
       effectType: 'dispatchEffectAction';
       action: EffectAction<Id, Value>;
     }>

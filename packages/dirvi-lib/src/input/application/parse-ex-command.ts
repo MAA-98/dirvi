@@ -7,9 +7,9 @@ const DEFAULT_FOLD_TREE_NAME = 'default';
 function parseAppCommand<Id extends SerializableKey, Value>(
   commandArgs: readonly string[],
 ): Effect<Id, Value> {
-  const [subcommand, name] = commandArgs;
+  const [firstArgument, ...remainingArguments] = commandArgs;
   
-  switch (subcommand) {
+  switch (firstArgument) {
     case 'list':
       return commandArgs.length === 1
         ? {
@@ -19,12 +19,41 @@ function parseAppCommand<Id extends SerializableKey, Value>(
             effectType: 'unrecognizedCommand',
             commandLine: `app ${commandArgs.join(' ')}`,
           };
-      
-    default:
+
+    case 'open':
+    case 'switch': {
+      const [appId, input] = remainingArguments;
+
+      if (appId === undefined || remainingArguments.length > 2) {
+        return {
+          effectType: 'unrecognizedCommand',
+          commandLine: `app ${commandArgs.join(' ')}`,
+        };
+      }
+
       return {
-        effectType: 'unrecognizedCommand',
-        commandLine: `app ${commandArgs.join(' ')}`,
+        effectType: 'switchApp',
+        appId,
+        input,
       };
+    }
+
+    default: {
+      if (firstArgument === undefined || remainingArguments.length > 1) {
+        return {
+          effectType: 'unrecognizedCommand',
+          commandLine: `app ${commandArgs.join(' ')}`,
+        };
+      }
+      
+      const input = remainingArguments[0];
+
+      return {
+        effectType: 'switchApp',
+        appId: firstArgument,
+        input,
+      };
+    }
   }
 }
 
@@ -134,19 +163,37 @@ function parseFoldCommand<Id extends SerializableKey, Value>(
 }
 
 /**
- * Parses a command-line command into an application effect.
+ * Parses a Vim-style Ex command line into an application effect.
+ *
+ * Leading and trailing whitespace is removed, and all consecutive leading `:`
+ * characters are removed before parsing. The remaining text is split on one or
+ * more whitespace characters:
+ *
+ * - The first token is treated as the command name.
+ * - All remaining tokens are passed to the command-specific parser as
+ *   `commandArgs`.
+ *
+ * Parsing is token-based and does not support quoted or escaped arguments.
+ * Consequently, whitespace within an argument cannot currently be preserved.
+ * Command-specific parsers are responsible for validating their arguments.
+ *
+ * An empty command line produces `undefined`. An unknown command produces an
+ * `unrecognizedCommand` effect containing the original `commandLine`.
  *
  * Command parsing is independent of the concrete tree-node value type, but the
  * generic parameters allow its result to compose with the application's
- * Effect<Id, Value> pipeline.
+ * `Effect<Id, Value>` pipeline.
  *
  * @typeParam Id - The sibling-unique tree-node ID type.
  * @typeParam Value - Application-owned data stored in each tree node.
+ * @param commandLine - The raw Ex command line, optionally prefixed with one
+ * or more `:` characters.
+ * @returns The parsed application effect, or `undefined` for an empty command.
  */
 export function parseExCommand<Id extends SerializableKey, Value>(
   commandLine: string,
 ): Effect<Id, Value> | undefined {
-  const command = commandLine.trim().replace(/^:/, '');
+  const command = commandLine.trim().replace(/^:+/, '');
 
   if (command === '') {
     return undefined;

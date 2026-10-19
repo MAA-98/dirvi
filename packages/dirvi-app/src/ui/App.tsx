@@ -26,6 +26,7 @@ import type { Config } from '../domain/config.js';
 import { useView } from './hooks/useView.js';
 import type { AppScreenRenderer } from './app-screen-renderer.js';
 import { AppPackageReference } from '../domain/app-pack-ref.js';
+import { ShellApi } from '../domain/shell-api.js';
 
 function toError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
@@ -33,6 +34,7 @@ function toError(error: unknown): Error {
 
 type AppProps<Id extends SerializableKey, Value, ViewKey = string> = {
   screenRenderer: AppScreenRenderer;
+  shellApi: ShellApi;
   appApi: AppApi<Id, Value, ViewKey>;
   config: Config;
   registeredApps: ReadonlyMap<string, AppPackageReference>;
@@ -47,6 +49,7 @@ type AppProps<Id extends SerializableKey, Value, ViewKey = string> = {
 
 export function App<Id extends SerializableKey, Value, ViewKey = string>({
   screenRenderer,
+  shellApi,
   appApi,
   config,
   registeredApps,
@@ -167,6 +170,10 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
 
           return;
         }
+        
+        case 'switchApp':
+          void shellApi.openApp(effect.appId, effect.input)
+          return
 
         case 'dispatchEffectAction':
           const effectActionResult = effectToAction(

@@ -29,8 +29,9 @@ type LoadingAppProps<Id extends SerializableKey, Value, ViewKey = string> = {
 export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
   appScreenRenderer,
   loadingScreenRenderer,
-  appApi,
   initialization,
+  shellApi,
+  appApi,
   stdout,
   clipboard,
 }: LoadingAppProps<Id, Value, ViewKey>) {
@@ -109,6 +110,7 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
   return (
     <App
       screenRenderer={appScreenRenderer}
+      shellApi={shellApi}
       appApi={appApi}
       config={config}
       registeredApps={initialization.registeredApps}
