@@ -38,7 +38,10 @@ export const posixAppPlugin: AppPlugin = {
       createRoot: async (treeNodeApi: TreeNodeApi<PosixId, PosixValue>) => {
         // Start with root branches already loaded
         const rootBranches = await loadDirectoryEntries(treeNodeApi, []);
-        const root = createConstructors(treeNodeApi).loadedDirectory(rootId, rootBranches);
+        const root = createConstructors(treeNodeApi).loadedDirectory(
+          rootId,
+          rootBranches,
+        );
 
         if (root === undefined) {
           throw new Error(
@@ -48,7 +51,8 @@ export const posixAppPlugin: AppPlugin = {
 
         return root;
       },
-      loadChildren: loadDirectoryEntries,
+      loadChildren: (treeNodeApi: TreeNodeApi<PosixId, PosixValue>, path: readonly PosixId[]) =>
+        loadDirectoryEntries(treeNodeApi, path),
       subscribeToResync: createFsResyncSubscription(join(unixAbsPath)),
       createNavNodeApiOptions: {
         compareSiblings: (
