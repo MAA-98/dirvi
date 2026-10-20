@@ -1,9 +1,11 @@
 import type { InputModeState } from './input-mode-state.js';
 import type { SerializableKey, TreeNode } from '../../trees/index.js';
 
+export type EffectClosure = () => void | Promise<void>;
+
 /**
- * An effect is some execution to be done in `App`, that could affect any part
- * of dirvi.
+ * An effect is some execution to be done in `App`, that could affect the shell
+ * or current app of dirvi.
  *
  * It is produced by interpreting an intent against the current state.
  *
@@ -51,8 +53,13 @@ export type Effect<Id extends SerializableKey, Value> =
       inputState: InputModeState;
     }>
   | Readonly<{
-      effectType: 'unrecognizedCommand';
-      commandLine: string;
+      effectType: 'userExCommand';
+      name: string;
+      args: readonly string[];
+    }>
+  | Readonly<{
+      effectType: 'emitError';
+      message: string;
     }>;
 
 /**

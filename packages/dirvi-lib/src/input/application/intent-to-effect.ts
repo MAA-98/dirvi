@@ -25,6 +25,7 @@ export type IntentToEffect<Id extends SerializableKey, Value> = (
 ) => Effect<Id, Value> | undefined;
 
 export function createIntentToEffect<Id extends SerializableKey, Value>(
+  registeredCommands: ReadonlySet<string>,
   stateApi: StateApi<Id, Value>,
   cursorApi: CursorApi<Id>,
   treeNodeApi: TreeNodeApi<Id, Value>,
@@ -84,7 +85,7 @@ export function createIntentToEffect<Id extends SerializableKey, Value>(
 
       case 'executeCommandLine':
         return (
-          parseExCommand(intent.commandLine) ?? {
+          parseExCommand(intent.commandLine, registeredCommands) ?? {
             effectType: 'setInputState',
             inputState: {
               inputMode: 'normal',

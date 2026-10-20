@@ -99,10 +99,7 @@ export function createInitRuntime(): InitRuntime {
             );
           }
 
-          exCommands.set(name, {
-            name,
-            execute,
-          });
+          exCommands.set(name, { name, execute });
         },
       },
     },
@@ -139,7 +136,7 @@ export function createInitRuntime(): InitRuntime {
           initial,
           registered: new Map(registeredApps),
         },
-        exCommands: [...exCommands.values()],
+        exCommands: new Map(exCommands),
       };
     },
   };

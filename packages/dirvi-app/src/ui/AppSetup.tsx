@@ -36,7 +36,6 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
   clipboard,
 }: LoadingAppProps<Id, Value, ViewKey>) {
   const [initialState, setInitialState] = useState<State<Id, Value>>();
-  const [config, setConfig] = useState<Config>(initialization.config);
 
   // Loading and setting initial state.
   useEffect(() => {
@@ -84,11 +83,12 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
   const intentToEffect = useMemo(
     () =>
       createIntentToEffect(
+        new Set(initialization.exCommands.keys()),
         appApi.stateApi,
         appApi.cursorApi,
         appApi.treeNodeApi,
       ),
-    [appApi.stateApi, appApi.cursorApi, appApi.treeNodeApi],
+    [appApi.stateApi, appApi.cursorApi, appApi.treeNodeApi, initialization.exCommands],
   );
 
   const effectToAction = useMemo(
@@ -112,8 +112,7 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
       screenRenderer={appScreenRenderer}
       shellApi={shellApi}
       appApi={appApi}
-      config={config}
-      registeredApps={initialization.app.registered}
+      initialization={initialization}
       initialState={initialState}
       reducer={reducer}
       intentToEffect={intentToEffect}

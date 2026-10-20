@@ -22,22 +22,16 @@ import type {
   UserInput,
 } from 'dirvi-lib';
 
-import type { Config } from '../domain/config.js';
 import { useView } from './hooks/useView.js';
 import type { AppScreenRenderer } from './app-screen-renderer.js';
-import { AppPackageReference } from '../domain/app-pack-ref.js';
 import { ShellApi } from '../domain/shell-api.js';
-
-function toError(error: unknown): Error {
-  return error instanceof Error ? error : new Error(String(error));
-}
+import { Initialization } from '../domain/initialization.js';
 
 type AppProps<Id extends SerializableKey, Value, ViewKey = string> = {
   screenRenderer: AppScreenRenderer;
   shellApi: ShellApi;
   appApi: AppApi<Id, Value, ViewKey>;
-  config: Config;
-  registeredApps: ReadonlyMap<string, AppPackageReference>;
+  initialization: Initialization;
   initialState: State<Id, Value>;
   reducer: Reducer<Id, Value>;
   intentToEffect: IntentToEffect<Id, Value>;
@@ -51,8 +45,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   screenRenderer,
   shellApi,
   appApi,
-  config,
-  registeredApps,
+  initialization,
   initialState,
   reducer,
   intentToEffect,
@@ -154,12 +147,41 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
       }
 
       switch (effect.effectType) {
+        case 'userExCommand': {
+          setInputState({
+            inputMode: 'normal',
+            normalBuffer: '',
+          });
+          const command = initialization.exCommands.get(effect.name);
+          
+          if (command === undefined) {
+            feedbackApi.addMessage(
+              `Command is no longer registered: ${effect.name}`,
+              'error',
+            );
+            return;
+          }
+          void Promise.resolve()
+            .then(() => command.execute({ shell: shellApi })) // TODO: Add args
+            .catch((error: unknown) => {
+              const appError =
+                error instanceof Error ? error : new Error(String(error));
+              
+              feedbackApi.addMessage(
+                `Command "${effect.name}" failed: ${appError.message}`,
+                'error',
+              );
+            });
+          
+          return;
+        }
+        
         case 'quit':
           setExitStatus(effect.exitMessage);
           return;
 
         case 'listApps': {
-          const appIds = [...registeredApps.keys()];
+          const appIds = [...initialization.app.registered.keys()];
           const lines = appIds.map((id) => `${id}`);
 
           setInputState({
@@ -336,15 +358,15 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           return;
         }
 
-        case 'unrecognizedCommand':
+        case 'emitError':
           feedbackApi.addMessage(
-            `Unrecognized command: ${effect.commandLine}`,
+            effect.message,
             'error',
           );
           return;
       }
     },
-    [appApi, effectToAction, feedbackApi, navEntry, state, stdout, registeredApps],
+    [appApi, effectToAction, feedbackApi, navEntry, state, stdout, initialization.app.registered, shellApi],
   );
 
   // ===========================================================================
@@ -376,7 +398,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
       view={view}
       feedback={feedback}
       feedbackApi={feedbackApi}
-      config={config}
+      config={initialization.config}
       inputState={inputState}
       handleInput={handleInput}
       onRowsChange={handleRowsChange}

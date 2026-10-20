@@ -20,5 +20,5 @@ export type Initialization = {
     initial: string;
     registered: ReadonlyMap<string, AppPackageReference>;
   };
-  readonly exCommands: readonly ExCommand[];
+  readonly exCommands: ReadonlyMap<string, ExCommand>;
 };
