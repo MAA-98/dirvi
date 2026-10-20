@@ -1,6 +1,6 @@
 {
   "name": "dirvi-lib",
-  "version": "0.11.0-beta.5",
+  "version": "0.11.0-beta.6",
   "description": "Dependency for dirvi.",
   "license": "LGPL-3.0-or-later",
   "type": "module",
