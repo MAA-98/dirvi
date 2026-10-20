@@ -1,15 +1,17 @@
 # dirvi
 
 A TUI for navigating and interacting with tree structures. Heavily inspired by Vim/Neovim,
-to provide a similar fast and extensible editing environment, but for trees rather than
-text buffers.
+to provide a similar extensible editing environment, but for trees rather than text buffers.
 
 ## Design Goals
 
-- Navigate and manipulate trees in a way reminiscent of how Vim/Neovim navigates and manipulates
-  text buffers.
-- Programmable configurations and easy to connect to other processes (c.f. Unix philosophy).
-- Two examples of `dirvi` apps: for directories and XML.
+- Focused, composable, extendable.
+- Simple configurations and APIs.
+- Modal editing, adapted from Vim for tree structures.
+- Two examples of `dirvi` apps: for editing file system and XML.
+
+Answering the question:
+https://vi.stackexchange.com/questions/29417/how-can-i-edit-trees-in-vim
 
 ## Installation
 
@@ -266,20 +268,22 @@ Fold state is independent of the materialized directory buffer:
 
 - What is the use case?
 
-I use the directory app for navigating project files, with fold trees now becoming
+I use the directory app for navigating project files, with folds now becoming
 the indispensable way for me to quickly view files relevant to a specific part
-of the project.
+of a project. I use the XML editor for creating LLM prompts. I have various scripts
+for custom commands.
 
 - Why make it a separate app instead of a Vim/Neovim plugin?
 
 I don't know Vimscript or Lua well enough. I wanted to focus on design and easy
 iteration rather than how to make it work as a plugin, so I wrote it as standalone.
-Someday I may write it as a plugin too.
+In the making, I do believe the UX is better than a Vim/Neovim plugin.
 
 - Why write it using TypeScript/React/Ink?
 
-As for the answer above, it was the easiest way for me to get started. If there's
-enough interest I would consider rewriting in Rust, which shouldn't be too hard.
+As for the answer above, it was the easiest way for me to get started. It had the 
+consequence of making plugins and script for commands very approachable and easy.
+If there's enough interest I would consider rewriting it in Rust for faster startups.
 
 ## Licensing
 
