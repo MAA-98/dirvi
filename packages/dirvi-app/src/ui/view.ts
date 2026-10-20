@@ -1,10 +1,10 @@
 import type {
   Cursor,
-  CursorApi,
+  CursorApi, HighlightToken,
   NavBranch,
   NavEntry,
   NavNode,
-  NavNodeApi,
+  NavNodeApi, PresentNode,
   SerializableKey,
 } from 'dirvi-lib';
 
@@ -14,6 +14,7 @@ type ViewRowBase = {
   content: string;
   cursor: boolean;
   selected: boolean;
+  highlight: HighlightToken;
 };
 
 export type ViewRow =
@@ -35,6 +36,7 @@ export const View = {
     navNodeApi: NavNodeApi<Id, Value>,
     cursor: Cursor<Id>,
     cursorApi: CursorApi<Id>,
+    presentNode: PresentNode<Id>
   ): ViewRow[] {
     const rootCursor: Cursor<Id> = [];
 
@@ -43,6 +45,7 @@ export const View = {
       null,
       cursorApi.equal(cursor, rootCursor),
       navNodeApi,
+      presentNode
     );
 
     if (rootNode.children === null) {
@@ -51,7 +54,7 @@ export const View = {
 
     return [
       rootRow,
-      ...viewRowsAtNode(rootNode.children, [], navNodeApi, cursor, cursorApi),
+      ...viewRowsAtNode(rootNode.children, [], navNodeApi, cursor, cursorApi, presentNode),
     ];
   },
 
@@ -62,8 +65,9 @@ export const View = {
     cursorApi: CursorApi<Id>,
     viewportHeight: number,
     viewportStart: number,
+    presentNode: PresentNode<Id>
   ): View {
-    const rows = View.createRows(rootNode, navNodeApi, cursor, cursorApi);
+    const rows = View.createRows(rootNode, navNodeApi, cursor, cursorApi, presentNode);
 
     return {
       rows: rows.slice(viewportStart, viewportStart + viewportHeight),
@@ -88,13 +92,14 @@ function viewRowsAtNode<Id extends SerializableKey, Value>(
   navNodeApi: NavNodeApi<Id, Value>,
   cursor: Cursor<Id>,
   cursorApi: CursorApi<Id>,
+  presentNode: PresentNode<Id>
 ): ViewRow[] {
   const rows: ViewRow[] = [];
 
   for (const entry of node.entries) {
     const entryCursor: Cursor<Id> = [...parentPath, entry.id];
     const isCursor = cursorApi.equal(cursor, entryCursor);
-    rows.push(viewRowForEntry(entry, parentPath, isCursor, navNodeApi));
+    rows.push(viewRowForEntry(entry, parentPath, isCursor, navNodeApi, presentNode));
 
     // Case where there's no branches
     if (!navNodeApi.entryIsBranch(entry) || entry.children === null) {
@@ -108,6 +113,7 @@ function viewRowsAtNode<Id extends SerializableKey, Value>(
         navNodeApi,
         cursor,
         cursorApi,
+        presentNode
       ),
     );
   }
@@ -120,12 +126,14 @@ function viewRowForEntry<Id extends SerializableKey, Value>(
   parentPath: Id[] | null,
   cursor: boolean,
   navNodeApi: NavNodeApi<Id, Value>,
+  presentNode: PresentNode<Id>
 ): ViewRow {
   const id = entryId(parentPath ?? [], entry.id);
   const indent = parentPath ? parentPath.length + 1 : 0;
   const selected = false;
 
   if (navNodeApi.entryIsBranch(entry)) {
+    const { content, highlight } = presentNode(entry.id, true);
     const foldedCount =
       entry.children === null || entry.children.folded === null
         ? 0
@@ -136,18 +144,21 @@ function viewRowForEntry<Id extends SerializableKey, Value>(
       indent,
       selected,
       cursor,
-      content: `${String(entry.id)}/`,
+      content: content,
+      highlight,
       type: 'branch',
       foldedCount,
     };
   }
-
+  
+  const { content, highlight } = presentNode(entry.id, false);
   return {
     id,
     indent,
     selected,
     cursor,
-    content: String(entry.id),
+    content,
+    highlight,
     type: 'leaf',
   };
 }

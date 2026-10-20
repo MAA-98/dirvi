@@ -3,11 +3,12 @@ import { useRef } from 'react';
 import type {
   CursorApi,
   NavBranch,
-  NavNodeApi,
+  NavNodeApi, PresentNode,
   SerializableKey,
   State,
 } from 'dirvi-lib';
 import { View, type ViewRow } from '../view.js';
+import { pre } from 'fast-check';
 
 const STATUS_BAR_HEIGHT = 1;
 
@@ -19,6 +20,7 @@ export function useView<Id extends SerializableKey, Value>(
   navNodeApi: NavNodeApi<Id, Value>,
   cursorApi: CursorApi<Id>,
   rowCount: number,
+  presentNode: PresentNode<Id>
 ): View {
   const viewportStartRef = useRef(0);
   const viewportHeight = Math.max(0, rowCount - STATUS_BAR_HEIGHT);
@@ -27,7 +29,7 @@ export function useView<Id extends SerializableKey, Value>(
     return { rows: [] };
   }
 
-  const rows = View.createRows(navNode, navNodeApi, state.cursor, cursorApi);
+  const rows = View.createRows(navNode, navNodeApi, state.cursor, cursorApi, presentNode);
 
   viewportStartRef.current = viewportStart(
     rows,
@@ -42,6 +44,7 @@ export function useView<Id extends SerializableKey, Value>(
     cursorApi,
     viewportHeight,
     viewportStartRef.current,
+    presentNode
   );
 }
 

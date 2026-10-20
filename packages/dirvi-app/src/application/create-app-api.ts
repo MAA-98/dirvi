@@ -1,11 +1,13 @@
+import type {
+  SerializableKey,
+  AppApi
+} from 'dirvi-lib';
 import {
-  type SerializableKey,
-  type AppApi,
   createCursorApi,
   createFoldsApi,
   createNavNodeApi,
   createStateApi,
-  createTreeNodeApi,
+  createTreeNodeApi
 } from 'dirvi-lib';
 import type { AppApiApplicator, AppApiConsumer, AppDefinition, AppDefinitionApplicator } from 'dirvi-apis';
 
@@ -48,6 +50,7 @@ export function createAppApi<
     rootId: appDefinition.rootId,
     createRoot: () => appDefinition.createRoot(treeNodeApi),
     loadBranches: (path) => appDefinition.loadChildren(treeNodeApi, path),
+    presentNode: (id, isBranch) => appDefinition.presentNode(id, isBranch),
     subscribeToResync: appDefinition.subscribeToResync,
     treeNodeApi,
     foldsApi,

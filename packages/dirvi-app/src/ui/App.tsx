@@ -100,6 +100,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
     appApi.navNodeApi,
     appApi.cursorApi,
     rowCount,
+    appApi.presentNode
   );
 
   // ===========================================================================
@@ -366,7 +367,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           return;
       }
     },
-    [appApi, effectToAction, feedbackApi, navEntry, state, stdout, initialization.app.registered, shellApi],
+    [appApi, effectToAction, feedbackApi, navEntry, state, stdout, initialization.app.registered, shellApi, initialization.exCommands],
   );
 
   // ===========================================================================

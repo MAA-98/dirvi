@@ -1,19 +1,13 @@
-import type { ViewApi } from './view-api.js';
 import type {
   CursorApi,
   FoldsApi,
   NavNodeApi,
   SerializableKey,
-  State,
   StateApi,
   TreeNode,
   TreeNodeApi,
 } from '../trees/index.js';
-import {
-  createCursorApi,
-  createStateApi,
-  createTreeNodeApi,
-} from '../trees/index.js';
+import type { PresentNode } from './node-presentation.js';
 
 /**
  * Application-specific tree dependencies and operations.
@@ -58,6 +52,8 @@ export type AppApi<
    * when an initial State is created.
    */
   createRoot: () => Promise<TreeNode<Id, Value>>;
+  
+  presentNode: PresentNode<Id>;
 
   /**
    * Subscribes to external data changes that require tree state to be loaded
@@ -92,24 +88,3 @@ export type AppApi<
   //
   // viewApi: ViewApi<State<Id, Value>, ViewKey>;
 }>;
-
-export type AppStateApis<Id extends SerializableKey, Value> = Readonly<{
-  treeNodeApi: TreeNodeApi<Id, Value>;
-  cursorApi: CursorApi<Id>;
-  stateApi: StateApi<Id, Value>;
-}>;
-
-export function createAppStateApis<
-  Id extends SerializableKey,
-  Value,
->(): AppStateApis<Id, Value> {
-  const treeNodeApi = createTreeNodeApi<Id, Value>();
-  const cursorApi = createCursorApi<Id>();
-  const stateApi = createStateApi<Id, Value>(treeNodeApi, cursorApi);
-
-  return {
-    treeNodeApi,
-    cursorApi,
-    stateApi,
-  };
-}

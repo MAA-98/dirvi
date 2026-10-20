@@ -53,6 +53,12 @@ export const posixAppPlugin: AppPlugin = {
       },
       loadChildren: (treeNodeApi: TreeNodeApi<PosixId, PosixValue>, path: readonly PosixId[]) =>
         loadDirectoryEntries(treeNodeApi, path),
+      presentNode: (id: PosixId, isBranch: boolean) => {
+        return {
+          content: id,
+          highlight: isBranch ? 'directory' : 'leaf'
+        }
+      },
       subscribeToResync: createFsResyncSubscription(join(unixAbsPath)),
       createNavNodeApiOptions: {
         compareSiblings: (

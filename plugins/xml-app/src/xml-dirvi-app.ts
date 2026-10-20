@@ -45,6 +45,13 @@ export const xmlAppPlugin: AppPlugin = {
           'Cannot load XML branches: parsed XML documents have no unloaded branches.',
         );
       },
+      presentNode: (id: Position, isBranch: boolean) => {
+        return {
+          content: String(id) + 'check',
+          highlight: isBranch ? 'enclosing' : 'atom'
+        }
+      },
+      
       subscribeToResync: createXmlFileResyncSubscription(xmlAbsolutePath),
       createNavNodeApiOptions: {},
     };

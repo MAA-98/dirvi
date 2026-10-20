@@ -58,9 +58,7 @@ export function createPackageLoader(packagesDirectory: string): PackageLoader {
   const loadingPluginsByPath = new Map<string, Promise<AppPlugin>>();
 
   return {
-    loadAppPlugin: (referenceInput) => {
-      const reference = AppPackageReference.parse(referenceInput);
-
+    loadAppPlugin: (reference) => {
       const appPackageDirectory = getAppPackageDirectory(
         packagesDirectory,
         reference,
