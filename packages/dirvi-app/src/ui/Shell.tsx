@@ -76,7 +76,7 @@ export function Shell({
   const shellApi = useMemo<ShellApi>(() => {
     return {
       openApp: async (appId, input) => {
-        const appReference = initialization.registeredApps.get(appId);
+        const appReference = initialization.app.registered.get(appId);
 
         if (appReference === undefined) {
           throw new Error(`App "${appId}" has not been registered.`);
@@ -93,28 +93,28 @@ export function Shell({
         setAppApiApplicator(() => loadedAppApiApplicator);
       },
     };
-  }, [initialization.registeredApps, packageLoader]);
+  }, [packageLoader, initialization.app.registered]);
 
   useEffect(() => {
     void shellApi
       .openApp(
-        initialAppOptions.app ?? initialization.initialAppId,
+        initialAppOptions.app ?? initialization.app.initial,
         initialAppOptions.input,
       )
       .catch((error: unknown) => {
         setAppError(error instanceof Error ? error : new Error(String(error)));
       });
-  }, [initialAppOptions.input, initialization.initialAppId, shellApi]);
+  }, [initialAppOptions.input, initialization.app.initial, shellApi]);
 
   if (appError !== undefined) {
     throw appError;
   }
-  const initialAppReference = initialization.registeredApps.get(
-    initialization.initialAppId,
+  const initialAppReference = initialization.app.registered.get(
+    initialization.app.initial,
   );
   if (initialAppReference === undefined) {
     throw new Error(
-      `Startup app "${initialization.initialAppId}" has not been registered.`,
+      `Startup app "${initialization.app.initial}" has not been registered.`,
     );
   }
 

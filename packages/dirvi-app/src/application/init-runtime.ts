@@ -1,7 +1,7 @@
 import type { Initialization } from '../domain/initialization.js';
 import { ConfigSchema, defaultConfig, merge } from '../domain/config.js';
 import type { PublicInitApi } from '../domain/public-init-api.js';
-import { ExCommand } from '../domain/ex-command.js';
+import type { ExCommand } from '../domain/ex-command.js';
 import { AppPackageReference } from '../domain/app-pack-ref.js';
 
 /**
@@ -16,69 +16,70 @@ export type InitRuntime = {
 };
 
 /**
- * Creates a fresh startup configuration session.
+ * Creates an isolated startup configuration session.
  *
- * Each runtime owns its own mutable configuration while registration is open.
- * The mutable state is not exposed directly to the config script.
+ * The returned API is exposed to `init.mjs` while the script is evaluated.
+ * Registration calls validate their runtime inputs, and option updates validate
+ * the merged configuration. The session keeps its mutable state private.
+ *
+ * Call `finish()` after evaluating `init.mjs` to seal the session and obtain
+ * the validated initialization. A successful call can happen only once; later
+ * API calls and calls to `finish()` throw an error.
+ *
+ * @returns A fresh initialization runtime with a public registration API and
+ *          a function for sealing the session.
  */
 export function createInitRuntime(): InitRuntime {
   let config = defaultConfig;
   let initialAppId: string | undefined;
-  const apps = new Map<string, AppPackageReference>();
+  const registeredApps = new Map<string, AppPackageReference>();
   const exCommands = new Map<string, ExCommand>();
   let finished = false;
+  
+  const checkFinished = (): void => {
+    if (finished) {
+      throw new Error('Initialization has finished. Make all initializations while init.mjs is evaluated.');
+    }
+  };
+  
+  const checkNonEmptyString = (value: unknown, label: string): void => {
+    if (typeof value !== 'string') {
+      throw new Error(`${label} must be a string.`);
+    }
+
+    if (value.trim().length === 0) {
+      throw new Error(`${label} must not be empty.`);
+    }
+  };
 
   return {
     api: {
       options: {
         set: (patch) => {
-          // init.mjs is a startup script. It must not modify startup options
-          // after the host has finished evaluating and consuming it.
-          if (finished) {
-            throw new Error(
-              'Initialization has finished. Configure dirvi while init.mjs is being evaluated.',
-            );
-          }
-
+          checkFinished();
           // Validate the complete result, not merely the patch. This preserves
           // domain invariants even when a patch changes nested configuration.
           config = ConfigSchema.parse(merge(config, patch));
         },
       },
 
-      apps: {
+      app: {
         register: (id, appReference) => {
-          if (finished) {
-            throw new Error(
-              'Initialization has finished. Register apps while ' +
-                'init.mjs is being evaluated.',
-            );
-          }
+          checkFinished();
+          checkNonEmptyString(id, 'App ID');
 
-          if (id.trim().length === 0) {
-            throw new Error('App ID must not be empty.');
-          }
-
-          if (apps.has(id)) {
+          if (registeredApps.has(id)) {
             throw new Error(
               `An app with ID "${id}" was registered multiple times.`,
             );
           }
-
-          apps.set(id, appReference);
+          
+          registeredApps.set(id, AppPackageReference.parse(appReference));
         },
 
-        initialAppId: (appId) => {
-          if (finished) {
-            throw new Error(
-              'Initialization has finished. Select an initial app while ' +
-                'init.mjs is being evaluated.',
-            );
-          }
-
-          if (appId.trim().length === 0) {
-            throw new Error('App ID must not be empty.');
-          }
+        initial: (appId) => {
+          checkFinished();
+          checkNonEmptyString(appId, 'App ID');
 
           initialAppId = appId;
         },
@@ -86,17 +87,12 @@ export function createInitRuntime(): InitRuntime {
 
       ex: {
         register: (name, execute) => {
-          if (finished) {
-            throw new Error(
-              'Initialization has finished. Register Ex commands while ' +
-                'init.mjs is being evaluated.',
-            );
+          checkFinished();
+          checkNonEmptyString(name, 'Ex command name');
+          if (typeof execute !== 'function') {
+            throw new Error('Ex command handler must be a function.');
           }
-
-          if (name.trim().length === 0) {
-            throw new Error('Ex command name must not be empty.');
-          }
-
+          
           if (exCommands.has(name)) {
             throw new Error(
               `An Ex command named "${name}" was registered multiple times.`,
@@ -112,40 +108,37 @@ export function createInitRuntime(): InitRuntime {
     },
 
     finish: () => {
-      if (finished) {
-        throw new Error('Initialization has already finished.');
-      }
+      checkFinished();
 
-      if (apps.size === 0) {
+      if (registeredApps.size === 0) {
         throw new Error(
           'Initialization did not register any apps. Call ' +
             'dirvi.apps.register(id, appReference) at least once in init.mjs.',
         );
       }
+      
+      let initial: string;
 
       if (initialAppId !== undefined) {
-        if (!apps.has(initialAppId)) {
+        if (!registeredApps.has(initialAppId)) {
           throw new Error(
             `Startup app "${initialAppId}" has not been registered.`,
           );
         }
-        finished = true;
-        return {
-          config,
-          initialAppId: initialAppId,
-          registeredApps: new Map(apps),
-          exCommands: [...exCommands.values()],
-        };
+
+        initial = initialAppId;
+      } else {
+        initial = getLastRegisteredAppId(registeredApps);
       }
 
-      const lastRegisteredAppRef = getLastRegisteredAppId(apps);
-
       finished = true;
-
+      
       return {
         config,
-        initialAppId: lastRegisteredAppRef,
-        registeredApps: new Map(apps),
+        app: {
+          initial,
+          registered: new Map(registeredApps),
+        },
         exCommands: [...exCommands.values()],
       };
     },

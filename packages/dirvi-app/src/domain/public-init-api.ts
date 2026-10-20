@@ -1,25 +1,30 @@
 import { AppPackageReference } from './app-pack-ref.js';
 import { ConfigPatch } from './config.js';
-import { ShellApi } from './shell-api.js';
+import { DirviApi } from './ex-command.js';
 
 /**
- * The startup configuration API exposed to init.mjs as the global `dirvi`.
+ * The startup configuration API exposed to `init.mjs` as the global `dirvi`.
  *
- * This is intentionally a narrow facade. It is the public scripting boundary,
- * rather than an escape hatch into UI state or infrastructure implementations.
+ * These types describe the intended API for TypeScript consumers and provide
+ * editor guidance and compile-time checking. They do not validate values at
+ * runtime: `init.mjs` may be plain JavaScript and can pass values that do not
+ * match these types. The runtime must validate inputs at the scripting
+ * boundary before relying on them.
+ *
+ * This is intentionally a narrow facade; it is the public scripting boundary.
  */
 export type PublicInitApi = {
   readonly options: {
     set: (patch: ConfigPatch) => void;
   };
 
-  readonly apps: {
+  readonly app: {
     /**
      * Optionally selects the app initially opened by the shell.
      *
      * If omitted, the runtime falls back to the most recently registered app.
      */
-    initialAppId: (appId: string) => void;
+    initial: (appId: string) => void;
     /**
      * Registers an application made available by init.mjs.
      */
@@ -41,7 +46,7 @@ export type PublicInitApi = {
      */
     register: (
       name: string,
-      execute: (shell: ShellApi) => void | Promise<void>,
+      execute: (api: DirviApi) => void | Promise<void>,
     ) => void;
   };
 };

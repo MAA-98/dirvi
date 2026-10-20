@@ -16,7 +16,9 @@ export type AppInput = string | undefined;
  */
 export type Initialization = {
   readonly config: Readonly<Config>;
-  readonly initialAppId: string;
-  readonly registeredApps: ReadonlyMap<string, AppPackageReference>;
+  readonly app: {
+    initial: string;
+    registered: ReadonlyMap<string, AppPackageReference>;
+  };
   readonly exCommands: readonly ExCommand[];
 };
