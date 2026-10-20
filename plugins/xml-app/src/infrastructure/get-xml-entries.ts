@@ -16,15 +16,15 @@ import type {
   XmlTreeNode,
 } from '../domain/xml-tree.js';
 import { createConstructors } from '../domain/xml-tree.js';
-import type { Position } from '../domain/xml-tree.js';
+import type { XmlId } from '../domain/xml-tree.js';
 
 /**
- * Allocates unique XML tree IDs while one parsed document is converted.
+ * Allocates an XML tree ID containing the node's name and a unique UUID.
  *
  * IDs identify nodes and cursor paths. They do not represent sibling order:
  * source child order is preserved by the TreeNode child sequence.
  */
-export type CreatePosition = () => Position;
+export type CreateXmlId = (name: string) => XmlId;
 
 /**
  * Converts XML parser nodes into ordered Dirvi XML tree nodes.
@@ -34,19 +34,19 @@ export type CreatePosition = () => Position;
  * source-document order.
  */
 export function getXmlEntries(
-  treeNodeApi: TreeNodeApi<Position, XmlNodeValue>,
+  treeNodeApi: TreeNodeApi<XmlId, XmlNodeValue>,
   xmlNodes: readonly XmlNode[],
-  createPosition: CreatePosition,
+  createXmlId: CreateXmlId,
 ): XmlTreeNode[] {
   return xmlNodes.map((xmlNode) => {
-    const id = createPosition();
+    const id = createXmlId(getXmlNodeName(xmlNode));
     const constructors = createConstructors(treeNodeApi);
 
     if (xmlNode instanceof XmlElement) {
       const children = getXmlEntries(
         treeNodeApi,
         xmlNode.children,
-        createPosition,
+        createXmlId,
       );
 
       const node = constructors.element(
@@ -109,4 +109,37 @@ export function getXmlEntries(
 
     throw new Error(`Unsupported XML node type "${xmlNode.type}".`);
   });
+}
+
+/**
+ * Returns the XML name where one exists, otherwise a synthetic node label.
+ *
+ * Namespace prefixes are preserved, for example "svg:path".
+ */
+function getXmlNodeName(xmlNode: XmlNode): string {
+  if (
+    xmlNode instanceof XmlElement ||
+    xmlNode instanceof XmlProcessingInstruction ||
+    xmlNode instanceof XmlDocumentType
+  ) {
+    return xmlNode.name;
+  }
+  
+  if (xmlNode instanceof XmlText) {
+    return '#text';
+  }
+  
+  if (xmlNode instanceof XmlCdata) {
+    return '#cdata';
+  }
+  
+  if (xmlNode instanceof XmlComment) {
+    return '#comment';
+  }
+  
+  if (xmlNode instanceof XmlDeclaration) {
+    return '#declaration';
+  }
+  
+  throw new Error(`Unsupported XML node type "${xmlNode.type}".`);
 }

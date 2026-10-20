@@ -11,22 +11,48 @@ type Assert<True extends true> = True;
 // Position: Id extends SerializableKey
 // -----------------------------------------------------------------------------
 
-/**
- * A parser-assigned node identity within one XML document.
- *
- * Position is an identity, not XML document order. XML sibling order is held
- * by the source TreeNode child sequence.
- */
-export type Position = number;
+const uuidSchema = z.uuid();
 
-type PositionIsSerializableKey = Assert<
-  Position extends SerializableKey ? true : false
+/**
+ * A node key containing its UUID and display name.
+ *
+ * This is not XML document order. XML sibling order is held by the source
+ * TreeNode child sequence.
+ *
+ * Changing the name changes the complete tree key.
+ */
+export const xmlIdSchema = z.string().refine(
+  (value) => {
+    const separator = value.indexOf(':');
+
+    return (
+      separator > 0 &&
+      uuidSchema.safeParse(value.slice(0, separator)).success &&
+      value.slice(separator + 1).trim().length > 0
+    );
+  },
+  {
+    message: 'Expected an XML node ID in the form <uuid>:<node-name>.',
+  },
+);
+
+export type XmlId = z.infer<typeof xmlIdSchema>;
+
+type XmlIdIsSerializableKey = Assert<
+  XmlId extends SerializableKey ? true : false
 >;
 
-export const xmlIdSchema = z
-  .number()
-  .int()
-  .nonnegative() satisfies z.ZodType<Position>;
+export function createXmlId(name: string, uuid: string): XmlId {
+  return xmlIdSchema.parse(`${uuid}:${name}`);
+}
+
+export function xmlIdName(id: XmlId): string {
+  return id.slice(id.indexOf(':') + 1);
+}
+
+export function xmlIdUuid(id: XmlId): string {
+  return id.slice(0, id.indexOf(':'));
+}
 
 // -----------------------------------------------------------------------------
 // XmlNodeValue: node-attached value
@@ -100,7 +126,7 @@ export type XmlNodeValue =
   | XmlCdataValue
   | XmlProcessingInstructionValue;
 
-export type XmlTreeNode = TreeNode<Position, XmlNodeValue>;
+export type XmlTreeNode = TreeNode<XmlId, XmlNodeValue>;
 
 // Schema ----------------------------------------------------------------------
 
@@ -156,11 +182,11 @@ export const xmlValueSchema = z.discriminatedUnion('kind', [
 // -----------------------------------------------------------------------------
 
 export function createConstructors(
-  xmlTreeNodeApi: TreeNodeApi<Position, XmlNodeValue>,
+  xmlTreeNodeApi: TreeNodeApi<XmlId, XmlNodeValue>,
 ) {
   return {
     document(
-      id: Position,
+      id: XmlId,
       children: Iterable<XmlTreeNode>,
     ): XmlTreeNode | undefined {
       return xmlTreeNodeApi.createLoadedBranch(
@@ -171,7 +197,7 @@ export function createConstructors(
     },
 
     declaration(
-      id: Position,
+      id: XmlId,
       version: string,
       encoding: string | null,
       standalone: 'yes' | 'no' | null,
@@ -185,7 +211,7 @@ export function createConstructors(
     },
 
     doctype(
-      id: Position,
+      id: XmlId,
       name: string,
       publicId: string | null,
       systemId: string | null,
@@ -201,7 +227,7 @@ export function createConstructors(
     },
 
     element(
-      id: Position,
+      id: XmlId,
       name: string,
       attributes: readonly XmlAttribute[],
       children: Iterable<XmlTreeNode>,
@@ -217,21 +243,21 @@ export function createConstructors(
       );
     },
 
-    text(id: Position, text: string): XmlTreeNode {
+    text(id: XmlId, text: string): XmlTreeNode {
       return xmlTreeNodeApi.createLeaf(id, {
         kind: 'text',
         text,
       });
     },
 
-    comment(id: Position, text: string): XmlTreeNode {
+    comment(id: XmlId, text: string): XmlTreeNode {
       return xmlTreeNodeApi.createLeaf(id, {
         kind: 'comment',
         text,
       });
     },
 
-    cdata(id: Position, text: string): XmlTreeNode {
+    cdata(id: XmlId, text: string): XmlTreeNode {
       return xmlTreeNodeApi.createLeaf(id, {
         kind: 'cdata',
         text,
@@ -239,7 +265,7 @@ export function createConstructors(
     },
 
     processingInstruction(
-      id: Position,
+      id: XmlId,
       target: string,
       data: string,
     ): XmlTreeNode {

@@ -4,10 +4,10 @@ import { resolve } from 'node:path';
 import type { AppPlugin } from 'dirvi-apis/plugin';
 import type { TreeNodeApi } from 'dirvi-lib';
 
-import type { Position, XmlNodeValue } from './domain/xml-tree.js';
+import type { XmlId, XmlNodeValue } from './domain/xml-tree.js';
 import { xmlIdSchema, xmlValueSchema } from './domain/xml-tree.js';
 import { createXmlFileResyncSubscription } from './infrastructure/create-xml-file-resync.js';
-import { parseXmlDocument } from './infrastructure/parse-xml-document.js';
+import { createXmlId, parseXmlDocument } from './infrastructure/parse-xml-document.js';
 
 /**
  * Creates applicator of `AppDefinition<Position, XmlValue>`.
@@ -27,31 +27,28 @@ export const xmlAppPlugin: AppPlugin = {
     
     const appDefinition = {
       displayName: `XML: ${input}`,
-      rootId: 0,
+      rootId: createXmlId('document'),
       idSchema: xmlIdSchema,
       valueSchema: xmlValueSchema,
-      createRoot: async (
-        treeNodeApi: TreeNodeApi<Position, XmlNodeValue>
-      ) => {
+      createRoot: async (treeNodeApi: TreeNodeApi<XmlId, XmlNodeValue>) => {
         const source = await readFile(input, 'utf8');
         return parseXmlDocument(treeNodeApi, source);
       },
       loadChildren: async (
-        treeNodeApi: TreeNodeApi<Position, XmlNodeValue>,
-        path: readonly Position[]
+        treeNodeApi: TreeNodeApi<XmlId, XmlNodeValue>,
+        path: readonly XmlId[],
       ) => {
         // TODO Later: load from the file
         throw new Error(
           'Cannot load XML branches: parsed XML documents have no unloaded branches.',
         );
       },
-      presentNode: (id: Position, isBranch: boolean) => {
-        return {
-          content: String(id) + 'check',
-          highlight: isBranch ? 'enclosing' : 'atom'
-        }
-      },
-      
+      presentNode: (id: XmlId, isBranch: boolean) => ({
+        // Split at the first colon only, preserving names such as "svg:path".
+        content: id.slice(id.indexOf(':') + 1),
+        highlight: isBranch ? 'branch' : 'leaf',
+      }),
+
       subscribeToResync: createXmlFileResyncSubscription(xmlAbsolutePath),
       createNavNodeApiOptions: {},
     };
