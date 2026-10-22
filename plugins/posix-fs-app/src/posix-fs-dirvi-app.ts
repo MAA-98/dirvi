@@ -33,6 +33,7 @@ export const posixAppPlugin: AppPlugin = {
     const appDefinition = {
       displayName: `POSIX: ${input}`,
       rootId,
+      semanticOrder: false,
       idSchema: posixFilenameSchema,
       valueSchema: posixValueSchema,
       createRoot: async (treeNodeApi: TreeNodeApi<PosixId, PosixValue>) => {

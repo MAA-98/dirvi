@@ -28,6 +28,7 @@ export const xmlAppPlugin: AppPlugin = {
     const appDefinition = {
       displayName: `XML: ${input}`,
       rootId: createXmlId('document'),
+      semanticOrder: true,
       idSchema: xmlIdSchema,
       valueSchema: xmlValueSchema,
       createRoot: async (treeNodeApi: TreeNodeApi<XmlId, XmlNodeValue>) => {
