@@ -4,7 +4,7 @@ import type {
   TreeNodeApi,
 } from '../tree-node/index.js';
 import type { Folds } from '../fold-node/index.js';
-import type { Cursor, CursorApi } from '../cursor.js';
+import type { Cursor, CursorApi } from '../unordered-nav/cursor.js';
 import type { StateApi, State } from './state.types.js';
 
 type ReloadResult<Id extends SerializableKey, Value> = Readonly<{

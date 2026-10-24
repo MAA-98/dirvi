@@ -4,7 +4,7 @@ import type {
   TreeNodeApi,
 } from '../tree-node/index.js';
 import type { Folds, FoldsApi } from '../fold-node/index.js';
-import type { Cursor, CursorApi } from '../cursor.js';
+import type { Cursor, CursorApi } from './cursor.js';
 import type {
   NavBranch,
   NavEntry,

@@ -1,15 +1,8 @@
 import type { SerializableKey, TreeNode } from '../tree-node/index.js';
-import type { Cursor } from '../cursor.js';
+import type { Cursor } from './cursor.js';
 import type { Folds } from '../fold-node/index.js';
 
 export type NavNode<Id extends SerializableKey> = {
-  /**
-   * Synthetic UI entry representing folded children.
-   *
-   * It is absent when this directory has no folded children.
-   */
-  folded: NavFoldEntry<Id> | null;
-
   /**
    * Loaded entries that are not folded at this directory, corresponding to
    * navigable rows.
@@ -17,6 +10,13 @@ export type NavNode<Id extends SerializableKey> = {
    * Their order is the sibling iteration order supplied by the TreeNode API.
    */
   entries: NavEntry<Id>[];
+  
+  /**
+   * Synthetic UI entry representing folded children.
+   *
+   * It is absent when this directory has no folded children.
+   */
+  folded: NavFoldEntry<Id> | null;
 };
 
 export type NavFoldEntry<Id extends SerializableKey> = {
@@ -28,7 +28,9 @@ export type NavFoldEntry<Id extends SerializableKey> = {
   entries: NavEntry<Id>[];
 };
 
-export type NavEntry<Id extends SerializableKey> = NavLeaf<Id> | NavBranch<Id>;
+export type NavEntry<Id extends SerializableKey> =
+  | NavLeaf<Id>
+  | NavBranch<Id>;
 
 export type NavLeaf<Id extends SerializableKey> = {
   id: Id;
@@ -38,13 +40,9 @@ export type NavBranch<Id extends SerializableKey> = {
   id: Id;
 
   /**
-   * `null` means this branch's children have not been loaded or opened.
+   * `null` means this branch's children have not been loaded.
    */
   children: NavNode<Id> | null;
-};
-
-type LoadedNavBranch<Id extends SerializableKey> = NavBranch<Id> & {
-  children: NavNode<Id>;
 };
 
 /**
@@ -84,7 +82,7 @@ export type NavNodeApi<Id extends SerializableKey, Value> = {
    * express that fact statically. This method returns `undefined` if `root`
    * is a leaf.
    *
-   * A closed root branch produces a NavBranch whose `children` is `null`.
+   * An unloaded branch produces a NavBranch whose `children` is `null`.
    *
    * @param root - Source tree node from which to create navigation.
    * @param folds - Fold definitions corresponding to `root`. All active fold

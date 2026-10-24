@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Cursor } from '../cursor.js';
+import type { Cursor } from '../unordered-nav/cursor.js';
 import type { FoldsModel } from '../fold-node/index.js';
 import type { SerializableKey, TreeNodeModel } from '../tree-node/index.js';
 

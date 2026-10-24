@@ -57,12 +57,12 @@ export type CursorApi<Id> = {
   getPath(cursor: Cursor<Id>): Id[];
 
   /**
-   * Tests whether the cursor is within the subtree at `entryPath`.
+   * Tests whether the cursor is within the subtree at `path`.
    *
-   * The subtree includes the node at `entryPath` itself. Therefore, equal
-   * paths return `true`, and an empty `entryPath` contains every cursor.
+   * The subtree includes the node at `path` itself. Therefore, equal
+   * paths return `true`, and an empty `path` contains every cursor.
    */
-  cursorBelongsToSubtree(cursor: Cursor<Id>, entryPath: readonly Id[]): boolean;
+  cursorBelongsToSubtree(cursor: Cursor<Id>, path: readonly Id[]): boolean;
 };
 
 export function createCursorApi<Id>(): CursorApi<Id> {
