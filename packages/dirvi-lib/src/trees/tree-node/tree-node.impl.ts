@@ -76,11 +76,8 @@ function isLoadedBranchData<Id extends SerializableKey, Value>(
 }
 
 /**
- * Returns a reusable iterable over child nodes without exposing the internal
- * child-array representation.
- *
- * The implementation currently stores children in an array, but callers only
- * receive an `Iterable` and must not rely on iteration order.
+ * Returns a reusable iterable over child nodes in their stored order without
+ * exposing the internal child array.
  */
 function asChildrenIterable<Id extends SerializableKey, Value>(
   children: readonly TreeNode<Id, Value>[],
@@ -104,10 +101,10 @@ function copyUniqueChildren<Id extends SerializableKey, Value>(
   children: Iterable<TreeNode<Id, Value>>,
   getId: (node: TreeNode<Id, Value>) => Id,
 ): readonly TreeNode<Id, Value>[] | undefined {
-  const copiedChildren = [...children];
+  const copiedChildren: TreeNode<Id, Value>[] = [];
   const seenIds = new Set<Id>();
 
-  for (const child of copiedChildren) {
+  for (const child of children) {
     const id = getId(child);
 
     if (seenIds.has(id)) {
@@ -115,6 +112,7 @@ function copyUniqueChildren<Id extends SerializableKey, Value>(
     }
 
     seenIds.add(id);
+    copiedChildren.push(child);
   }
 
   return Object.freeze(copiedChildren);
@@ -168,7 +166,7 @@ export function createTreeNodeApi<
   Id extends SerializableKey,
   Value,
 >(): TreeNodeApi<Id, Value> {
-  function getOpenChildren(
+  function getLoadedChildrenData(
     node: TreeNode<Id, Value>,
   ): readonly TreeNode<Id, Value>[] | undefined {
     const data = toData(node);
@@ -245,13 +243,13 @@ export function createTreeNodeApi<
     },
 
     getLoadedChildren(node) {
-      const children = getOpenChildren(node);
+      const children = getLoadedChildrenData(node);
 
       return children === undefined ? undefined : asChildrenIterable(children);
     },
 
     findChildById(node, id) {
-      const children = getOpenChildren(node);
+      const children = getLoadedChildrenData(node);
 
       if (children === undefined) {
         return undefined;
@@ -390,7 +388,7 @@ export function createTreeNodeApi<
     modifier: (node: TreeNode<Id, Value>) => TreeNode<Id, Value> | undefined,
   ): TreeNode<Id, Value> | undefined {
     const childId = path[0];
-    const children = getOpenChildren(node);
+    const children = getLoadedChildrenData(node);
 
     if (childId === undefined || children === undefined) {
       return undefined;
@@ -425,15 +423,14 @@ export function createTreeNodeApi<
     }
 
     /*
-     * The current representation happens to use an array, so replacing one
-     * child is efficient internally. The public API makes no ordering promise:
-     * this is solely an implementation detail.
+     * Replace the child at its existing position, preserving sibling order even
+     * when the replacement has a different ID.
      */
     const updatedChildren = [...children];
     updatedChildren[childIndex] = updatedChild;
 
     /*
-     * `withChildren` revalidates sibling-ID uniqueness. This matters when
+     * `withLoadedChildren` revalidates sibling-ID uniqueness. This matters when
      * `modifier` replaces a node with another node having a different ID.
      */
     return api.withLoadedChildren(node, updatedChildren);

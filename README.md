@@ -5,10 +5,11 @@ to provide a similar extensible editing environment, but for trees rather than t
 
 ## Design Goals
 
-- Focused, composable, extendable.
-- Simple configurations and APIs.
+- Focused, composable, extendable. **Be really good at one thing: navigating trees.**
+- Simple configurations and APIs. **Fearless improvements until out of beta.**
 - Modal editing, adapted from Vim for tree structures.
-- Two examples of `dirvi` apps: for editing file system and XML.
+- Example of an unordered `dirvi` app: file system editor.
+- Example of an ordered `dirvi` app: XML editor.
 
 Answering the question:
 https://vi.stackexchange.com/questions/29417/how-can-i-edit-trees-in-vim
@@ -27,36 +28,6 @@ Launch `dirvi` from the directory you want to browse:
 
 ```sh
 dirvi
-```
-
-### Piping Stdout
-
-`dirvi` can be connected to another process through stdout.
-For example:
-
-```sh
-dirvi | jq --unbuffered -c '.' > dirvi-output.json
-```
-
-> Warning: When stdout is connected to a pipe, some terminals and color libraries disable color automatically.
-
-Set `FORCE_COLOR=3` to preserve the colored tree output:
-
-```sh
-FORCE_COLOR=3 dirvi | jq --unbuffered -c '.' > dirvi-output.json
-```
-
-For convenience, you can define an alias:
-
-```sh
-alias dirvi-pipe='FORCE_COLOR=3 dirvi'
-```
-
-with zshell:
-
-```
-echo "alias dirvi-pipe='FORCE_COLOR=3 dirvi'" >> ~/.zshrc
-source ~/.zshrc
 ```
 
 ## Controls
@@ -116,7 +87,6 @@ Currently supported commands:
 | Command                | Action                                                               |
 | ---------------------- | -------------------------------------------------------------------- |
 | `:q`                   | Quit `dirvi`                                                         |
-| `:evlp`                | Experimental: Send to stdout an array of paths of the visible leaves |
 | `:fold list`           | List fold trees in the current view                                  |
 | `:fold create <name>`  | Create a named fold tree                                             |
 | `:fold delete <name>`  | Delete a named fold tree                                             |
@@ -130,102 +100,45 @@ When a fold command omits `name`, it targets the fold tree named `default`.
 
 An unknown command returns to Normal mode without changing the directory tree.
 
-## Open/Close Directory
+## Loading/Unloading Parents
 
-Opening and closing affect the materialized tree in the TUI:
+Loading and unloading affect the materialized tree in the TUI:
 
-- Opening a directory creates its child entries in the buffer.
-- Closing a directory removes its descendants from the buffer.
-- Opening a directory does not automatically open its child directories.
+- Loading a parent creates its child entries in the buffer.
+- Unloading a parent removes its descendants from the buffer.
+- Loading a parent does not automatically load its child descendants.
 
-> WARNING: Folding is a separate mechanism. It controls the visibility of entries while preserving their directory open/closed state.
-
-### Opening directories
-
-When the cursor is on a closed directory, press `l` or Right to open it:
-
-```text
-src/
-```
-
-becomes:
-
-```text
-src/
-  main.ts
-  util.ts
-```
-
-The cursor remains on `src/`. Press Down to move into its children.
-
-When the cursor is on an already-open directory, press `l` or Right to close it.
-
-### Closing directories
-
-Closing a directory removes its descendants from the visible tree:
-
-```text
-project/
-  src/
-    components/
-      Button.tsx
-```
-
-becomes:
-
-```text
-project/
-```
-
-Closing a directory also closes all descendant directories. Reopening it reveals its immediate children, but does not automatically reopen the entire subtree.
-
-## Navigation
-
-Navigation is based on visible entries only:
-
-- Down moves to the next entry currently shown in the tree.
-- Up moves to the previous entry currently shown.
-- A closed directory has no visible children.
-- Files and symlinks have no children.
-- Right opens a closed directory but does not move into it.
-- Down is used to enter an opened directory.
-- Left always moves toward the parent.
-
-### Moving to parents
-
-`h` or Left always moves the cursor to the parent directory. It does not close the current directory.
-
-For example:
-
-```text
-project/
-  src/
-    main.ts
-```
-
-With the cursor on `main.ts`, pressing Left moves to `src/`. Pressing it again moves to `project/`.
-
-If the cursor is on an open or closed directory, Left still moves toward its parent without changing its open/close state.
+> WARNING: Folding is a separate mechanism. It controls the visibility of entries while 
+> they are loaded. Unloading does not automatically fold or unfold the descendants.
 
 ## Folding
 
-Folding is separate from opening and closing directories. Instead of a single
-fold state, each view has a collection of named **fold trees**. A fold tree
-contains entries that it can hide, and the fold tree can be independently enabled or
-disabled.
+Folding is separate from (un)loading directories. A active app has a collection of
+named **fold trees**. A fold tree contains entries that it should hide if active, 
+and each fold tree can be independently made active or inactive.
 
-An entry is hidden when it belongs to at least one enabled fold tree. Disabling
+An entry is hidden when it belongs to at least one active fold tree. Disabling
 one fold tree reveals its entries only when no other enabled fold tree also
 contains them.
 
-Folded children are represented inline on their parent branch, preserving
-vertical space. A branch with folded children shows a folded-entry count, for
-example:
+For unordered trees, folded children are represented on their parent branch, 
+conserving vertical space. A branch with folded children shows a folded-entry
+count, for example:
 
 ```text
 directory/ … 1
   file0
   file1
+```
+
+For ordered trees, folded children are displayed inline in a contiguous block, 
+closer to how Vim/Neovim displays folded lines.
+
+```text
+directory/
+  file0
+  … 2
+  file3
 ```
 
 ### Default fold tree
@@ -253,16 +166,13 @@ visibility; they do not alter its membership.
 
 ### Relationship to directory opening
 
-Folding an open directory does not close it. Its descendants retain their own
-open, closed, and fold membership state.
+Folding a parent with loaded children does not unload it. Its descendants 
+retain their own load and fold state.
 
 Fold state is independent of the materialized directory buffer:
 
-- Closing a directory removes its loaded descendants.
-- Closing a directory does not remove fold-tree membership.
-- Reopening a directory reloads its entries and reapplies enabled fold trees.
-- Adding or removing an entry from a fold tree does not change whether its
-  directory is open.
+- Unloading a node does not remove fold-tree membership.
+- Reloading a parent reloads its children and reapplies active fold trees.
 
 ## FAQ
 
@@ -270,8 +180,8 @@ Fold state is independent of the materialized directory buffer:
 
 I use the directory app for navigating project files, with folds now becoming
 the indispensable way for me to quickly view files relevant to a specific part
-of a project. I use the XML editor for creating LLM prompts. I have various scripts
-for custom commands.
+of a project. I use the XML editor, with various scripts for custom commands,
+for creating LLM prompts.
 
 - Why make it a separate app instead of a Vim/Neovim plugin?
 
@@ -282,8 +192,8 @@ In the making, I do believe the UX is better than a Vim/Neovim plugin.
 - Why write it using TypeScript/React/Ink?
 
 As for the answer above, it was the easiest way for me to get started. It had the 
-consequence of making plugins and script for commands very approachable and easy.
-If there's enough interest I would consider rewriting it in Rust for faster startups.
+consequence of making plugins and scripts for commands very approachable. It also
+allows possible future rewrites in Rust to be incremental.
 
 ## Licensing
 

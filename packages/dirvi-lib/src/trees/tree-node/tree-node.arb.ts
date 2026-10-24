@@ -1,6 +1,5 @@
 import * as fc from 'fast-check';
 
-import type { TreeNode } from './tree-node.types.js';
 import { TreeNodeModel } from './tree-node.model.js';
 
 /**
@@ -9,25 +8,29 @@ import { TreeNodeModel } from './tree-node.model.js';
  * Short strings keep generated counterexamples readable. Values just have to
  * be something easily checked for equality.
  */
-type TestNodeId = string;
-type TestValue = number;
-
-type TestNode = TreeNode<TestNodeId, TestValue>;
-type TestNodeModel = TreeNodeModel<TestNodeId, TestValue>;
+type Id = string;
+type Value = number;
 
 type ModelAndPath = {
-  path: TestNodeId[];
-  model: TestNodeModel;
+  model: TreeNodeModel<Id, Value>;
+  path: Id[];
 };
 
+/**
+ * A model and a pair of a model and its path for every reachable path in the
+ * model
+ *
+ * Includes this model at `[]` and every descendant reachable through loaded
+ * branches. Descendants behind unloaded branches are intentionally absent.
+ */
 type ModelWithReachableModels = {
-  model: TestNodeModel;
-  /**
-   * Includes this model at `[]` and every descendant reachable through loaded
-   * branches. Descendants behind unloaded branches are intentionally absent.
-   */
+  model: TreeNodeModel<Id, Value>;
   reachableModels: ModelAndPath[];
 };
+
+// =============================================================================
+// ID and Value Arbitraries
+// =============================================================================
 
 /**
  * Characters used for readable generated node IDs.
@@ -38,7 +41,7 @@ const smallLetterCharacters = Array.from('abcdefghijklmnopqrstuvwxyz');
  * Generates valid string IDs for test nodes. Note that the API just does
  * comparisons on the IDs so we can safely restrict to any subset.
  */
-export const testIdArb = fc.string({
+export const idArb = fc.string({
   unit: fc.constantFrom(...smallLetterCharacters),
   minLength: 1,
   maxLength: 8,
@@ -47,16 +50,22 @@ export const testIdArb = fc.string({
 /**
  * Generates serializable application values for test nodes.
  */
-export const testValueArb = fc.integer({
+export const valueArb = fc.integer({
   min: -10_000,
   max: 10_000,
 });
 
-const generatedLeafModel = (
-  id: TestNodeId,
-  value: TestValue,
+// =============================================================================
+// Generating Models with Reachable Models
+// =============================================================================
+
+// Helpers
+
+const createLeafModel = (
+  id: Id,
+  value: Value,
 ): ModelWithReachableModels => {
-  const model: TestNodeModel = {
+  const model: TreeNodeModel<Id, Value> = {
     id,
     value,
   };
@@ -67,11 +76,11 @@ const generatedLeafModel = (
   };
 };
 
-function generatedUnloadedBranchModel(
-  id: TestNodeId,
-  value: TestValue,
+function createUnloadedBranchModel(
+  id: Id,
+  value: Value,
 ): ModelWithReachableModels {
-  const model: TestNodeModel = {
+  const model: TreeNodeModel<Id, Value> = {
     id,
     value,
     children: null,
@@ -87,15 +96,15 @@ function generatedUnloadedBranchModel(
  * Creates the metadata for a loaded branch and all descendants reachable
  * through its loaded child collection.
  *
- * Child-array order is not semantically meaningful to the tree API. The
- * generator happens to use an array because `TreeNodeModel` is serializable.
+ * Child-array order is preserved, both in the model and in the enumeration
+ * of reachable descendants.
  */
-function generatedLoadedBranchModel(
-  id: TestNodeId,
-  value: TestValue,
+function createLoadedBranchModel(
+  id: Id,
+  value: Value,
   children: readonly ModelWithReachableModels[],
 ): ModelWithReachableModels {
-  const model: TestNodeModel = {
+  const model: TreeNodeModel<Id, Value> = {
     id,
     value,
     children: children.map(({ model: child }) => child),
@@ -115,28 +124,30 @@ function generatedLoadedBranchModel(
   };
 }
 
+// Arbs
+
 /**
  * Generates a leaf model.
  */
-export const generatedLeafModelArb: fc.Arbitrary<ModelWithReachableModels> = fc
-  .tuple(testIdArb, testValueArb)
-  .map(([id, value]) => generatedLeafModel(id, value));
+export const leafModelWRMArb: fc.Arbitrary<ModelWithReachableModels> = fc
+  .tuple(idArb, valueArb)
+  .map(([id, value]) => createLeafModel(id, value));
 
 /**
  * Generates an unloaded-branch model.
  */
-export const generatedUnloadedBranchModelArb: fc.Arbitrary<ModelWithReachableModels> =
+export const unloadedBranchModelWRMArb: fc.Arbitrary<ModelWithReachableModels> =
   fc
-    .tuple(testIdArb, testValueArb)
-    .map(([id, value]) => generatedUnloadedBranchModel(id, value));
+    .tuple(idArb, valueArb)
+    .map(([id, value]) => createUnloadedBranchModel(id, value));
 
 /**
- * Generates either kind of terminal model.
+ * Generates either kind of 'terminal' model.
  *
  * Both leaves and unloaded branches terminate path traversal.
  */
-const generatedTerminalModelArb: fc.Arbitrary<ModelWithReachableModels> =
-  fc.oneof(generatedLeafModelArb, generatedUnloadedBranchModelArb);
+const terminalModelWRMArb: fc.Arbitrary<ModelWithReachableModels> =
+  fc.oneof(leafModelWRMArb, unloadedBranchModelWRMArb);
 
 /**
  * Generates a leaf, an unloaded branch, or a loaded branch.
@@ -144,21 +155,21 @@ const generatedTerminalModelArb: fc.Arbitrary<ModelWithReachableModels> =
  * Loaded branches have unique child IDs. Root IDs are made unique separately
  * when generating a forest.
  *
- * The weighted choice gives recursive open branches a geometric dropoff.
+ * The weighted choice gives recursive loaded branches a geometric drop off.
  */
-export const generatedNodeArb: fc.Arbitrary<ModelWithReachableModels> =
+export const modelWithReachableModelsArb: fc.Arbitrary<ModelWithReachableModels> =
   fc.letrec((tie) => {
     const generatedChildModelArb = tie(
       'node',
     ) as fc.Arbitrary<ModelWithReachableModels>;
 
     /**
-     * Generates the loaded children of an open branch.
+     * Generates the loaded children of a loaded branch.
      *
      * Sibling IDs must be unique so that child lookup is unambiguous. The
      * maximum length also limits the branching factor of recursive examples.
      */
-    const generatedOpenChildrenArb = fc.uniqueArray(generatedChildModelArb, {
+    const generatedLoadedChildrenArb = fc.uniqueArray(generatedChildModelArb, {
       minLength: 0,
       maxLength: 4,
       size: 'medium',
@@ -166,12 +177,12 @@ export const generatedNodeArb: fc.Arbitrary<ModelWithReachableModels> =
     });
 
     /**
-     * Generates an open branch and its reachable descendants.
+     * Generates a loaded branch and its reachable descendants.
      */
     const generatedLoadedBranchModelArb = fc
-      .tuple(testIdArb, testValueArb, generatedOpenChildrenArb)
+      .tuple(idArb, valueArb, generatedLoadedChildrenArb)
       .map(([id, value, children]) =>
-        generatedLoadedBranchModel(id, value, children),
+        createLoadedBranchModel(id, value, children),
       );
 
     return {
@@ -184,62 +195,57 @@ export const generatedNodeArb: fc.Arbitrary<ModelWithReachableModels> =
           // 5046 works for getAtPath tests, but too heavy for modifyAtPath tests
           choice >= 5050
             ? generatedLoadedBranchModelArb
-            : generatedTerminalModelArb,
+            : terminalModelWRMArb,
         ),
     };
   }).node;
 
+// =============================================================================
+// Generating Models
+// =============================================================================
+// Prepares inputs for particular tests.
+
+// Generating Replacement Child State
+
 /**
- * Generates an array of generated nodes with unique sibling IDs.
+ * Generates an array of generated models with unique sibling IDs.
  *
- * The result is suitable for use as the loaded children of an open branch.
+ * The result is suitable for use as the loaded children of a loaded branch.
  */
-export const generatedNodesArrayArb = fc.uniqueArray(generatedNodeArb, {
+export const siblingModelsWRMArb = fc.uniqueArray(modelWithReachableModelsArb, {
   minLength: 0,
   size: 'small',
   selector: (generated) => generated.model.id,
 });
 
-/**
- * An array of root-level nodes and all paths that can be resolved through
- * those nodes.
- *
- * Paths through closed branches stop at the closed branch because its
- * descendants are not loaded.
- */
-export const nodeAndPathsArb = generatedNodeArb.map(
-  ({ model: root, reachableModels }) => ({
-    root,
-    pathEntries: reachableModels,
-  }),
-);
+// Generating Models with a Selected Reachable Target
 
 /**
- * Generates root-level nodes and a path to one of their reachable nodes.
+ * Generates root-level models and a path to one of their reachable models.
  *
  * Every generated path is valid for `getAtPath`; unreachable paths are not
  * included.
  */
-export const nodeAndPathAndExpectedArb = nodeAndPathsArb
-  .filter(({ pathEntries }) => pathEntries.length > 0)
-  .chain(({ root, pathEntries }) =>
-    fc.constantFrom(...pathEntries).map(({ path, model }) => ({
+export const modelAndReachablePathArb = modelWithReachableModelsArb.chain(
+  ({ model: root, reachableModels }) =>
+    fc.constantFrom(...reachableModels).map(({ path, model }) => ({
       root,
       path,
       expected: model,
     })),
-  );
+);
 
 /**
- * Generates root-level nodes and a path to one of their branch nodes.
+ * Generates a root model and a path to one of its reachable branch models.
  *
- * Both open and closed branches are included. A path to a closed branch is
- * valid, but a path through a closed branch cannot reach any descendants.
+ * Both loaded and unloaded branches are included.
  */
-export const nodesArrayAndBranchPathArb = nodeAndPathsArb
-  .map(({ root, pathEntries }) => ({
+export const modelAndBranchPathArb = modelWithReachableModelsArb
+  .map(({ model: root, reachableModels }) => ({
     root,
-    branchPathEntries: pathEntries.filter(({ model }) => 'children' in model),
+    branchPathEntries: reachableModels.filter(
+      ({ model }) => 'children' in model,
+    ),
   }))
   .filter(({ branchPathEntries }) => branchPathEntries.length > 0)
   .chain(({ root, branchPathEntries }) =>
@@ -251,19 +257,19 @@ export const nodesArrayAndBranchPathArb = nodeAndPathsArb
   );
 
 /**
- * Generates a new array of loaded child nodes.
+ * Generates a new array of loaded child models.
  *
- * The generated nodes have unique IDs, making the result suitable for use as
- * the children of an open branch.
+ * The generated models have unique IDs, making the result suitable for use as
+ * the children of a loaded branch.
  */
-export const newBranchesArb = generatedNodesArrayArb.map((generatedNodes) =>
+export const childrenModelsArb = siblingModelsWRMArb.map((generatedNodes) =>
   generatedNodes.map(({ model }) => model),
 );
 
 /**
- * Generates either a new array of loaded child nodes or `null`.
+ * Generates either a new array of loaded child models or `null`.
  *
- * An array represents an open branch, including an open branch with no
- * children. `null` represents a closed branch.
+ * An array represents a loaded branch, including a loaded branch with no
+ * children. `null` represents an unloaded branch.
  */
-export const newBranchesOrNullArb = fc.oneof(newBranchesArb, fc.constant(null));
+export const childrenStateModelArb = fc.oneof(childrenModelsArb, fc.constant(null));

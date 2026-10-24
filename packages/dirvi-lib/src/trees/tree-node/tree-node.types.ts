@@ -115,14 +115,14 @@ export type TreeNodeKind = 'leaf' | 'unloaded-branch' | 'loaded-branch';
  *
  * @remarks
  *
- * `TreeNodeMatch` provides exhaustive pattern matching over the semantic state
- * of a node. It is the preferred operation when behavior differs between
- * leaves, unloaded branches, and loaded branches:
+ * `MatchByKind` provides exhaustive pattern matching over the node's semantic
+ * state. It is the preferred operation when behavior differs between leaves,
+ * unloaded branches, and loaded branches:
  *
  * - `leaf` receives no `children`, because a leaf cannot have children;
  * - `unloadedBranch` receives no `children`, because its children are not loaded;
- * - `loadedBranch` receives an iterable of loaded direct child nodes. No
- *   iteration-order guarantee is made.
+ * - `loadedBranch` receives an iterable of loaded direct child nodes in
+ *    child order.
  *
  * Every handler must return the same `Result` type.
  *
@@ -185,12 +185,16 @@ export type MatchByKind<
  *
  * A `TreeNodeApi` is specialized to one ID type and one application-value
  * type. It owns the structural tree rules: leaf/branch state, child loading
- * state, sibling-ID uniqueness, and immutable ancestor reconstruction.
+ * state, child order, sibling-ID uniqueness, and immutable ancestor
+ * reconstruction.
  *
- * Child collections are unordered. Although operations expose children as
- * `Iterable` values, callers must not rely on iteration order being stable,
- * meaningful, or related to insertion order. The implementation may use an
- * array, map, set, indexed store, or another representation internally.
+ * Loaded children form an ordered sequence. Construction and child-replacement
+ * operations preserve the supplied iterable's iteration order. Inspection
+ * operations expose children in that order, and model conversion preserves it.
+ * Replacing a descendant retains its position among siblings.
+ *
+ * The backing representation is private; these ordering guarantees do not
+ * require callers to depend on a particular storage structure.
  *
  * Tree nodes are plain immutable values at runtime. Update operations do not
  * mutate supplied nodes or their loaded child collections. When an update
@@ -208,9 +212,9 @@ export type MatchByKind<
  *
  * the root is addressed by `[]`, and `child` is addressed by `['child']`.
  *
- * Paths cannot pass through leaves or closed branches. A closed branch may be
- * selected as the final node in a path, but its unloaded descendants cannot be
- * addressed.
+ * Paths cannot pass through leaves or unloaded branches. An unloaded branch may
+ * be selected as the final node in a path, but its unloaded descendants cannot
+ * be addressed.
  *
  * @typeParam Id - The type used to identify nodes among siblings.
  * @typeParam Value - The application-specific value stored at each node.
@@ -238,7 +242,13 @@ export type TreeNodeApi<Id extends SerializableKey, Value> = Readonly<{
   createUnloadedBranch(id: Id, value: Value): TreeNode<Id, Value>;
 
   /**
-   * Creates a branch with a loaded child collection.
+   * Creates a branch with an ordered, loaded child collection.
+   *
+   * Children are copied in the supplied iterable's iteration order. Subsequent
+   * changes to the supplied collection do not affect the created branch.
+   *
+   * Direct siblings must have unique IDs. Returns `undefined` if the supplied
+   * children contain duplicate sibling IDs.
    *
    * An empty child collection creates a loaded branch with no current children;
    * it does not create a leaf.
@@ -271,7 +281,7 @@ export type TreeNodeApi<Id extends SerializableKey, Value> = Readonly<{
   /**
    * Returns the semantic kind of a node.
    *
-   * Prefer {@link TreeNodeApi.match} when behavior differs by node kind and all
+   * Prefer {@link TreeNodeApi.matchByKind} when behavior differs by node kind and all
    * three variants must be handled.
    *
    * @param node - The node to inspect.
@@ -283,7 +293,7 @@ export type TreeNodeApi<Id extends SerializableKey, Value> = Readonly<{
    * Inspects a node by handling its semantic state exhaustively.
    *
    * @param node - The node to inspect.
-   * @param handlers - Case handlers for leaf, closed-branch, and open-branch
+   * @param handlers - Case handlers for leaf, and unloaded/loaded branch
    * states.
    * @returns The value returned by the selected case handler.
    */
@@ -293,18 +303,18 @@ export type TreeNodeApi<Id extends SerializableKey, Value> = Readonly<{
   ): Result;
 
   /**
-   * Returns the loaded direct children of a loaded branch.
+   * Returns the loaded direct children of a loaded branch in child order.
    *
-   * The returned child nodes are existing values, not defensive clones. No
-   * iteration-order guarantee is made.
+   * The returned iterable is reusable. Its child nodes are existing values,
+   * not defensive clones.
    *
    * Returns `undefined` when `node` is a leaf or an unloaded branch. Use
-   * {@link TreeNodeApi.kind} or {@link TreeNodeApi.match} when those cases need
+   * {@link TreeNodeApi.kind} or {@link TreeNodeApi.matchByKind} when those cases need
    * to be distinguished.
    *
    * @param node - The node whose direct children to inspect.
    * @returns An iterable of loaded direct children, or `undefined` when children
-   * are unavailable because `node` is a leaf or closed branch.
+   * are unavailable because `node` is a leaf or unloaded branch.
    */
   getLoadedChildren(
     node: TreeNode<Id, Value>,
@@ -318,8 +328,8 @@ export type TreeNodeApi<Id extends SerializableKey, Value> = Readonly<{
    *
    * @param node - The node whose loaded direct children to search.
    * @param id - The sibling ID to find.
-   * @returns The existing matching child, or `undefined` when `node` is not an
-   * open branch or does not have a direct child with `id`.
+   * @returns The existing matching child, or `undefined` when `node` is not a
+   * loaded branch or does not have a direct child with `id`.
    */
   findChildById(
     node: TreeNode<Id, Value>,
@@ -330,8 +340,8 @@ export type TreeNodeApi<Id extends SerializableKey, Value> = Readonly<{
    * Returns an equivalent node with replacement application data.
    *
    * The returned node retains the original node's ID, semantic child state,
-   * and when applicable, existing child-node references. The supplied node is
-   * not mutated.
+   * and when applicable, child order and existing child-node references.
+   * The supplied node is not mutated.
    *
    * @param node - The node to update.
    * @param value - Replacement application-owned data.
@@ -357,18 +367,19 @@ export type TreeNodeApi<Id extends SerializableKey, Value> = Readonly<{
    * Any currently loaded child collection is discarded.
    *
    * @param node - The node to convert.
-   * @returns A closed branch with the source node's ID and value.
+   * @returns An unloaded branch with the source node's ID and value.
    */
   toUnloadedBranch(node: TreeNode<Id, Value>): TreeNode<Id, Value>;
 
   /**
-   * Converts a node to an open branch with replacement loaded children.
+   * Converts a node to a loaded branch with replacement children.
    *
    * The returned node retains the source node's ID and application value.
    * Any previous child state is replaced.
    *
-   * Child collections are unordered. Callers must not rely on the iteration order
-   * of the supplied children being retained or exposed by the resulting node.
+   * Children are copied in the supplied iterable's iteration order. That order
+   * becomes the replacement child order. Subsequent changes to the supplied
+   * collection do not affect the returned node.
    *
    * Direct siblings must have unique IDs. If two or more supplied children have
    * the same ID, no replacement node is created and this method returns
@@ -379,8 +390,8 @@ export type TreeNodeApi<Id extends SerializableKey, Value> = Readonly<{
    * @param node - The node to convert or update.
    * @param children - Replacement loaded direct children. Their IDs must be
    * unique among direct siblings.
-   * @returns An open branch with the source node's ID and value, or `undefined`
-   * when `children` contains duplicate sibling IDs.
+   * @returns A loaded branch with the source node's ID and value, or
+   * `undefined` when `children` contains duplicate sibling IDs.
    */
   withLoadedChildren(
     node: TreeNode<Id, Value>,
@@ -410,7 +421,7 @@ export type TreeNodeApi<Id extends SerializableKey, Value> = Readonly<{
    * selected node is supplied as the existing node value and is not cloned.
    *
    * An empty path selects `root`. Resolution fails when a path refers to a
-   * missing child or attempts to pass through a leaf or a closed branch.
+   * missing child or attempts to pass through a leaf or an unloaded branch.
    *
    * @param root - The root node relative to which `path` is interpreted.
    * @param path - A sibling-ID path relative to `root`.
@@ -427,27 +438,28 @@ export type TreeNodeApi<Id extends SerializableKey, Value> = Readonly<{
   /**
    * Immutably replaces the node addressed by a path relative to `root`.
    *
-   * The modifier runs only after the complete path has been resolved. Returning
-   * `undefined` aborts the operation and causes this method to return
+   * The update callback runs only after the complete path has been resolved.
+   * Returning `undefined` aborts the operation and causes this method to return
    * `undefined`.
    *
    * An empty path selects `root`. When a descendant is replaced, replacement
    * nodes are created only along the path from `root` to that descendant. Nodes
    * outside that path retain their original object identity.
    *
-   * The modifier may return a node with a different ID. If it does, the
+   * The `update` may return a node with a different ID. If it does, the
    * replacement is subsequently addressed by its new ID rather than the old
-   * path segment.
+   * path segment. The replacement retains the original node's position among
+   * siblings, and all other siblings retain their relative order.
    *
    * The update also fails when the replacement node's ID duplicates the ID of
-   * one of its new siblings. This can occur when `modifier` returns a node with
+   * one of its new siblings. This can occur when `update` returns a node with
    * a different ID.
    *
    * @param root - The root node relative to which `path` is interpreted.
    * @param path - A sibling-ID path relative to `root`.
    * @param update - Produces a replacement node, or `undefined` to abort.
    * @returns A replacement root, or `undefined` when the path cannot be
-   *  resolved, `modifier` aborts, or the replacement would create duplicate
+   *  resolved, `update` aborts, or the replacement would create duplicate
    *  sibling IDs.
    */
   updateAtPath(
@@ -459,13 +471,21 @@ export type TreeNodeApi<Id extends SerializableKey, Value> = Readonly<{
   /**
    * Converts an opaque runtime node into a public structural model.
    *
-   * The returned model is a fresh recursive snapshot. It is suitable for
-   * serialization when `Id` and `Value` are serializable.
+   * Creates fresh model objects and child arrays recursively, preserving child
+   * order at every loaded branch. Application-owned values are retained by
+   * reference, not cloned; callers must treat those values as immutable.
+   *
+   * The model is suitable for JSON serialization when `Id` and `Value` are
+   * JSON-serializable.
    */
   toModel(node: TreeNode<Id, Value>): TreeNodeModel<Id, Value>;
 
   /**
    * Constructs an opaque tree from a public structural model.
+   *
+   * Creates new runtime nodes and child collections, preserving child order
+   * at every loaded branch. Application-owned values are retained by reference,
+   * not cloned.
    *
    * Returns `undefined` if any loaded child collection contains duplicate
    * sibling IDs.

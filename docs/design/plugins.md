@@ -119,9 +119,10 @@ while dirvi performs it through the shared runtime.
 
 **Requirement:**
 
-1. Preserve structural information that is meaningful to the application.
-2. Share navigation and folding behavior where possible without forcing
-   different structures into the same presentation.
+1. Preserve structural information that is meaningful to the application, 
+   in particular whether order is semantically meaningful.
+2. Share behavior where possible without forcing different structures into
+   the same presentation.
 
 **Implications:**
 
@@ -141,8 +142,9 @@ so I do want to see the folds inline and be able to interact with a particular
 contiguous selection of folds, as in Vim and any other text editors. 
 
 Therefore collecting all hidden children into a summary on their parent is 
-appropriate for unordered siblings. For ordered siblings, it loses the 
-positions of hidden entries within the sequence.
+appropriate for unordered siblings. For ordered siblings, that would lose 
+the position of hidden entries within the sequence and hence should be displayed 
+inline.
 
 **_Decision:_**
 
@@ -156,6 +158,16 @@ Dirvi uses this declaration to provide the corresponding fold presentation
 and navigation behavior. This is structural information supplied by the
 app, rather than merely a cosmetic preference in user configuration.
 
-The shared UI remains responsible for standard folding and navigation.
-Apps should not need to reimplement these controls solely because their
-trees have different ordering semantics.
+The first layer that interprets these inputs differently is the
+navigation projection. Unordered navigation aggregates hidden children
+on their parent, while ordered navigation introduces inline fold
+markers as navigable positions.
+
+Therefore two versions of navigation nodes and its API are made, one with 
+inline folds as navigable entries and one without.
+
+The app declares ordering semantics, not a concrete navigation
+implementation. Dirvi remains responsible for constructing and
+integrating the selected navigation system.
+
+This selection does not change the node-tree or fold-state APIs.
