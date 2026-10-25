@@ -108,7 +108,7 @@ responsible for the order of entries. The order of `children` and
 ## Structural Tree Operations
 
 `FoldNode` has a `children` property and can therefore be used with
-`TreeNodeApi`.
+`TreeMethods`.
 
 `FoldNodeApi` provides structural operations over the `children` collection,
 including:

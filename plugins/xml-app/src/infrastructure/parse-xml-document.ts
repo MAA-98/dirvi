@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { parseXml } from '@rgrove/parse-xml';
 
-import type { TreeNodeApi } from 'dirvi-lib';
+import type { TreeMethods } from 'dirvi-lib';
 
 import type { XmlId, XmlNodeValue, XmlTreeNode } from '../domain/xml-tree.js';
 import { createConstructors, xmlIdSchema } from '../domain/xml-tree.js';
@@ -17,7 +17,7 @@ export const createXmlId = (name: string): XmlId =>
  * Source child order is preserved by the TreeNode child sequence.
  */
 export function parseXmlDocument(
-  treeNodeApi: TreeNodeApi<XmlId, XmlNodeValue>,
+  treeNodeApi: TreeMethods<XmlId, XmlNodeValue>,
   source: string,
 ): XmlTreeNode {
   const document = parseXml(source);

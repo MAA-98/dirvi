@@ -1,36 +1,26 @@
-import type { SerializableKey, TreeNode } from '../tree-node/index.js';
-import type { Cursor } from './cursor.js';
+import type { SerializableKey, TreeNode } from '../tree/index.js';
+import type { Cursor } from '../cursor.js';
 import type { Folds } from '../fold-node/index.js';
 
 export type NavNode<Id extends SerializableKey> = {
   /**
-   * Loaded entries that are not folded at this directory, corresponding to
-   * navigable rows.
+   * Projected direct children, including fold summaries.
    *
-   * Their order is the sibling iteration order supplied by the TreeNode API.
-   */
-  entries: NavEntry<Id>[];
-  
-  /**
-   * Synthetic UI entry representing folded children.
+   * Ordered navigation preserves source sibling order and inserts inline folds.
+   * Unordered navigation uses presentation order and places its optional fold
+   * summary first.
    *
-   * It is absent when this directory has no folded children.
-   */
-  folded: NavFoldEntry<Id> | null;
-};
-
-export type NavFoldEntry<Id extends SerializableKey> = {
-  /**
-   * Folded entries that are present in the loaded TreeNode.
-   *
-   * This is information for rendering the folded row.
+   * Not every entry is therefore necessarily a cursor destination: in ordered
+   * trees, the fold summary is not navigable and the NavMethod implementation
+   * should skip it.
    */
   entries: NavEntry<Id>[];
 };
 
 export type NavEntry<Id extends SerializableKey> =
   | NavLeaf<Id>
-  | NavBranch<Id>;
+  | NavBranch<Id>
+  | NavFold<Id>;
 
 export type NavLeaf<Id extends SerializableKey> = {
   id: Id;
@@ -45,13 +35,23 @@ export type NavBranch<Id extends SerializableKey> = {
   children: NavNode<Id> | null;
 };
 
+export type NavFold<Id extends SerializableKey> = {
+  /**
+   * Folded entries that are present in the loaded TreeNode.
+   *
+   * For unordered trees, there is at most one folded entry, and it is the first
+   * in nav node's `entries`.
+   */
+  folded: NavEntry<Id>[];
+};
+
 /**
  * Operations for creating and navigating a UI-oriented projection of a tree.
  *
  * @typeParam Id - The type identifying a node among its direct siblings.
  * @typeParam Value - Application-owned data stored in each source TreeNode.
  */
-export type NavNodeApi<Id extends SerializableKey, Value> = {
+export type NavMethods<Id extends SerializableKey, Value> = {
   /**
    * Tests whether a navigation entry represents a branch.
    *
@@ -60,6 +60,11 @@ export type NavNodeApi<Id extends SerializableKey, Value> = {
    * opened.
    */
   entryIsBranch(entry: NavEntry<Id>): entry is NavBranch<Id>;
+
+  /**
+   * Tests whether a navigation entry represents a branch.
+   */
+  entryIsFold(entry: NavEntry<Id>): entry is NavFold<Id>;
 
   /**
    * Creates a navigation projection rooted at `root`.
@@ -138,6 +143,12 @@ export type NavNodeApi<Id extends SerializableKey, Value> = {
     cursor: Cursor<Id>,
   ): Cursor<Id> | undefined;
 
+  /**
+   * Enumerates navigable positions in depth-first display order.
+   *
+   * Unordered navigation skips fold summaries.
+   * Ordered navigation includes inline folds as fold cursors.
+   */
   cursors(navigation: NavNode<Id>, parentPath?: readonly Id[]): Cursor<Id>[];
 
   visibleLeavesPaths(

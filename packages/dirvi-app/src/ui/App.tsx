@@ -61,13 +61,15 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   stateRef.current = state;
 
   const navEntry: NavBranch<Id> = useMemo(() => {
-    const navigation = appApi.navNodeApi.from(state.root, state.folds);
+    const root = appApi.stateApi.getRoot(state);
+    const folds = appApi.stateApi.getFolds(state);
+    const navigation = appApi.navMethods.from(root, folds);
 
     if (navigation === undefined) {
       throw new Error('Tree-surfer state root must be a loaded branch.');
     }
     return navigation;
-  }, [appApi.navNodeApi, state.root, state.folds]);
+  }, [appApi.navMethods, appApi.stateApi, state]);
 
   const [inputState, setInputState] = useState<InputModeState>({
     inputMode: 'normal',
@@ -97,8 +99,9 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   const view = useView(
     navEntry,
     state,
-    appApi.navNodeApi,
-    appApi.cursorApi,
+    appApi.stateApi,
+    appApi.navMethods,
+    appApi.stateApi.cursorApi,
     rowCount,
     appApi.presentNode
   );
@@ -262,7 +265,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           }
 
           const visibleLeavesPaths =
-            appApi.navNodeApi.visibleLeavesPaths(navigation);
+            appApi.navMethods.visibleLeavesPaths(navigation);
           stdout?.(
             JSON.stringify({
               type: 'displayed-leaves-paths',
@@ -329,13 +332,13 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
 
         // TODO: Add descriptions with `...` truncation.
         case 'listFolds': {
-          const folds = state.folds;
+          const folds = appApi.stateApi.getFolds(state);
 
-          const foldTrees = [...appApi.foldsApi.indexes(folds)].map(
+          const foldTrees = [...appApi.stateApi.foldsApi.indexes(folds)].map(
             (index) => ({
               index,
-              info: appApi.foldsApi.getInfoAtIndex(folds, index),
-              active: appApi.foldsApi.isActiveAtIndex(folds, index),
+              info: appApi.stateApi.foldsApi.getInfoAtIndex(folds, index),
+              active: appApi.stateApi.foldsApi.isActiveAtIndex(folds, index),
             }),
           );
 

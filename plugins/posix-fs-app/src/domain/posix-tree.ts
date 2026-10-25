@@ -1,10 +1,6 @@
 import { z } from 'zod';
 
-import type {
-  SerializableKey,
-  TreeNode,
-  TreeNodeApi,
-} from 'dirvi-lib';
+import type { SerializableKey, TreeNode, TreeMethods } from 'dirvi-lib';
 
 import { UnixPath, UnixPathSchema } from './unix-path.js';
 
@@ -98,7 +94,7 @@ export const posixValueSchema: z.ZodType<PosixValue> = z.discriminatedUnion(
 // -----------------------------------------------------------------------------
 
 export function createConstructors(
-  posixTreeNodeApi: TreeNodeApi<PosixId, PosixValue>
+  posixTreeNodeApi: TreeMethods<PosixId, PosixValue>,
 ) {
   return {
     file(name: PosixId): PosixTreeNode {
@@ -106,20 +102,20 @@ export function createConstructors(
         kind: 'file',
       });
     },
-    
+
     symlink(name: PosixId, target: UnixPath): PosixTreeNode {
       return posixTreeNodeApi.createLeaf(name, {
         kind: 'symlink',
         target,
       });
     },
-    
+
     unloadedDirectory(name: PosixId): PosixTreeNode {
       return posixTreeNodeApi.createUnloadedBranch(name, {
         kind: 'directory',
       });
     },
-    
+
     loadedDirectory(
       name: PosixId,
       children: Iterable<PosixTreeNode>,
@@ -130,7 +126,7 @@ export function createConstructors(
         children,
       );
     },
-    
+
     /**
      * Runtime domain invariant check.
      *
@@ -140,17 +136,17 @@ export function createConstructors(
     isValid(node: PosixTreeNode): boolean {
       const entry = posixTreeNodeApi.value(node);
       const treeKind = posixTreeNodeApi.kind(node);
-      
+
       switch (entry.kind) {
         case 'file':
         case 'symlink':
           return treeKind === 'leaf';
-        
+
         case 'directory':
           return treeKind === 'unloaded-branch' || treeKind === 'loaded-branch';
       }
     },
-    
+
     /**
      * Adds or replaces the loaded children of a directory.
      *
@@ -165,10 +161,10 @@ export function createConstructors(
       if (posixTreeNodeApi.value(node).kind !== 'directory') {
         return undefined;
       }
-      
+
       return posixTreeNodeApi.withLoadedChildren(node, children);
     },
-    
+
     /**
      * Converts a directory to an unloaded directory.
      *
@@ -178,10 +174,10 @@ export function createConstructors(
       if (posixTreeNodeApi.value(node).kind !== 'directory') {
         return undefined;
       }
-      
+
       return posixTreeNodeApi.toUnloadedBranch(node);
     },
-  } as const
+  } as const;
 };
 
 // -----------------------------------------------------------------------------

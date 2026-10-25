@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { createTreeNodeApi } from '../../tree-node/tree-node.impl.js';
+import { createTreeMethods } from '../../tree/index.js';
 import type { FoldNode, FoldNodeValue } from './fold-node.types.js';
 import { createFoldNodeService } from './fold-node.impl.js';
 
-const foldNodeApi = createTreeNodeApi<number, FoldNodeValue<number>>();
+const foldNodeApi = createTreeMethods<number, FoldNodeValue<number>>();
 
 const service = createFoldNodeService(foldNodeApi);
 

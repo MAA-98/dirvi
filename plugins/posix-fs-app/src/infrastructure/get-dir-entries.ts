@@ -1,7 +1,7 @@
 import { readdir, readlink } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import type { TreeNode, TreeNodeApi } from 'dirvi-lib';
+import type { TreeNode, TreeMethods } from 'dirvi-lib';
 
 import {
   type PosixValue,
@@ -13,7 +13,7 @@ import {
 import { type UnixAbsolutePath, UnixPathSchema } from '../domain/unix-path.js';
 
 export async function getDirEntries(
-  treeNodeApi: TreeNodeApi<PosixId, PosixValue>,
+  treeNodeApi: TreeMethods<PosixId, PosixValue>,
   address: UnixAbsolutePath,
 ): Promise<TreeNode<PosixId, PosixValue>[]> {
   const directoryEntries = await readdir(address, {

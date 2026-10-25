@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { SerializableKey } from '../tree-node/index.js';
+import type { SerializableKey } from '../tree/index.js';
 
 /**
  * Returns whether every value appears at most once.

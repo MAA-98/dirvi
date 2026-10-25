@@ -65,7 +65,7 @@ Loading state is independent of UI expansion or folding.
 In `TreeNodeModel`, these states are represented by an absent `children`
 property, `children: null`, and a child array, respectively.
 
-The opaque runtime representation is private. Use `TreeNodeApi` to inspect
+The opaque runtime representation is private. Use `TreeMethods` to inspect
 a runtime node's kind and children.
 
 ### TypeScript configuration
@@ -83,7 +83,7 @@ an explicitly supplied `children: undefined`:
 
 ## Root
 
-Any tree node can serve as the root supplied to `TreeNodeApi`.
+Any tree node can serve as the root supplied to `TreeMethods`.
 The tree layer does not require it to be a branch or to have loaded children.
 
 Paths are relative to the supplied root: `[]` addresses the root itself.

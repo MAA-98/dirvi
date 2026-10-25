@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { SerializableKey, TreeNode, TreeNodeApi } from 'dirvi-lib';
+import type { SerializableKey, TreeNode, TreeMethods } from 'dirvi-lib';
 
 // -----------------------------------------------------------------------------
 // Utility
@@ -182,7 +182,7 @@ export const xmlValueSchema = z.discriminatedUnion('kind', [
 // -----------------------------------------------------------------------------
 
 export function createConstructors(
-  xmlTreeNodeApi: TreeNodeApi<XmlId, XmlNodeValue>,
+  xmlTreeNodeApi: TreeMethods<XmlId, XmlNodeValue>,
 ) {
   return {
     document(

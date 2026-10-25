@@ -4,7 +4,8 @@ import { join } from 'node:path';
 import { Command } from 'commander';
 import { render } from 'ink';
 
-import { type InitialAppOptions, Shell } from '@mak-98/dirvi-app';
+import type { InitialAppOptions } from '@mak-98/dirvi-app';
+import { Shell } from '@mak-98/dirvi-app';
 
 import { createInitialization } from './infrastructure/create-initialization.js';
 import { createPackageLoader } from './infrastructure/create-package-loader.js';
@@ -67,8 +68,8 @@ program
   .description('View and manage trees.')
   .version('0.11.0-beta.6')
   .helpOption('--help')
-  .option('-i, --input <value>', 'Input for the app at startup.')
   .option('-a, --app <id>', 'App name to open at startup.')
+  .option('-i, --input <value>', 'Input for the app at startup.')
   .action(async () => {
     // Input is a generic startup value supplied by the host; its interpretation
     // belongs to the selected app.

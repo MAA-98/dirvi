@@ -1,5 +1,6 @@
 import type { Key } from 'ink';
-import { UserInput } from 'dirvi-lib';
+
+import type { UserInput } from 'dirvi-lib';
 
 // Interprets raw user input to typed UserInput.
 export function inkInputToUserInput(

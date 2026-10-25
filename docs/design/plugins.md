@@ -103,7 +103,7 @@ definition. The plugin does not supply implementations of dirvi's
 internal tree structures or runtime.
 
 Functions that create or load nodes receive the application's specialized
-`TreeNodeApi`. They must return opaque tree nodes created or decoded
+`TreeMethods`. They must return opaque tree nodes created or decoded
 through that API, rather than constructing an alternative node
 representation.
 

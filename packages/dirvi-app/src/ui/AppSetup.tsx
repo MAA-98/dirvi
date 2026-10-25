@@ -47,15 +47,17 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
         if (!mounted) {
           return;
         }
-
-        setInitialState({
-          root,
-          folds: appApi.foldsApi.create(appApi.rootId, {
-            name: 'default',
-            description: null,
-          }),
-          cursor: [],
-        });
+        
+        setInitialState(
+          appApi.stateApi.create(
+            root,
+            appApi.stateApi.foldsApi.create(appApi.rootId, {
+              name: 'default',
+              description: null,
+            }),
+            { path: [] }
+          )
+        )
       })
       .catch((cause: unknown) => {
         const nextError =
@@ -76,8 +78,8 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
   // --- Pure function deps ---
 
   const reducer = useMemo(
-    () => createReducer(appApi.treeNodeApi, appApi.foldsApi),
-    [appApi.treeNodeApi, appApi.foldsApi],
+    () => createReducer(appApi.stateApi, appApi.navMethods),
+    [appApi.stateApi, appApi.navMethods],
   );
 
   const intentToEffect = useMemo(
@@ -85,20 +87,17 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
       createIntentToEffect(
         new Set(initialization.exCommands.keys()),
         appApi.stateApi,
-        appApi.cursorApi,
-        appApi.treeNodeApi,
       ),
-    [appApi.stateApi, appApi.cursorApi, appApi.treeNodeApi, initialization.exCommands],
+    [appApi.stateApi, initialization.exCommands],
   );
 
   const effectToAction = useMemo(
     () =>
       createEffectToAction(
-        appApi.foldsApi,
-        appApi.cursorApi,
-        appApi.navNodeApi,
+        appApi.stateApi,
+        appApi.navMethods,
       ),
-    [appApi.navNodeApi, appApi.cursorApi, appApi.foldsApi],
+    [appApi.navMethods, appApi.stateApi],
   );
 
   // --- JSX ---

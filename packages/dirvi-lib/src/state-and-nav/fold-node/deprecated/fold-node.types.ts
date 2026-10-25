@@ -1,8 +1,8 @@
 import type {
   TreeNode,
-  TreeNodeApi,
+  TreeMethods,
   SerializableKey,
-} from '../../tree-node/index.js';
+} from '../../tree/index.js';
 
 /**
  * Application-specific state stored in each fold-tree node.
@@ -28,7 +28,7 @@ export type FoldNode<Id extends SerializableKey> = TreeNode<
 /**
  * Generic structural operations specialized to a fold-state tree.
  */
-export type FoldNodeApi<Id extends SerializableKey> = TreeNodeApi<
+export type FoldNodeApi<Id extends SerializableKey> = TreeMethods<
   Id,
   FoldNodeValue<Id>
 >;

@@ -1,10 +1,8 @@
 import type {
-  CursorApi,
   SerializableKey,
   State,
   StateApi,
-  TreeNodeApi,
-} from '../../trees/index.js';
+} from '../../state-and-nav/index.js';
 import type { Effect, EffectAction, Intent } from '../domain/index.js';
 
 import { parseExCommand } from './parse-ex-command.js';
@@ -27,8 +25,6 @@ export type IntentToEffect<Id extends SerializableKey, Value> = (
 export function createIntentToEffect<Id extends SerializableKey, Value>(
   registeredCommands: ReadonlySet<string>,
   stateApi: StateApi<Id, Value>,
-  cursorApi: CursorApi<Id>,
-  treeNodeApi: TreeNodeApi<Id, Value>,
 ): IntentToEffect<Id, Value> {
   return (intent, state) => {
     switch (intent.intentType) {
@@ -39,12 +35,10 @@ export function createIntentToEffect<Id extends SerializableKey, Value>(
         return normalInteractRightToEffect(
           state,
           stateApi,
-          cursorApi,
-          treeNodeApi,
         );
 
       case 'normalLeft':
-        return normalInteractLeftToEffect(state, cursorApi);
+        return normalInteractLeftToEffect(state, stateApi);
 
       case 'normalDown':
         return dispatchAction<Id, Value>({
@@ -168,8 +162,6 @@ function normalBufferToEffectResult<Id extends SerializableKey, Value>(
 function normalInteractRightToEffect<Id extends SerializableKey, Value>(
   state: State<Id, Value>,
   stateApi: StateApi<Id, Value>,
-  cursorApi: CursorApi<Id>,
-  treeNodeApi: TreeNodeApi<Id, Value>,
 ): Effect<Id, Value> | undefined {
   const currentEntry = stateApi.getNodeAtCursor(state);
 
@@ -177,13 +169,13 @@ function normalInteractRightToEffect<Id extends SerializableKey, Value>(
     return undefined;
   }
 
-  const path = cursorApi.getPath(state.cursor);
+  const path = stateApi.cursorPath(state);
 
   if (path === undefined) {
     return undefined;
   }
 
-  switch (treeNodeApi.kind(currentEntry)) {
+  switch (stateApi.treeNodeApi.kind(currentEntry)) {
     case 'unloaded-branch':
       return {
         effectType: 'loadBranchEntries',
@@ -210,11 +202,9 @@ function normalInteractRightToEffect<Id extends SerializableKey, Value>(
  */
 function normalInteractLeftToEffect<Id extends SerializableKey, Value>(
   state: State<Id, Value>,
-  cursorApi: CursorApi<Id>,
+  stateApi: StateApi<Id, Value>,
 ): Effect<Id, Value> | undefined {
-  const path = cursorApi.getPath(state.cursor);
-
-  if (path === undefined || path.length === 0) {
+  if (stateApi.isCursorRoot(state)) {
     return undefined;
   }
 

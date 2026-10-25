@@ -1,8 +1,7 @@
 import type {
-  CreateNavNodeApiOptions,
   SerializableKey,
   TreeNode,
-  TreeNodeApi,
+  TreeMethods,
   PresentNode,
 } from 'dirvi-lib';
 import type { ZodType } from 'zod';
@@ -49,7 +48,7 @@ export type AppDefinition<Id extends SerializableKey, Value> = Readonly<{
    * when an initial State is created.
    */
   readonly createRoot: (
-    treeNodeApi: TreeNodeApi<Id, Value>,
+    treeNodeApi: TreeMethods<Id, Value>,
   ) => Promise<TreeNode<Id, Value>>;
 
   /**
@@ -59,7 +58,7 @@ export type AppDefinition<Id extends SerializableKey, Value> = Readonly<{
    * application's TreeNodeApi specialization.
    */
   readonly loadChildren: (
-    treeNodeApi: TreeNodeApi<Id, Value>,
+    treeNodeApi: TreeMethods<Id, Value>,
     path: readonly Id[],
   ) => Promise<readonly TreeNode<Id, Value>[]>;
 
@@ -76,6 +75,4 @@ export type AppDefinition<Id extends SerializableKey, Value> = Readonly<{
    * branches.
    */
   readonly subscribeToResync: (listener: () => void) => () => void;
-
-  readonly createNavNodeApiOptions: CreateNavNodeApiOptions<Id, Value>;
 }>;

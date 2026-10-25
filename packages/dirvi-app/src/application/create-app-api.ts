@@ -1,13 +1,10 @@
-import type {
+import {
   SerializableKey,
-  AppApi
+  AppApi, createFoldMethods, createCursorMethods, createUnorderedNavMethods, createOrderedNavMethods,
 } from 'dirvi-lib';
 import {
-  createCursorApi,
-  createFoldsApi,
-  createNavNodeApi,
+  createTreeMethods,
   createStateApi,
-  createTreeNodeApi
 } from 'dirvi-lib';
 import type { AppApiApplicator, AppApiConsumer, AppDefinition, AppDefinitionApplicator } from 'dirvi-apis';
 
@@ -33,29 +30,30 @@ export function createAppApi<
   Id extends SerializableKey,
   Value
 >(appDefinition: AppDefinition<Id, Value>): AppApi<Id, Value> {
-  const treeNodeApi = createTreeNodeApi<Id, Value>();
-  const foldTreeNodeApi = createTreeNodeApi<Id, readonly Id[]>();
-  const foldsApi = createFoldsApi(foldTreeNodeApi);
-  const cursorApi = createCursorApi<Id>()
-  const stateApi = createStateApi<Id, Value>(treeNodeApi, cursorApi);
-  const navNodeApi = createNavNodeApi<Id, Value>(
-    treeNodeApi,
-    foldsApi,
-    cursorApi,
-    appDefinition.createNavNodeApiOptions
-  )
+  const treeMethods = createTreeMethods<Id, Value>();
+  const foldTreeMethods = createTreeMethods<Id, readonly Id[]>();
+  const foldMethods = createFoldMethods(foldTreeMethods);
+  const cursorMethods = createCursorMethods<Id>()
+  const stateApi = createStateApi<Id, Value>(treeMethods, foldMethods, cursorMethods);
+  const navMethods = appDefinition.semanticOrder ?
+    createOrderedNavMethods<Id, Value>(
+      treeMethods,
+      foldMethods,
+      cursorMethods) :
+    createUnorderedNavMethods(
+      treeMethods,
+      foldMethods,
+      cursorMethods
+    );
   
   return {
     name: appDefinition.displayName,
     rootId: appDefinition.rootId,
-    createRoot: () => appDefinition.createRoot(treeNodeApi),
-    loadBranches: (path) => appDefinition.loadChildren(treeNodeApi, path),
+    createRoot: () => appDefinition.createRoot(treeMethods),
+    loadBranches: (path) => appDefinition.loadChildren(treeMethods, path),
     presentNode: (id, isBranch) => appDefinition.presentNode(id, isBranch),
     subscribeToResync: appDefinition.subscribeToResync,
-    treeNodeApi,
-    foldsApi,
-    cursorApi,
     stateApi,
-    navNodeApi,
+    navMethods,
   };
 }

@@ -1,11 +1,49 @@
 import type {
   SerializableKey,
   TreeNode,
-  TreeNodeApi,
-} from '../tree-node/index.js';
-import type { Folds } from '../fold-node/index.js';
-import type { Cursor, CursorApi } from '../unordered-nav/cursor.js';
+  TreeMethods,
+} from '../tree/index.js';
+import type { Folds, FoldMethods } from '../fold-node/index.js';
+import type { Cursor, CursorMethods } from '../cursor.js';
 import type { StateApi, State } from './state.types.js';
+
+// =============================================================================
+// Opaque Type Implementation
+// =============================================================================
+
+/**
+ * Opaque state type implementation.
+ *
+ * Invariant: `root` is an open branch.
+ *
+ * Note: This cannot be represented through a structural intersection because
+ * TreeNode is opaque; enforce it when constructing State, using
+ * TreeNodeApi.state or TreeNodeApi.getChildren.
+ *
+ * @typeParam Id - Tree-node sibling ID type.
+ * @typeParam Value - Application-owned value stored in every tree node.
+ */
+type StateData<Id extends SerializableKey, Value> = Readonly<{
+  root: TreeNode<Id, Value>;
+  folds: Folds<Id>;
+  cursor: Cursor<Id>;
+}>;
+
+function getStateData<Id extends SerializableKey, Value>(
+  state: State<Id, Value>,
+): StateData<Id, Value> {
+  return state as unknown as StateData<Id, Value>;
+}
+
+function createState<Id extends SerializableKey, Value>(
+  data: StateData<Id, Value>,
+): State<Id, Value> {
+  return data as unknown as State<Id, Value>;
+}
+
+// =============================================================================
+// StateApi Init
+// =============================================================================
 
 type ReloadResult<Id extends SerializableKey, Value> = Readonly<{
   root: TreeNode<Id, Value>;
@@ -15,8 +53,9 @@ type ReloadResult<Id extends SerializableKey, Value> = Readonly<{
  * Creates operations for navigating and resynchronizing tree-surfer state.
  */
 export function createStateApi<Id extends SerializableKey, Value>(
-  treeNodeApi: TreeNodeApi<Id, Value>,
-  cursorApi: CursorApi<Id>,
+  treeNodeApi: TreeMethods<Id, Value>,
+  foldsApi: FoldMethods<Id>,
+  cursorApi: CursorMethods<Id>,
 ): StateApi<Id, Value> {
   /**
    * Reloads one node's direct children and recursively reloads descendant
@@ -177,32 +216,95 @@ export function createStateApi<Id extends SerializableKey, Value>(
     _newRoot: TreeNode<Id, Value>,
     _newFolds: Folds<Id>,
   ): Cursor<Id> {
-    return [];
+    return { path: [] };
   }
 
   return {
-    getNodeAtCursor(state) {
-      const path = cursorApi.getPath(state.cursor);
+    treeNodeApi,
+    foldsApi,
+    cursorApi,
 
-      return treeNodeApi.selectAtPath(state.root, path, (node) => node);
+    create(root, folds, cursor) {
+      return treeNodeApi.kind(root) === 'loaded-branch'
+        ? createState({ root, folds, cursor })
+        : undefined;
+    },
+
+    getRoot(state) {
+      return getStateData(state).root;
+    },
+
+    getFolds(state) {
+      return getStateData(state).folds;
+    },
+
+    getCursor(state) {
+      return getStateData(state).cursor;
+    },
+
+    update(state, changes) {
+      const data = getStateData(state);
+      const root = changes.root ?? data.root;
+      const folds = changes.folds ?? data.folds;
+      const cursor = changes.cursor ?? data.cursor;
+
+      if (treeNodeApi.kind(root) !== 'loaded-branch') {
+        return undefined;
+      }
+
+      if (
+        root === data.root &&
+        folds === data.folds &&
+        cursor === data.cursor
+      ) {
+        return state;
+      }
+
+      return createState({ root, folds, cursor });
+    },
+
+    getNodeAtCursor(state) {
+      const { root, cursor } = getStateData(state);
+
+      /*
+       * A fold cursor identifies a display item, not a single source node.
+       * Its representative path must not silently select its first child.
+       */
+      if (!cursorApi.isNodeCursor(cursor)) {
+        return undefined;
+      }
+
+      return treeNodeApi.selectAtPath(root, cursor.path, (node) => node);
+    },
+
+    isCursorRoot(state) {
+      const { cursor } = getStateData(state);
+
+      return cursorApi.isNodeCursor(cursor) && cursor.path.length === 0;
+    },
+
+    cursorPath(state) {
+      const { cursor } = getStateData(state);
+
+      return cursorApi.getPath(cursor);
     },
 
     async resync(oldState, loadBranches) {
-      const reloaded = await reload(oldState.root, [], loadBranches);
+      const oldStateData = getStateData(oldState);
+      const reloaded = await reload(oldStateData.root, [], loadBranches);
 
       /*
        * Fold-state resynchronization is not implemented yet. Keep the existing
        * fold definitions while the source tree is reloaded.
        */
-      const folds = oldState.folds;
+      const folds = oldStateData.folds;
       const root = reloaded.root;
 
-      return {
-        ...oldState,
+      return createState({
         root,
         folds,
         cursor: resyncCursor(oldState, root, folds),
-      };
+      });
     },
   };
 }

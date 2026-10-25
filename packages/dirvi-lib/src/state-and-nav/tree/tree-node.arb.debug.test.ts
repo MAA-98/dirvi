@@ -1,7 +1,7 @@
 import { describe, it } from 'vitest';
 import * as fc from 'fast-check';
 
-import { modelWithReachableModelsArb, generatedNodesArrayArb } from './tree-node.arb.js';
+import { modelWithReachableModelsArb, siblingModelsWRMArb } from './tree-node.arb.js';
 
 /**
  * Manual inspection of generated models and their reachable paths.
@@ -54,7 +54,7 @@ describe.skip('inspect tree-node arbitraries', () => {
   });
 
   it('prints generated sibling collections', () => {
-    const samples = fc.sample(generatedNodesArrayArb, {
+    const samples = fc.sample(siblingModelsWRMArb, {
       numRuns: 5,
       seed,
     });

@@ -1,13 +1,13 @@
 import type {
-  CursorApi,
   FoldIndex,
+  FoldMethods,
   Folds,
-  FoldsApi,
   NavBranch,
-  NavNodeApi,
+  NavMethods,
   SerializableKey,
   State,
-} from '../../trees/index.js';
+  StateApi,
+} from '../../state-and-nav/index.js';
 import type {
   EffectAction,
   FoldTreeReference,
@@ -44,7 +44,7 @@ type FoldTreeResolution =
     }>;
 
 function resolveFoldTreeIndex<Id extends SerializableKey>(
-  foldsApi: FoldsApi<Id>,
+  foldsApi: FoldMethods<Id>,
   folds: Folds<Id>,
   foldTree: FoldTreeReference,
 ): FoldTreeResolution {
@@ -60,7 +60,7 @@ function resolveFoldTreeIndex<Id extends SerializableKey>(
             message: `Fold tree at index ${foldTree.index} not found.`,
           };
 
-    case 'name':
+    case 'name': {
       const index = foldsApi.getIndexByName(folds, foldTree.name);
 
       return index === undefined
@@ -72,6 +72,7 @@ function resolveFoldTreeIndex<Id extends SerializableKey>(
             kind: 'found',
             index,
           };
+    }
 
     default: {
       const _exhaustive: never = foldTree;
@@ -84,10 +85,11 @@ function resolveFoldTreeIndex<Id extends SerializableKey>(
 }
 
 export function createEffectToAction<Id extends SerializableKey, Value>(
-  foldsApi: FoldsApi<Id>,
-  cursorApi: CursorApi<Id>,
-  navNodeApi: NavNodeApi<Id, Value>,
+  stateApi: StateApi<Id, Value>,
+  navNodeApi: NavMethods<Id, Value>,
 ): EffectToAction<Id, Value> {
+  const { cursorApi, foldsApi } = stateApi;
+
   function action(
     reducerAction: ReducerAction<Id, Value>,
   ): EffectToActionResult<Id, Value> {
@@ -115,26 +117,29 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
     navigation: NavBranch<Id>,
     state: State<Id, Value>,
   ): EffectToActionResult<Id, Value> {
+    const cursor = stateApi.getCursor(state);
+    const folds = stateApi.getFolds(state);
+
     switch (effectAction.effectActionType) {
       case 'nextEntry': {
-        const cursor = navNodeApi.nextCursor(navigation, state.cursor);
+        const nextCursor = navNodeApi.nextCursor(navigation, cursor);
 
-        return cursor === undefined
+        return nextCursor === undefined
           ? ignored()
           : action({
               kind: 'changeCursor',
-              cursor,
+              cursor: nextCursor,
             });
       }
 
       case 'prevEntry': {
-        const cursor = navNodeApi.previousCursor(navigation, state.cursor);
+        const previousCursor = navNodeApi.previousCursor(navigation, cursor);
 
-        return cursor === undefined
+        return previousCursor === undefined
           ? ignored()
           : action({
               kind: 'changeCursor',
-              cursor,
+              cursor: previousCursor,
             });
       }
 
@@ -146,28 +151,27 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
         });
 
       case 'navigateToParent': {
-        // TODO: navigation should be Loaded Branch instead to encode invariant
-        // in state
+        // TODO: Encode the loaded-root invariant in the navigation type.
         const navNode = navigation.children;
 
         if (navNode === null) {
           return ignored();
         }
 
-        const cursor = navNodeApi.parentCursor(navNode, state.cursor);
+        const parentCursor = navNodeApi.parentCursor(navNode, cursor);
 
-        return cursor === undefined
+        return parentCursor === undefined
           ? ignored()
           : action({
               kind: 'changeCursor',
-              cursor,
+              cursor: parentCursor,
             });
       }
 
       case 'addToFoldTree': {
         const foldTree = resolveFoldTreeIndex(
           foldsApi,
-          state.folds,
+          folds,
           effectAction.foldTree,
         );
 
@@ -175,20 +179,28 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
           return rejected(foldTree.message);
         }
 
-        if (state.cursor.length === 0) {
+        // The root cannot be folded, and a fold marker is already folded.
+        if (!cursorApi.isNodeCursor(cursor) || cursor.path.length === 0) {
           return ignored();
         }
 
-        const cursor = navNodeApi.cursorAfterFold(navigation, state.cursor);
+        /*
+         * Adding an entry to an inactive fold tree does not change the
+         * navigation projection, so keep the cursor where it is.
+         */
+        const nextCursor =
+          foldsApi.isActiveAtIndex(folds, foldTree.index) === true
+            ? navNodeApi.cursorAfterFold(navigation, cursor)
+            : cursor;
 
-        if (cursor === undefined) {
+        if (nextCursor === undefined) {
           return ignored();
         }
 
         return action({
           kind: 'addToFoldTree',
-          path: state.cursor,
-          cursor,
+          path: cursor.path,
+          cursor: nextCursor,
           foldTreeIndex: foldTree.index,
         });
       }
@@ -196,7 +208,7 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
       case 'removeFromFoldTree': {
         const foldTree = resolveFoldTreeIndex(
           foldsApi,
-          state.folds,
+          folds,
           effectAction.foldTree,
         );
 
@@ -204,24 +216,89 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
           return rejected(foldTree.message);
         }
 
-        const currentPath = cursorApi.getPath(state.cursor);
         const navNode = navigation.children;
 
-        // TODO: Should not be possible with update type
+        // TODO: Encode the loaded-root invariant in the navigation type.
         if (navNode === null) {
           return ignored();
         }
 
-        const node = navNodeApi.getNodeAtPath(navNode, currentPath);
+        if (cursorApi.isFoldCursor(cursor)) {
+          const parent = navNodeApi.getNodeAtPath(navNode, cursor.parentPath);
 
-        if (node === undefined || node.folded?.entries.length === 0) {
+          const foldEntry = parent?.entries.find((entry) => {
+            if (!navNodeApi.entryIsFold(entry)) {
+              return false;
+            }
+
+            const firstEntry = entry.folded[0];
+
+            return (
+              firstEntry !== undefined &&
+              !navNodeApi.entryIsFold(firstEntry) &&
+              firstEntry.id === cursor.firstId
+            );
+          });
+
+          if (foldEntry === undefined || !navNodeApi.entryIsFold(foldEntry)) {
+            return ignored();
+          }
+
+          /*
+           * Remove only this fold tree's contribution to the selected
+           * ordered run. Other fold trees may still hide some entries.
+           */
+          const entryIds: Id[] = [];
+
+          for (const entry of foldEntry.folded) {
+            if (
+              !navNodeApi.entryIsFold(entry) &&
+              foldsApi.isEntryHiddenInFoldAtPath(
+                folds,
+                foldTree.index,
+                cursor.parentPath,
+                entry.id,
+              )
+            ) {
+              entryIds.push(entry.id);
+            }
+          }
+
+          const firstId = entryIds[0];
+
+          if (firstId === undefined) {
+            return ignored();
+          }
+
+          return action({
+            kind: 'removeFromFoldTree',
+            path: cursor.parentPath,
+            entryIds,
+            cursor: {
+              path: [...cursor.parentPath, firstId],
+            },
+            foldTreeIndex: foldTree.index,
+          });
+        }
+
+        /*
+         * In unordered navigation, folds are summarized on the selected
+         * parent. Reveal all direct entries hidden by this fold tree there.
+         */
+        const node = navNodeApi.getNodeAtPath(navNode, cursor.path);
+        const hasFoldedEntries = node?.entries.some(
+          (entry) => navNodeApi.entryIsFold(entry) && entry.folded.length > 0,
+        );
+
+        if (!hasFoldedEntries) {
           return ignored();
         }
 
         return action({
           kind: 'removeFromFoldTree',
-          path: currentPath,
-          cursor: state.cursor,
+          path: cursor.path,
+          entryIds: null,
+          cursor,
           foldTreeIndex: foldTree.index,
         });
       }
@@ -229,7 +306,7 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
       case 'fold': {
         const foldTree = resolveFoldTreeIndex(
           foldsApi,
-          state.folds,
+          folds,
           effectAction.foldTree,
         );
 
@@ -244,7 +321,7 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
       case 'unfold': {
         const foldTree = resolveFoldTreeIndex(
           foldsApi,
-          state.folds,
+          folds,
           effectAction.foldTree,
         );
 
@@ -259,7 +336,7 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
       case 'toggleFold': {
         const foldTree = resolveFoldTreeIndex(
           foldsApi,
-          state.folds,
+          folds,
           effectAction.foldTree,
         );
 
@@ -272,10 +349,7 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
       }
 
       case 'createFoldTree': {
-        const existingIndex = foldsApi.getIndexByName(
-          state.folds,
-          effectAction.name,
-        );
+        const existingIndex = foldsApi.getIndexByName(folds, effectAction.name);
 
         return existingIndex === undefined
           ? action({
@@ -286,10 +360,7 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
       }
 
       case 'deleteFoldTree': {
-        const foldTreeIndex = foldsApi.getIndexByName(
-          state.folds,
-          effectAction.name,
-        );
+        const foldTreeIndex = foldsApi.getIndexByName(folds, effectAction.name);
 
         if (foldTreeIndex === undefined) {
           return rejected(`Fold tree named "${effectAction.name}" not found.`);
@@ -307,12 +378,13 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
         });
       }
 
-      default:
+      default: {
         const _exhaustive: never = effectAction;
 
         throw new Error(
           `Unhandled effect action: ${JSON.stringify(_exhaustive)}`,
         );
+      }
     }
   }
 

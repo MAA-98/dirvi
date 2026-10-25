@@ -1,18 +1,25 @@
+import type { Cursor } from '../../state-and-nav/cursor.js';
 import type {
-  FoldsApi,
+  FoldIndex,
+  FoldMethods,
+  Folds,
+} from '../../state-and-nav/index.js';
+import type {
+  NavMethods,
+} from '../../state-and-nav/index.js';
+import type {
   SerializableKey,
-  State,
-  TreeNodeApi,
-} from '../../trees/index.js';
+} from '../../state-and-nav/index.js';
+import type { State, StateApi } from '../../state-and-nav/index.js';
 import type { ReducerAction } from './reducer-action.js';
 
-function firstAvailableAdditionalFoldIndex<Id extends SerializableKey, Value>(
-  foldsApi: FoldsApi<Id>,
-  state: State<Id, Value>,
-): number {
+function firstAvailableAdditionalFoldIndex<Id extends SerializableKey>(
+  foldsApi: FoldMethods<Id>,
+  folds: Folds<Id>,
+): FoldIndex {
   let index = 1;
 
-  while (foldsApi.hasAtIndex(state.folds, index)) {
+  while (foldsApi.hasAtIndex(folds, index)) {
     index += 1;
   }
 
@@ -25,26 +32,119 @@ export type Reducer<Id extends SerializableKey, Value> = (
 ) => State<Id, Value>;
 
 export function createReducer<Id extends SerializableKey, Value>(
-  treeNodeApi: TreeNodeApi<Id, Value>,
-  foldsApi: FoldsApi<Id>,
+  stateApi: StateApi<Id, Value>,
+  navNodeApi: NavMethods<Id, Value>,
 ): Reducer<Id, Value> {
+  const { treeNodeApi, foldsApi, cursorApi } = stateApi;
+
+  /**
+   * Preserve the cursor if its position remains navigable. Otherwise, move it
+   * to a fold marker containing its representative entry, or to the nearest
+   * visible ancestor.
+   */
+  function reconcileCursor(state: State<Id, Value>): State<Id, Value> {
+    const navigation = navNodeApi.from(
+      stateApi.getRoot(state),
+      stateApi.getFolds(state),
+    );
+
+    if (navigation === undefined || navigation.children === null) {
+      // StateApi guarantees that the root is a loaded branch.
+      throw new Error('Cannot navigate state: root is not a loaded branch.');
+    }
+
+    const cursor = stateApi.getCursor(state);
+    const positions: Cursor<Id>[] = [
+      { path: [] },
+      ...navNodeApi.cursors(navigation.children),
+    ];
+
+    if (positions.some((position) => cursorApi.equal(position, cursor))) {
+      return state;
+    }
+
+    const path = cursorApi.getPath(cursor);
+
+    while (path.length > 0) {
+      const entryId = path.at(-1);
+
+      if (entryId !== undefined) {
+        const parentPath = path.slice(0, -1);
+        const parent = navNodeApi.getNodeAtPath(
+          navigation.children,
+          parentPath,
+        );
+
+        const foldEntry = parent?.entries.find(
+          (entry) =>
+            navNodeApi.entryIsFold(entry) &&
+            entry.folded.some(
+              (foldedEntry) =>
+                !navNodeApi.entryIsFold(foldedEntry) &&
+                foldedEntry.id === entryId,
+            ),
+        );
+
+        if (foldEntry !== undefined && navNodeApi.entryIsFold(foldEntry)) {
+          const firstEntry = foldEntry.folded.find(
+            (entry) => !navNodeApi.entryIsFold(entry),
+          );
+          
+          if (firstEntry !== undefined && !navNodeApi.entryIsFold(firstEntry)) {
+            const foldCursor: Cursor<Id> = {
+              parentPath,
+              firstId: firstEntry.id,
+            };
+
+            if (
+              positions.some((position) =>
+                cursorApi.equal(position, foldCursor),
+              )
+            ) {
+              return stateApi.update(state, { cursor: foldCursor }) ?? state;
+            }
+          }
+        }
+
+        const nodeCursor: Cursor<Id> = { path: [...path] };
+
+        if (
+          positions.some((position) => cursorApi.equal(position, nodeCursor))
+        ) {
+          return stateApi.update(state, { cursor: nodeCursor }) ?? state;
+        }
+      }
+
+      path.pop();
+    }
+
+    // The root cursor is always included in `positions`.
+    return stateApi.update(state, { cursor: { path: [] } }) ?? state;
+  }
+
+  function update(
+    state: State<Id, Value>,
+    changes: Parameters<StateApi<Id, Value>['update']>[1],
+  ): State<Id, Value> {
+    const nextState = stateApi.update(state, changes);
+
+    return nextState === undefined ? state : reconcileCursor(nextState);
+  }
+
   return (state, action) => {
     switch (action.kind) {
       case 'changeCursor':
-        return {
-          ...state,
-          cursor: action.cursor,
-        };
+        return update(state, { cursor: action.cursor });
 
       case 'updateBranch': {
         const root = treeNodeApi.updateAtPath(
-          state.root,
+          stateApi.getRoot(state),
           action.path,
           (node) => {
             /*
-             * Loading/unloading is a branch-only operation. TreeNodeApi can
-             * structurally convert any node, but the application reducer must
-             * not turn a leaf into a branch.
+             * Loading/unloading is a branch-only operation. TreeMethods can
+             * structurally convert any node, but the reducer must not turn a
+             * leaf into a branch.
              */
             if (treeNodeApi.kind(node) === 'leaf') {
               return undefined;
@@ -66,10 +166,7 @@ export function createReducer<Id extends SerializableKey, Value>(
           return state;
         }
 
-        return {
-          ...state,
-          root,
-        };
+        return update(state, { root });
       }
 
       case 'setState': {
@@ -78,9 +175,7 @@ export function createReducer<Id extends SerializableKey, Value>(
           return state;
         }
 
-        return {
-          ...action.newState,
-        };
+        return reconcileCursor(action.newState);
       }
 
       case 'addToFoldTree': {
@@ -92,7 +187,7 @@ export function createReducer<Id extends SerializableKey, Value>(
 
         const parentPath = action.path.slice(0, -1);
         const folds = foldsApi.hideEntryAtPath(
-          state.folds,
+          stateApi.getFolds(state),
           action.foldTreeIndex,
           parentPath,
           entryId,
@@ -102,111 +197,106 @@ export function createReducer<Id extends SerializableKey, Value>(
           return state;
         }
 
-        return {
-          ...state,
+        return update(state, {
           folds,
           cursor: action.cursor,
-        };
+        });
       }
 
       case 'removeFromFoldTree': {
-        // TODO: Change to show only entry at cursor. mirroring addToFoldTree
-        const folds = foldsApi.showAllHiddenEntriesAtPath(
-          state.folds,
-          action.foldTreeIndex,
-          action.path,
-        );
+        let folds = stateApi.getFolds(state);
 
-        if (folds === undefined) {
-          return state;
+        if (action.entryIds === null) {
+          const nextFolds = foldsApi.showAllHiddenEntriesAtPath(
+            folds,
+            action.foldTreeIndex,
+            action.path,
+          );
+
+          if (nextFolds === undefined) {
+            return state;
+          }
+
+          folds = nextFolds;
+        } else {
+          for (const entryId of action.entryIds) {
+            const nextFolds = foldsApi.showEntryAtPath(
+              folds,
+              action.foldTreeIndex,
+              action.path,
+              entryId,
+            );
+
+            if (nextFolds === undefined) {
+              return state;
+            }
+
+            folds = nextFolds;
+          }
         }
 
-        return {
-          ...state,
+        return update(state, {
           folds,
           cursor: action.cursor,
-        };
+        });
       }
 
       case 'fold': {
         const folds = foldsApi.activateAtIndex(
-          state.folds,
+          stateApi.getFolds(state),
           action.foldTreeIndex,
         );
 
-        return folds === undefined
-          ? state
-          : {
-              ...state,
-              folds,
-            };
+        return folds === undefined ? state : update(state, { folds });
       }
 
       case 'unfold': {
         const folds = foldsApi.deactivateAtIndex(
-          state.folds,
+          stateApi.getFolds(state),
           action.foldTreeIndex,
         );
 
-        return folds === undefined
-          ? state
-          : {
-              ...state,
-              folds,
-            };
+        return folds === undefined ? state : update(state, { folds });
       }
 
       case 'toggleFold': {
         const folds = foldsApi.toggleActiveAtIndex(
-          state.folds,
+          stateApi.getFolds(state),
           action.foldTreeIndex,
         );
 
-        return folds === undefined
-          ? state
-          : {
-              ...state,
-              folds,
-            };
+        return folds === undefined ? state : update(state, { folds });
       }
 
       case 'createFoldTree': {
-        const index = firstAvailableAdditionalFoldIndex(foldsApi, state);
+        const currentFolds = stateApi.getFolds(state);
+        const index = firstAvailableAdditionalFoldIndex(foldsApi, currentFolds);
 
         const folds = foldsApi.setAdditionalFoldAtIndex(
-          state.folds,
+          currentFolds,
           index,
-          // Obtain this through the actual TreeNodeApi root-ID operation.
-          treeNodeApi.id(state.root),
+          // Obtain this through the actual TreeMethods root-ID operation.
+          treeNodeApi.id(stateApi.getRoot(state)),
           {
             name: action.name,
             description: null,
           },
         );
 
-        return folds === undefined
-          ? state
-          : {
-              ...state,
-              folds,
-            };
+        return folds === undefined ? state : update(state, { folds });
       }
 
       case 'deleteFoldTree': {
-        const index = foldsApi.getIndexByName(state.folds, action.name);
+        const currentFolds = stateApi.getFolds(state);
+        const index = foldsApi.getIndexByName(currentFolds, action.name);
 
         if (index === undefined || index === 0) {
           return state;
         }
 
-        const folds = foldsApi.removeAdditionalFoldAtIndex(state.folds, index);
+        const folds = foldsApi.removeAdditionalFoldAtIndex(currentFolds, index);
 
-        return folds === undefined
-          ? state
-          : {
-              ...state,
-              folds,
-            };
+        return folds === undefined ? state : update(state, { folds });
       }
 
       default: {

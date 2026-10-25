@@ -1,9 +1,9 @@
 import type {
-  Cursor,
+  Cursor, FoldIndex,
   SerializableKey,
   State,
   TreeNode,
-} from '../../trees/index.js';
+} from '../../state-and-nav/index.js';
 
 export type ReducerAction<Id extends SerializableKey, Value> =
   | {
@@ -24,13 +24,20 @@ export type ReducerAction<Id extends SerializableKey, Value> =
       kind: 'addToFoldTree';
       path: readonly Id[];
       cursor: Cursor<Id>;
-      foldTreeIndex: number;
+      foldTreeIndex: FoldIndex;
     }
   | {
       kind: 'removeFromFoldTree';
+      /** Parent branch containing the hidden entries. */
       path: readonly Id[];
+
+      /**
+       * null removes every direct hidden entry in this fold tree.
+       * An array removes only the specified entries of an inline fold run.
+       */
+      entryIds: readonly Id[] | null;
       cursor: Cursor<Id>;
-      foldTreeIndex: number;
+      foldTreeIndex: FoldIndex;
     }
   | {
       /**
@@ -38,21 +45,21 @@ export type ReducerAction<Id extends SerializableKey, Value> =
        * visible navigation projection.
        */
       kind: 'fold';
-      foldTreeIndex: number;
+      foldTreeIndex: FoldIndex;
     }
   | {
       /**
        * Deactivates a fold tree while preserving its fold definition.
        */
       kind: 'unfold';
-      foldTreeIndex: number;
+      foldTreeIndex: FoldIndex;
     }
   | {
       /**
        * Inverts whether a fold tree contributes to hiding entries.
        */
       kind: 'toggleFold';
-      foldTreeIndex: number;
+      foldTreeIndex: FoldIndex;
     }
   | {
       kind: 'createFoldTree';

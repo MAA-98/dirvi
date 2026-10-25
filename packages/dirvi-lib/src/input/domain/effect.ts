@@ -1,7 +1,5 @@
 import type { InputModeState } from './input-mode-state.js';
-import type { SerializableKey, TreeNode } from '../../trees/index.js';
-
-export type EffectClosure = () => void | Promise<void>;
+import type { SerializableKey, TreeNode } from '../../state-and-nav/index.js';
 
 /**
  * An effect is some execution to be done in `App`, that could affect the shell

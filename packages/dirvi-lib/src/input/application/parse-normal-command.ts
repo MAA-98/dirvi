@@ -1,4 +1,4 @@
-import type { SerializableKey } from '../../trees/index.js';
+import type { SerializableKey } from '../../state-and-nav/index.js';
 import type { EffectAction } from '../domain/index.js';
 import {
   tokenizeNormalCommand,

@@ -1,6 +1,6 @@
+import { useEffect, useMemo } from 'react';
 import { Box, Text, useApp, useInput, useWindowSize } from 'ink';
 
-import type { AppScreenRenderer, Config, View } from '@mak-98/dirvi-app';
 import { ViewRowComponent } from './components/ViewRowComponent.js';
 import { FeedbackBar } from './components/FeedbackBar.js';
 import { STATUS_BAR_HEIGHT, StatusBar } from './components/StatusBar.js';
@@ -13,7 +13,8 @@ import {
   InputModeState,
   UserInput,
 } from 'dirvi-lib';
-import { useEffect, useMemo } from 'react';
+import type { AppScreenRenderer, Config } from '@mak-98/dirvi-app';
+import { View } from '@mak-98/dirvi-app';
 
 export const InkAppScreen: AppScreenRenderer = ({
   view,

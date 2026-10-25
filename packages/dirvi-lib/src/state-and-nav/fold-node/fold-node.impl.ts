@@ -1,8 +1,8 @@
 import type {
   SerializableKey,
   TreeNode,
-  TreeNodeApi,
-} from '../tree-node/index.js';
+  TreeMethods,
+} from '../tree/index.js';
 import type {
   FoldNodeModel,
   FoldsModel,
@@ -12,7 +12,7 @@ import type {
   FoldIndex,
   FoldInfo,
   Folds,
-  FoldsApi,
+  FoldMethods,
 } from './fold-node.types.js';
 
 /**
@@ -67,9 +67,9 @@ function hasUniqueValues<Value>(values: readonly Value[]): boolean {
  * Each fold tree preserves its own hidden-entry definition. An entry is hidden
  * by the aggregate when at least one active fold tree hides it.
  */
-export function createFoldsApi<Id extends SerializableKey>(
-  foldTreeApi: TreeNodeApi<Id, HiddenEntryIds<Id>>,
-): FoldsApi<Id> {
+export function createFoldMethods<Id extends SerializableKey>(
+  foldTreeApi: TreeMethods<Id, HiddenEntryIds<Id>>,
+): FoldMethods<Id> {
   function createEmptyFoldTree(rootId: Id): FoldTree<Id> {
     const tree = foldTreeApi.createLoadedBranch(rootId, [], []);
 
@@ -364,7 +364,7 @@ export function createFoldsApi<Id extends SerializableKey>(
     );
   }
 
-  const api: FoldsApi<Id> = {
+  const api: FoldMethods<Id> = {
     create(rootId, initialPrimaryInfo) {
       return fromData({
         slots: [

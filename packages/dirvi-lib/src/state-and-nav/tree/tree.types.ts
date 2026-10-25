@@ -27,7 +27,7 @@ declare const treeNodeBrand: unique symbol;
  * @remarks
  *
  * `TreeNode` is intentionally opaque. Callers may hold, compare by reference,
- * pass, store, and return nodes, but should use {@link TreeNodeApi} operations
+ * pass, store, and return nodes, but should use {@link TreeMethods} operations
  * to create, inspect, and update them.
  *
  * In particular, callers do not depend on:
@@ -219,12 +219,12 @@ export type MatchByKind<
  * @typeParam Id - The type used to identify nodes among siblings.
  * @typeParam Value - The application-specific value stored at each node.
  */
-export type TreeNodeApi<Id extends SerializableKey, Value> = Readonly<{
+export type TreeMethods<Id extends SerializableKey, Value> = Readonly<{
   /**
    * Creates a leaf node.
    *
    * A leaf cannot contain children. To convert an existing node to a leaf while
-   * retaining its ID and value, use {@link TreeNodeApi.toLeaf}.
+   * retaining its ID and value, use {@link TreeMethods.toLeaf}.
    *
    * @param id - The ID that identifies this node among its siblings.
    * @param value - Application-owned data stored on the node.
@@ -281,7 +281,7 @@ export type TreeNodeApi<Id extends SerializableKey, Value> = Readonly<{
   /**
    * Returns the semantic kind of a node.
    *
-   * Prefer {@link TreeNodeApi.matchByKind} when behavior differs by node kind and all
+   * Prefer {@link TreeMethods.matchByKind} when behavior differs by node kind and all
    * three variants must be handled.
    *
    * @param node - The node to inspect.
@@ -309,7 +309,7 @@ export type TreeNodeApi<Id extends SerializableKey, Value> = Readonly<{
    * not defensive clones.
    *
    * Returns `undefined` when `node` is a leaf or an unloaded branch. Use
-   * {@link TreeNodeApi.kind} or {@link TreeNodeApi.matchByKind} when those cases need
+   * {@link TreeMethods.kind} or {@link TreeMethods.matchByKind} when those cases need
    * to be distinguished.
    *
    * @param node - The node whose direct children to inspect.

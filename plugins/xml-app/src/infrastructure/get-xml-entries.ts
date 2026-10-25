@@ -9,7 +9,7 @@ import {
 } from '@rgrove/parse-xml';
 import type { XmlNode } from '@rgrove/parse-xml';
 
-import type { TreeNodeApi } from 'dirvi-lib';
+import type { TreeMethods } from 'dirvi-lib';
 
 import type {
   XmlNodeValue,
@@ -34,7 +34,7 @@ export type CreateXmlId = (name: string) => XmlId;
  * source-document order.
  */
 export function getXmlEntries(
-  treeNodeApi: TreeNodeApi<XmlId, XmlNodeValue>,
+  treeNodeApi: TreeMethods<XmlId, XmlNodeValue>,
   xmlNodes: readonly XmlNode[],
   createXmlId: CreateXmlId,
 ): XmlTreeNode[] {

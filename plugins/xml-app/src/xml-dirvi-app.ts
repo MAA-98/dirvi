@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 import type { AppPlugin } from 'dirvi-apis/plugin';
-import type { TreeNodeApi } from 'dirvi-lib';
+import type { TreeMethods } from 'dirvi-lib';
 
 import type { XmlId, XmlNodeValue } from './domain/xml-tree.js';
 import { xmlIdSchema, xmlValueSchema } from './domain/xml-tree.js';
@@ -31,12 +31,12 @@ export const xmlAppPlugin: AppPlugin = {
       semanticOrder: true,
       idSchema: xmlIdSchema,
       valueSchema: xmlValueSchema,
-      createRoot: async (treeNodeApi: TreeNodeApi<XmlId, XmlNodeValue>) => {
+      createRoot: async (treeNodeApi: TreeMethods<XmlId, XmlNodeValue>) => {
         const source = await readFile(input, 'utf8');
         return parseXmlDocument(treeNodeApi, source);
       },
       loadChildren: async (
-        treeNodeApi: TreeNodeApi<XmlId, XmlNodeValue>,
+        treeNodeApi: TreeMethods<XmlId, XmlNodeValue>,
         path: readonly XmlId[],
       ) => {
         // TODO Later: load from the file

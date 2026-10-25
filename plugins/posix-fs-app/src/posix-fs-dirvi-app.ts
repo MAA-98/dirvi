@@ -1,7 +1,7 @@
 import { basename, join } from 'node:path';
 
 import type { AppPlugin } from 'dirvi-apis';
-import type { TreeNodeApi } from 'dirvi-lib';
+import type { TreeMethods } from 'dirvi-lib';
 
 import type { PosixValue, PosixId } from './domain/posix-tree.js';
 import {
@@ -23,8 +23,8 @@ export const posixAppPlugin: AppPlugin = {
     const unixAbsPath = getUnixAbsPath(input ?? process.cwd());
     const rootId = posixFilenameSchema.parse(basename(unixAbsPath));
     function loadDirectoryEntries(
-      treeNodeApi: TreeNodeApi<PosixId, PosixValue>,
-      path: readonly PosixId[]
+      treeNodeApi: TreeMethods<PosixId, PosixValue>,
+      path: readonly PosixId[],
     ) {
       const address = join(unixAbsPath, ...path);
       return getDirEntries(treeNodeApi, address);
@@ -36,7 +36,7 @@ export const posixAppPlugin: AppPlugin = {
       semanticOrder: false,
       idSchema: posixFilenameSchema,
       valueSchema: posixValueSchema,
-      createRoot: async (treeNodeApi: TreeNodeApi<PosixId, PosixValue>) => {
+      createRoot: async (treeNodeApi: TreeMethods<PosixId, PosixValue>) => {
         // Start with root branches already loaded
         const rootBranches = await loadDirectoryEntries(treeNodeApi, []);
         const root = createConstructors(treeNodeApi).loadedDirectory(
@@ -52,13 +52,15 @@ export const posixAppPlugin: AppPlugin = {
 
         return root;
       },
-      loadChildren: (treeNodeApi: TreeNodeApi<PosixId, PosixValue>, path: readonly PosixId[]) =>
-        loadDirectoryEntries(treeNodeApi, path),
+      loadChildren: (
+        treeNodeApi: TreeMethods<PosixId, PosixValue>,
+        path: readonly PosixId[],
+      ) => loadDirectoryEntries(treeNodeApi, path),
       presentNode: (id: PosixId, isBranch: boolean) => {
         return {
           content: id,
-          highlight: isBranch ? 'directory' : 'leaf'
-        }
+          highlight: isBranch ? 'directory' : 'leaf',
+        };
       },
       subscribeToResync: createFsResyncSubscription(join(unixAbsPath)),
       createNavNodeApiOptions: {

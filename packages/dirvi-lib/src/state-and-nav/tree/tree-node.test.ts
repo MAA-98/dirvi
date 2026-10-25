@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as fc from 'fast-check';
 
-import { createTreeNodeApi } from './tree-node.impl.js';
-import type { TreeNode } from './tree-node.types.js';
+import { createTreeMethods } from './tree.impl.js';
+import type { TreeNode } from './tree.types.js';
 import type { TreeNodeModel } from './tree-node.model.js';
 import {
   childrenStateModelArb,
@@ -13,7 +13,7 @@ import {
 type TestNode = TreeNode<string, number>;
 type TestModel = TreeNodeModel<string, number>;
 
-const api = createTreeNodeApi<string, number>();
+const api = createTreeMethods<string, number>();
 
 /**
  * Fail rather than silently skipping assertions when an operation that should

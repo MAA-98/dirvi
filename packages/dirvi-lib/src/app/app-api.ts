@@ -1,13 +1,10 @@
 import type {
-  CursorApi,
-  FoldsApi,
-  NavNodeApi,
+  NavMethods,
   SerializableKey,
   StateApi,
-  TreeNode,
-  TreeNodeApi,
-} from '../trees/index.js';
+} from '../state-and-nav/index.js';
 import type { PresentNode } from './node-presentation.js';
+import { TreeNode } from '../state-and-nav/index.js';
 
 /**
  * Application-specific tree dependencies and operations.
@@ -63,28 +60,10 @@ export type AppApi<
    */
   subscribeToResync: (listener: () => void) => () => void;
 
-  /**
-   * Generic structural operations for this application's buffer tree.
-   */
-  treeNodeApi: TreeNodeApi<Id, Value>;
-
-  /**
-   * Semantic fold-state operations.
-   *
-   * This remains temporarily available while FoldNode itself is migrated.
-   */
-  foldsApi: FoldsApi<Id>;
-
-  cursorApi: CursorApi<Id>;
-
   stateApi: StateApi<Id, Value>;
 
   /**
    * UI navigation projection and cursor-navigation operations.
    */
-  navNodeApi: NavNodeApi<Id, Value>;
-
-  // viewKey: ViewKey;
-  //
-  // viewApi: ViewApi<State<Id, Value>, ViewKey>;
+  navMethods: NavMethods<Id, Value>;
 }>;

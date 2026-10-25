@@ -1,18 +1,18 @@
 import type {
   TreeNode,
-  TreeNodeApi,
+  TreeMethods,
   MatchByKind,
   TreeNodeKind,
-} from './tree-node.types.js';
+} from './tree.types.js';
 import type { SerializableKey, TreeNodeModel } from './tree-node.model.js';
 
-/**
- * Private runtime representation.
- *
- * This representation is intentionally not exported. The public `TreeNode`
- * type is opaque, so consumers must use `TreeNodeApi` operations rather than
- * depending on these object properties.
- */
+// =============================================================================
+// Opaque Type Implementation
+// =============================================================================
+// These representations are intentionally not exported. The public `TreeNode`
+// type is opaque, so consumers must use `TreeNodeApi` operations rather than
+// depending on these object properties.
+
 type TreeNodeData<Id extends SerializableKey, Value> =
   | LeafTreeNodeData<Id, Value>
   | UnloadedBranchTreeNodeData<Id, Value>
@@ -56,6 +56,10 @@ function fromData<Id extends SerializableKey, Value>(
 ): TreeNode<Id, Value> {
   return data as unknown as TreeNode<Id, Value>;
 }
+
+// =============================================================================
+// Helpers
+// =============================================================================
 
 function isLeafData<Id extends SerializableKey, Value>(
   node: TreeNodeData<Id, Value>,
@@ -151,6 +155,10 @@ function createLoadedBranchData<Id extends SerializableKey, Value>(
   });
 }
 
+// =============================================================================
+// Generic Tree Methods Init
+// =============================================================================
+
 /**
  * Creates an API for constructing, inspecting, and immutably updating opaque
  * tree nodes.
@@ -162,10 +170,10 @@ function createLoadedBranchData<Id extends SerializableKey, Value>(
  * Tree updates preserve object identity for unrelated nodes. New ancestor
  * nodes and child collections are created only along an updated path.
  */
-export function createTreeNodeApi<
+export function createTreeMethods<
   Id extends SerializableKey,
   Value,
->(): TreeNodeApi<Id, Value> {
+>(): TreeMethods<Id, Value> {
   function getLoadedChildrenData(
     node: TreeNode<Id, Value>,
   ): readonly TreeNode<Id, Value>[] | undefined {
@@ -174,7 +182,7 @@ export function createTreeNodeApi<
     return isLoadedBranchData(data) ? data.children : undefined;
   }
 
-  const api: TreeNodeApi<Id, Value> = {
+  const api: TreeMethods<Id, Value> = {
     createLeaf(id, value) {
       return fromData(createLeafData(id, value));
     },
