@@ -94,5 +94,27 @@ export function ViewRowComponent({ row, config }: ViewRowComponentProps) {
           )}
         </Box>
       );
+
+    case 'fold':
+      return (
+        <Box
+          width="100%"
+          backgroundColor={row.cursor ? cursorRowBgColor : undefined}
+        >
+          {indentation !== '' && (
+            <Text
+              {...(indentationGuideColor === undefined
+                ? {}
+                : { color: indentationGuideColor, dimColor: true })}
+            >
+              {indentation}
+            </Text>
+          )}
+
+          <Text color={foldedCountColor} dimColor>
+            {row.content}
+          </Text>
+        </Box>
+      );
   }
 }
