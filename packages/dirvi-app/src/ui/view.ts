@@ -1,10 +1,13 @@
 import type {
-  Cursor,
   HighlightToken,
+  PresentNode
+} from 'dirvi-apis';
+
+import type {
+  Cursor,
   NavBranch,
   NavNode,
   NavMethods,
-  PresentNode,
   SerializableKey, CursorMethods,
 } from 'dirvi-lib';
 import { NavEntry, NavFold } from 'dirvi-lib/dist/state-and-nav/nav/nav.types.js';

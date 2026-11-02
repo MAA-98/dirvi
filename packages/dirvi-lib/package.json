@@ -1,6 +1,6 @@
 {
   "name": "dirvi-lib",
-  "version": "0.11.0-beta.8",
+  "version": "0.11.0-beta.9",
   "description": "Dependency for dirvi.",
   "license": "LGPL-3.0-or-later",
   "type": "module",
@@ -17,7 +17,8 @@
     "docs": "typedoc"
   },
   "dependencies": {
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "dirvi-apis": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

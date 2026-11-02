@@ -3,10 +3,11 @@ import { useRef } from 'react';
 import type {
   CursorMethods,
   NavBranch,
-  NavMethods, PresentNode,
+  NavMethods,
   SerializableKey,
   State, StateApi,
 } from 'dirvi-lib';
+import type { PresentNode } from 'dirvi-apis';
 import { View, type ViewRow } from '../view.js';
 
 const STATUS_BAR_HEIGHT = 1;

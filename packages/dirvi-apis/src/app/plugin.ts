@@ -1,24 +1,5 @@
-import type { AppApi, SerializableKey } from './imports.js';
-import type { AppDefinition } from './app/app-definition.js';
-
-/**
- * Creates and applies the AppApi to a given consumer of it.
- */
-export type AppApiApplicator = <Result>(
-  appApiConsumer: AppApiConsumer<Result>,
-) => Result;
-
-/**
- * An operation that can consume an AppApi of any valid concrete type and
- * produce a caller-selected result.
- */
-export type AppApiConsumer<Result> = <
-  Id extends SerializableKey,
-  Value,
-  ViewKey = string,
->(
-  appApi: AppApi<Id, Value, ViewKey>,
-) => Result;
+import type { AppDefinition } from './app-definition.js';
+import type { SerializableKey } from './key.js';
 
 /**
  * Creates and applies the AppDefinition to a given consumer of it.

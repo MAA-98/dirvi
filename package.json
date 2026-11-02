@@ -1,6 +1,6 @@
 {
   "name": "dirvi",
-  "version": "0.11.0-beta.8",
+  "version": "0.11.0-beta.9",
   "description": "A Vim-inspired terminal UI for browsing directories.",
   "private": true,
   "type": "module",
@@ -21,8 +21,6 @@
     "deps": "depcruise packages plugins",
     "deps:check": "depcruise --validate .dependency-cruiser.cjs packages plugins",
     "deps:svg": "depcruise --config .dependency-cruiser.cjs packages plugins --output-type dot | dot -T svg > dependency-graph.svg",
-    "deps:svg:lib": "depcruise packages/dirvi-lib --output-type dot | dot -T svg > dependency-graph-lib.svg",
-    "deps:svg:cli": "depcruise packages/dirvi-cli --output-type dot | dot -T svg > dependency-graph-cli.svg",
     "loc": "./scripts/count-lines.zsh"
   },
   "repository": {

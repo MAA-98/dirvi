@@ -1,8 +1,6 @@
-import type {
-  SerializableKey,
-  PresentNode,
-} from '../imports.js';
 import type { ZodType } from 'zod';
+import type { SerializableKey } from './key.js';
+import type { PresentNode } from './present-node.js';
 
 /**
  * Data used by Dirvi to construct the application's root.

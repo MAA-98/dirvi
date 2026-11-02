@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { SerializableKey } from 'dirvi-apis';
 
 /**
  * A serializable primitive suitable for use as a stable tree-node ID.
@@ -36,7 +37,7 @@ import { z } from 'zod';
  * type MyTreeModel = TreeNodeModel<MyId, MyItem>;
  * ```
  */
-export type SerializableKey = string | number;
+export type { SerializableKey }
 
 /**
  * Validates a serializable primitive suitable for use as a tree-node ID.

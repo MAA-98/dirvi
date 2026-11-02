@@ -1,15 +1,20 @@
-import {
+import type {
   SerializableKey,
-  AppApi, createFoldMethods, createCursorMethods, createUnorderedNavMethods, createOrderedNavMethods,
+  AppApi,
+  AppApiApplicator,
+  AppApiConsumer,
+} from 'dirvi-lib';
+import {
+  createFoldMethods, createCursorMethods, createUnorderedNavMethods, createOrderedNavMethods,
 } from 'dirvi-lib';
 import {
   createTreeMethods,
   createStateApi,
 } from 'dirvi-lib';
-import type { AppApiApplicator, AppApiConsumer, AppDefinition, AppDefinitionApplicator } from 'dirvi-apis';
+import type { AppDefinition, AppDefinitionApplicator } from 'dirvi-apis';
 
 /**
- * Turns a plugin-owned app definition into a host-owned runtime AppApi.
+ * Turns an app owned `AppDefinition` into a host-owned runtime `AppApi`.
  *
  * The plugin's concrete generic types remain hidden by the applicator
  * boundary, while the host creates the matching AppApi specialization.

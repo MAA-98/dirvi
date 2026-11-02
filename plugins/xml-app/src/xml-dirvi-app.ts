@@ -1,8 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-import type { AppDefinition } from 'dirvi-apis';
-import type { AppPlugin } from 'dirvi-apis/plugin';
+import type { AppDefinition, AppPlugin } from 'dirvi-apis';
 
 import type { XmlId, XmlNodeValue } from './domain/xml-tree.js';
 import { xmlIdSchema, xmlValueSchema } from './domain/xml-tree.js';

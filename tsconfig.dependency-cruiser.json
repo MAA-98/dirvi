@@ -5,6 +5,8 @@
     "paths": {
       "@mak-98/dirvi-apis": ["packages/dirvi-apis/src/index.ts"],
       "@mak-98/dirvi-apis/*": ["packages/dirvi-apis/src/*"],
+      "dirvi-apis": ["packages/dirvi-apis/src/index.ts"],
+      "dirvi-apis/*": ["packages/dirvi-apis/src/*"],
 
       "@mak-98/dirvi-app": ["packages/dirvi-app/src/index.ts"],
       "@mak-98/dirvi-app/*": ["packages/dirvi-app/src/*"],

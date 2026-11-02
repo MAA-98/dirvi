@@ -1,4 +1,4 @@
-import type { SerializableKey } from '../state-and-nav/index.js';
+import { SerializableKey } from './key.js';
 
 /**
  * A semantic highlight name, not a concrete terminal color.

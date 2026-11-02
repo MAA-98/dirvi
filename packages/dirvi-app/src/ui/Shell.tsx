@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { AppApiApplicator } from 'dirvi-apis';
+import type { AppApiApplicator } from 'dirvi-lib';
 
 import type { AppScreenRenderer } from './app-screen-renderer.js';
 import type { LoadingScreenRenderer } from './loading-screen-renderer.js';

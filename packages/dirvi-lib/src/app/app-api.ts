@@ -3,8 +3,8 @@ import type {
   SerializableKey,
   StateApi,
 } from '../state-and-nav/index.js';
-import type { PresentNode } from './node-presentation.js';
 import { TreeNode } from '../state-and-nav/index.js';
+import { PresentNode } from 'dirvi-apis';
 
 /**
  * Application-specific tree dependencies and operations.
@@ -62,3 +62,22 @@ export type AppApi<
    */
   navMethods: NavMethods<Id, Value>;
 }>;
+
+/**
+ * An operation that can consume an AppApi of any valid concrete type and
+ * produce a caller-selected result.
+ */
+export type AppApiConsumer<Result> = <
+  Id extends SerializableKey,
+  Value,
+  ViewKey = string,
+>(
+  appApi: AppApi<Id, Value, ViewKey>,
+) => Result;
+
+/**
+ * Creates and applies the AppApi to a given consumer of it.
+ */
+export type AppApiApplicator = <Result>(
+  appApiConsumer: AppApiConsumer<Result>,
+) => Result;
