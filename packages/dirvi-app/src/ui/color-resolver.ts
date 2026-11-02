@@ -1,4 +1,4 @@
-import type { ColorConfig } from '../domain/theme.js';
+import type { ColorConfig } from 'dirvi-apis';
 
 type RgbColor = [number, number, number];
 

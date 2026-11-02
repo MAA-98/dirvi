@@ -3,11 +3,14 @@ import type {
   TreeNode,
   TreeMethods,
   PresentNode,
-} from 'dirvi-lib';
+} from '../imports.js';
 import type { ZodType } from 'zod';
 
+// TODO: Redefine so it doesn't take tree methods, but return the inputs for it
+// instead.
+
 /**
- * The needed information for creating an `AppApi`.
+ * The needed information for dirvi to create an App instance.
  */
 export type AppDefinition<Id extends SerializableKey, Value> = Readonly<{
   /**
@@ -30,8 +33,6 @@ export type AppDefinition<Id extends SerializableKey, Value> = Readonly<{
    * When false, folded children are summarized on their parent without
    * introducing separate navigable fold markers. Visible siblings still
    * have a presentation order.
-   *
-   * Applies to the entire application.
    */
   readonly semanticOrder: boolean;
 
@@ -41,6 +42,8 @@ export type AppDefinition<Id extends SerializableKey, Value> = Readonly<{
   readonly idSchema: ZodType<Id>;
   readonly valueSchema: ZodType<Value>;
 
+  // TODO: Redefine to create root deps instead of root
+  
   /**
    * Creates the application's root node.
    *

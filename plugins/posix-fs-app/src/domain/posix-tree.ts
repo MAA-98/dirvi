@@ -94,24 +94,24 @@ export const posixValueSchema: z.ZodType<PosixValue> = z.discriminatedUnion(
 // -----------------------------------------------------------------------------
 
 export function createConstructors(
-  posixTreeNodeApi: TreeMethods<PosixId, PosixValue>,
+  treeMethods: TreeMethods<PosixId, PosixValue>,
 ) {
   return {
     file(name: PosixId): PosixTreeNode {
-      return posixTreeNodeApi.createLeaf(name, {
+      return treeMethods.createLeaf(name, {
         kind: 'file',
       });
     },
 
     symlink(name: PosixId, target: UnixPath): PosixTreeNode {
-      return posixTreeNodeApi.createLeaf(name, {
+      return treeMethods.createLeaf(name, {
         kind: 'symlink',
         target,
       });
     },
 
     unloadedDirectory(name: PosixId): PosixTreeNode {
-      return posixTreeNodeApi.createUnloadedBranch(name, {
+      return treeMethods.createUnloadedBranch(name, {
         kind: 'directory',
       });
     },
@@ -120,7 +120,7 @@ export function createConstructors(
       name: PosixId,
       children: Iterable<PosixTreeNode>,
     ): PosixTreeNode | undefined {
-      return posixTreeNodeApi.createLoadedBranch(
+      return treeMethods.createLoadedBranch(
         name,
         { kind: 'directory' },
         children,
@@ -134,8 +134,8 @@ export function createConstructors(
      * loaded or unloaded.
      */
     isValid(node: PosixTreeNode): boolean {
-      const entry = posixTreeNodeApi.value(node);
-      const treeKind = posixTreeNodeApi.kind(node);
+      const entry = treeMethods.value(node);
+      const treeKind = treeMethods.kind(node);
 
       switch (entry.kind) {
         case 'file':
@@ -158,11 +158,11 @@ export function createConstructors(
       node: PosixTreeNode,
       children: Iterable<PosixTreeNode>,
     ): PosixTreeNode | undefined {
-      if (posixTreeNodeApi.value(node).kind !== 'directory') {
+      if (treeMethods.value(node).kind !== 'directory') {
         return undefined;
       }
 
-      return posixTreeNodeApi.withLoadedChildren(node, children);
+      return treeMethods.withLoadedChildren(node, children);
     },
 
     /**
@@ -171,11 +171,11 @@ export function createConstructors(
      * Files and symlinks cannot be converted to branches through this POSIX API.
      */
     toUnloadedDirectory(node: PosixTreeNode): PosixTreeNode | undefined {
-      if (posixTreeNodeApi.value(node).kind !== 'directory') {
+      if (treeMethods.value(node).kind !== 'directory') {
         return undefined;
       }
 
-      return posixTreeNodeApi.toUnloadedBranch(node);
+      return treeMethods.toUnloadedBranch(node);
     },
   } as const;
 };

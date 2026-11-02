@@ -1,5 +1,5 @@
 import type { AppApi, SerializableKey } from './imports.js';
-import type { AppDefinition } from './app-definition.js';
+import type { AppDefinition } from './app/app-definition.js';
 
 /**
  * Creates and applies the AppApi to a given consumer of it.

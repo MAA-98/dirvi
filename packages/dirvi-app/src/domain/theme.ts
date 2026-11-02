@@ -1,22 +1,19 @@
 import { z } from 'zod';
+import type {
+  BackgroundHighlightConfig,
+  BasicColorName,
+  ColorConfig,
+  ForegroundBackgroundHighlightConfig,
+  ForegroundHighlightConfig,
+  OptionalForegroundHighlightConfig,
+  Theme,
+} from 'dirvi-apis';
 
 // =============================================================================
-// Terminal colors
+// Colors: Schemas
 // =============================================================================
 
-const HexColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/, {
-  message: 'Expected a #rrggbb color',
-});
-
-const Ansi256ColorSchema = z.number().int().min(0).max(255);
-
-/**
- * Named ANSI foreground colors supported by Dirvi themes.
- *
- * Renderers translate these symbolic names into their own color APIs. The CLI
- * renderer currently maps them to terminal colors; another renderer does not
- * need to depend on Chalk to interpret the same theme.
- */
+/** Named ANSI colors accepted by the theme schema. */
 export const basicColorNames = [
   'black',
   'red',
@@ -39,9 +36,13 @@ export const basicColorNames = [
   'cyanBright',
   'magentaBright',
   'whiteBright',
-] as const;
+] as const satisfies readonly BasicColorName[];
 
-export type BasicColorName = (typeof basicColorNames)[number];
+const HexColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/, {
+  message: 'Expected a #rrggbb color',
+});
+
+const Ansi256ColorSchema = z.number().int().min(0).max(255);
 
 const BasicColorSchema = z.enum(basicColorNames);
 
@@ -59,46 +60,29 @@ export const ColorConfigSchema = z
     {
       message: 'Expected at least one terminal color profile',
     },
-  );
-
-export type ColorConfig = z.infer<typeof ColorConfigSchema>;
+  ) satisfies z.ZodType<ColorConfig>;
 
 // =============================================================================
-// Highlights
+// Highlights: Schemas
 // =============================================================================
-// Note: these schemas are meant to be non-strict
+// These schemas are intentionally non-strict.
+
 export const ForegroundHighlightConfigSchema = z.object({
   fg: ColorConfigSchema,
-});
+}) satisfies z.ZodType<ForegroundHighlightConfig>;
 
 export const OptionalForegroundHighlightConfigSchema = z.object({
   fg: ColorConfigSchema.optional(),
-});
+}) satisfies z.ZodType<OptionalForegroundHighlightConfig>;
 
 export const BackgroundHighlightConfigSchema = z.object({
   bg: ColorConfigSchema,
-});
+}) satisfies z.ZodType<BackgroundHighlightConfig>;
 
 export const ForegroundBackgroundHighlightConfigSchema = z.object({
   fg: ColorConfigSchema,
   bg: ColorConfigSchema,
-});
-
-export type ForegroundHighlightConfig = z.infer<
-  typeof ForegroundHighlightConfigSchema
->;
-
-export type OptionalForegroundHighlightConfig = z.infer<
-  typeof OptionalForegroundHighlightConfigSchema
->;
-
-export type BackgroundHighlightConfig = z.infer<
-  typeof BackgroundHighlightConfigSchema
->;
-
-export type ForegroundBackgroundHighlightConfig = z.infer<
-  typeof ForegroundBackgroundHighlightConfigSchema
->;
+}) satisfies z.ZodType<ForegroundBackgroundHighlightConfig>;
 
 // =============================================================================
 // Theme defaults
@@ -188,7 +172,7 @@ const themeDefaults = {
 };
 
 // =============================================================================
-// Theme schema
+// Theme: Schema
 // =============================================================================
 
 export const ThemeSchema = z.object({
@@ -237,8 +221,6 @@ export const ThemeSchema = z.object({
       ),
     })
     .default(themeDefaults.feedbackBar),
-});
-
-export type Theme = z.infer<typeof ThemeSchema>;
+}) satisfies z.ZodType<Theme>;
 
 export const defaultTheme: Theme = ThemeSchema.parse({});

@@ -1,4 +1,3 @@
-export type { Theme } from './domain/theme.js';
 export type { Config } from './domain/config.js';
 export type { Initialization } from './domain/initialization.js';
 export type { PublicInitApi } from './domain/public-init-api.js';
