@@ -104,7 +104,12 @@ export function Shell({
       .catch((error: unknown) => {
         setAppError(error instanceof Error ? error : new Error(String(error)));
       });
-  }, [initialAppOptions.input, initialization.app.initial, shellApi]);
+  }, [
+    initialAppOptions.app,
+    initialAppOptions.input,
+    initialization.app.initial,
+    shellApi,
+  ]);
 
   if (appError !== undefined) {
     throw appError;

@@ -66,20 +66,17 @@ const packagesDirectory = join(dirviDataDirectory, 'site', 'pack');
 program
   .name('dirvi')
   .description('View and manage trees.')
-  .version('0.11.0-beta.7')
+  .version('0.11.0-beta.8')
   .helpOption('--help')
   .option('-a, --app <id>', 'App name to open at startup.')
   .option('-i, --input <value>', 'Input for the app at startup.')
   .action(async () => {
-    // Input is a generic startup value supplied by the host; its interpretation
-    // belongs to the selected app.
+    // Input is a generic startup value supplied by the host;
+    // its interpretation belongs to the selected app.
     const options = program.opts<InitialAppOptions>();
-
     const initialization = await createInitialization(initPath);
     const packageLoader = createPackageLoader(packagesDirectory);
-
-    let appError: Error | undefined;
-
+    
     const useAlternateScreen = uiOutput.isTTY === true;
     const stdoutIsInteractive = process.stdout.isTTY === true;
     if (useAlternateScreen) {
@@ -129,12 +126,6 @@ program
     } finally {
       restoreTerminal(); // Always restore terminal regardless of error
     }
-
-    // Re-throw an error reported by AppShell after the terminal
-    // has been restored, so the outer catch can format it.
-    if (appError !== undefined) {
-      throw appError;
-    }
   });
 
 // =============================================================================
@@ -143,7 +134,8 @@ program
 try {
   await program.parseAsync(process.argv);
 } catch (error) {
-  const message = error instanceof Error ? error.message : String(error);
+  const message =
+    error instanceof Error ? (error.stack ?? error.message) : String(error);
 
   process.stderr.write(`dirvi error: ${message}\n`);
   process.exitCode = 1;

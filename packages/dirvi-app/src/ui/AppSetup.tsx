@@ -52,7 +52,6 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
   clipboard,
 }: LoadingAppProps<Id, Value, ViewKey>) {
   const [loadState, setLoadState] = useState<LoadState<Id, Value, ViewKey>>();
-  const [initialState, setInitialState] = useState<State<Id, Value>>();
 
   // Loading and setting initial state.
   useEffect(() => {
@@ -124,8 +123,17 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
 
   // --- JSX ---
   const LoadingScreenRenderer = loadingScreenRenderer;
-  if (initialState === undefined) {
+
+  if (loadState === undefined || loadState.appApi !== appApi) {
     return <LoadingScreenRenderer />;
+  }
+
+  if (loadState.status === 'loading') {
+    return <LoadingScreenRenderer />;
+  }
+
+  if (loadState.status === 'error') {
+    throw loadState.error;
   }
 
   return (
@@ -134,7 +142,7 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
       shellApi={shellApi}
       appApi={appApi}
       initialization={initialization}
-      initialState={initialState}
+      initialState={loadState.initialState}
       reducer={reducer}
       intentToEffect={intentToEffect}
       effectToAction={effectToAction}
