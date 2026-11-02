@@ -1,13 +1,31 @@
 import type {
   SerializableKey,
-  TreeNode,
-  TreeMethods,
   PresentNode,
 } from '../imports.js';
 import type { ZodType } from 'zod';
 
-// TODO: Redefine so it doesn't take tree methods, but return the inputs for it
-// instead.
+/**
+ * Data used by Dirvi to construct the application's root.
+ *
+ * Dirvi creates the root as a loaded branch using these fields and the
+ * direct children returned by `loadChildren([])`.
+ */
+export type AppRoot<Id, Value> = Readonly<{
+  id: Id;
+  value: Value;
+}>;
+
+/**
+ * A direct child returned by an application.
+ *
+ * Branches start unloaded. Dirvi loads their children separately when needed.
+ * Child IDs must be unique among siblings.
+ */
+export type AppChild<Id, Value> = Readonly<{
+  id: Id;
+  value: Value;
+  kind: 'leaf' | 'unloaded-branch';
+}>;
 
 /**
  * The needed information for dirvi to create an App instance.
@@ -18,11 +36,6 @@ export type AppDefinition<Id extends SerializableKey, Value> = Readonly<{
    */
   readonly displayName: string;
 
-  /**
-   * Useful at times.
-   */
-  readonly rootId: Id;
-  
   /**
    * Whether sibling order is meaningful in the application's underlying
    * structure, rather than merely a presentation choice.
@@ -42,28 +55,24 @@ export type AppDefinition<Id extends SerializableKey, Value> = Readonly<{
   readonly idSchema: ZodType<Id>;
   readonly valueSchema: ZodType<Value>;
 
-  // TODO: Redefine to create root deps instead of root
-  
-  /**
-   * Creates the application's root node.
-   *
-   * Invariant: the returned node is an open branch. That invariant is checked
-   * when an initial State is created.
-   */
-  readonly createRoot: (
-    treeNodeApi: TreeMethods<Id, Value>,
-  ) => Promise<TreeNode<Id, Value>>;
-
   /**
    * Loads direct children for the branch addressed by `path`.
    *
-   * Returned nodes must be opaque tree values created or decoded through this
-   * application's TreeNodeApi specialization.
+   * `path` is relative to the root; `[]` addresses the root. Returned
+   * children are in application order and must have unique sibling IDs.
+   * Dirvi constructs the corresponding tree nodes.
    */
   readonly loadChildren: (
-    treeNodeApi: TreeMethods<Id, Value>,
     path: readonly Id[],
-  ) => Promise<readonly TreeNode<Id, Value>[]>;
+  ) => Promise<readonly AppChild<Id, Value>[]>;
+
+  /**
+   * Supplies the application's root ID and value.
+   *
+   * Dirvi constructs the root as a loaded branch using these fields and
+   * the direct children returned by `loadChildren([])`.
+   */
+  readonly loadRoot: () => Promise<AppRoot<Id, Value>>;
 
   /**
    * Describes a navigable entry's plain-text content and semantic highlight.

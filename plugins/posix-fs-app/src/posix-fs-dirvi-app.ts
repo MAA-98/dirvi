@@ -1,13 +1,11 @@
 import { basename, join } from 'node:path';
 
 import type { AppPlugin } from 'dirvi-apis';
-import type { TreeMethods } from 'dirvi-lib';
 
 import type { PosixValue, PosixId } from './domain/posix-tree.js';
 import {
   posixFilenameSchema,
   posixValueSchema,
-  createConstructors,
 } from './domain/posix-tree.js';
 import { createFsResyncSubscription } from './infrastructure/load-node-posix-app-api.js';
 import { getUnixAbsPath } from './infrastructure/get-unix-abs-path.js';
@@ -23,39 +21,22 @@ export const posixAppPlugin: AppPlugin = {
     const unixAbsPath = getUnixAbsPath(input ?? process.cwd());
     const rootId = posixFilenameSchema.parse(basename(unixAbsPath));
     function loadDirectoryEntries(
-      treeNodeApi: TreeMethods<PosixId, PosixValue>,
       path: readonly PosixId[],
     ) {
       const address = join(unixAbsPath, ...path);
-      return getDirEntries(treeNodeApi, address);
+      return getDirEntries(address);
     }
     
     const appDefinition = {
       displayName: `POSIX: ${input}`,
-      rootId,
       semanticOrder: false,
       idSchema: posixFilenameSchema,
       valueSchema: posixValueSchema,
-      createRoot: async (treeNodeApi: TreeMethods<PosixId, PosixValue>) => {
-        // Start with root branches already loaded
-        const rootBranches = await loadDirectoryEntries(treeNodeApi, []);
-        const root = createConstructors(treeNodeApi).loadedDirectory(
-          rootId,
-          rootBranches,
-        );
-
-        if (root === undefined) {
-          throw new Error(
-            'Cannot create POSIX root: duplicate directory entry names',
-          );
-        }
-
-        return root;
-      },
-      loadChildren: (
-        treeNodeApi: TreeMethods<PosixId, PosixValue>,
-        path: readonly PosixId[],
-      ) => loadDirectoryEntries(treeNodeApi, path),
+      loadChildren: (path: readonly PosixId[]) => loadDirectoryEntries(path),
+      loadRoot: async () => ({
+        id: rootId,
+        value: { kind: 'directory' as const },
+      }),
       presentNode: (id: PosixId, isBranch: boolean) => {
         return {
           content: id,

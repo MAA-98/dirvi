@@ -9,5 +9,5 @@ export type {
   OptionalForegroundHighlightConfig,
   Theme,
 } from './config/index.js';
-export type { AppDefinition } from './app/app-definition.js';
+export type { AppRoot, AppChild, AppDefinition } from './app/app-definition.js';
 export type { AppApiConsumer, AppApiApplicator, AppDefinitionApplicator, AppPlugin } from './plugin.js';

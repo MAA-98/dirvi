@@ -116,7 +116,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
       const oldState = stateRef.current;
 
       void appApi.stateApi
-        .resync(oldState, appApi.loadBranches)
+        .resync(oldState, appApi.loadChildren)
         .then((newState) => {
           if (!active) {
             return;
@@ -237,7 +237,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
 
         case 'loadBranchEntries': {
           void appApi
-            .loadBranches(effect.path)
+            .loadChildren(effect.path)
             .then((entries) => {
               dispatch({
                 kind: 'updateBranch',

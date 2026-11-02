@@ -28,17 +28,12 @@ export type AppApi<
   name: string;
 
   /**
-   * ID used for the application's root node.
-   */
-  rootId: Id;
-
-  /**
    * Loads direct children for the branch addressed by `path`.
    *
    * Returned nodes must be opaque tree values created or decoded through this
    * application's TreeNodeApi specialization.
    */
-  loadBranches: (
+  loadChildren: (
     path: readonly Id[],
   ) => Promise<readonly TreeNode<Id, Value>[]>;
 
@@ -48,7 +43,7 @@ export type AppApi<
    * Invariant: the returned node is an open branch. That invariant is checked
    * when an initial State is created.
    */
-  createRoot: () => Promise<TreeNode<Id, Value>>;
+  loadRoot: () => Promise<TreeNode<Id, Value>>;
   
   presentNode: PresentNode<Id>;
 

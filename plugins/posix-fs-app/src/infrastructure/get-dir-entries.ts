@@ -1,49 +1,51 @@
 import { readdir, readlink } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import type { TreeNode, TreeMethods } from 'dirvi-lib';
+import type { AppChild } from 'dirvi-apis';
 
 import {
-  type PosixValue,
   type PosixId,
+  type PosixValue,
   posixFilenameSchema,
-  PosixTreeNode,
-  createConstructors,
 } from '../domain/posix-tree.js';
 import { type UnixAbsolutePath, UnixPathSchema } from '../domain/unix-path.js';
 
 export async function getDirEntries(
-  treeNodeApi: TreeMethods<PosixId, PosixValue>,
   address: UnixAbsolutePath,
-): Promise<TreeNode<PosixId, PosixValue>[]> {
+): Promise<readonly AppChild<PosixId, PosixValue>[]> {
   const directoryEntries = await readdir(address, {
     withFileTypes: true,
   });
-  const constructors = createConstructors(treeNodeApi);
 
   return Promise.all(
-    directoryEntries.map(async (directoryEntry): Promise<PosixTreeNode> => {
-      const id = posixFilenameSchema.parse(directoryEntry.name);
+    directoryEntries.map(
+      async (entry): Promise<AppChild<PosixId, PosixValue>> => {
+        const id = posixFilenameSchema.parse(entry.name);
 
-      if (directoryEntry.isSymbolicLink()) {
-        const target = UnixPathSchema.parse(
-          await readlink(join(address, directoryEntry.name)),
+        if (entry.isSymbolicLink()) {
+          const target = UnixPathSchema.parse(
+            await readlink(join(address, entry.name)),
+          );
+
+          return { id, kind: 'leaf', value: { kind: 'symlink', target } };
+        }
+
+        if (entry.isDirectory()) {
+          return {
+            id,
+            kind: 'unloaded-branch',
+            value: { kind: 'directory' },
+          };
+        }
+
+        if (entry.isFile()) {
+          return { id, kind: 'leaf', value: { kind: 'file' } };
+        }
+
+        throw new Error(
+          `Unsupported filesystem entry "${join(address, entry.name)}"`,
         );
-
-        return constructors.symlink(id, target);
-      }
-
-      if (directoryEntry.isDirectory()) {
-        return constructors.unloadedDirectory(id);
-      }
-
-      if (directoryEntry.isFile()) {
-        return constructors.file(id);
-      }
-
-      throw new Error(
-        `Unsupported filesystem entry "${join(address, directoryEntry.name)}"`,
-      );
-    }),
+      },
+    ),
   );
 }

@@ -46,11 +46,49 @@ export function createAppApi<
       cursorMethods
     );
   
+  async function loadChildren(path: readonly Id[]) {
+    const children = await appDefinition.loadChildren(path);
+    const seenIds = new Set<Id>();
+
+    return children.map((child) => {
+      if (seenIds.has(child.id)) {
+        throw new Error('Application returned duplicate sibling IDs');
+      }
+      seenIds.add(child.id);
+
+      switch (child.kind) {
+        case 'leaf':
+          return treeMethods.createLeaf(child.id, child.value);
+
+        case 'unloaded-branch':
+          return treeMethods.createUnloadedBranch(child.id, child.value);
+
+        default:
+          // Also protects against invalid output from JavaScript plugins.
+          throw new Error('Application returned an invalid child kind');
+      }
+    });
+  }
+  
   return {
     name: appDefinition.displayName,
-    rootId: appDefinition.rootId,
-    createRoot: () => appDefinition.createRoot(treeMethods),
-    loadBranches: (path) => appDefinition.loadChildren(treeMethods, path),
+    loadChildren: (path) => loadChildren(path),
+    loadRoot: async () => {
+      const rootData = await appDefinition.loadRoot();
+      const children = await loadChildren([]);
+
+      const root = treeMethods.createLoadedBranch(
+        rootData.id,
+        rootData.value,
+        children,
+      );
+
+      if (root === undefined) {
+        throw new Error('Cannot create root: duplicate child IDs');
+      }
+
+      return root;
+    },
     presentNode: (id, isBranch) => appDefinition.presentNode(id, isBranch),
     subscribeToResync: appDefinition.subscribeToResync,
     stateApi,

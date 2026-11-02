@@ -1,4 +1,7 @@
+import { createHash } from 'node:crypto';
+
 import {
+  parseXml,
   XmlCdata,
   XmlComment,
   XmlDeclaration,
@@ -8,138 +11,177 @@ import {
   XmlText,
 } from '@rgrove/parse-xml';
 import type { XmlNode } from '@rgrove/parse-xml';
+import type { AppChild, AppRoot } from 'dirvi-apis';
 
-import type { TreeMethods } from 'dirvi-lib';
+import type { XmlId, XmlNodeValue } from '../domain/xml-tree.js';
+import { createXmlId } from '../domain/xml-tree.js';
 
-import type {
-  XmlNodeValue,
-  XmlTreeNode,
-} from '../domain/xml-tree.js';
-import { createConstructors } from '../domain/xml-tree.js';
-import type { XmlId } from '../domain/xml-tree.js';
+// RFC 4122 URL namespace, used to derive deterministic version-5 UUIDs.
+const uuidNamespace = Buffer.from('6ba7b8119dad11d180b400c04fd430c8', 'hex');
 
-/**
- * Allocates an XML tree ID containing the node's name and a unique UUID.
- *
- * IDs identify nodes and cursor paths. They do not represent sibling order:
- * source child order is preserved by the TreeNode child sequence.
- */
-export type CreateXmlId = (name: string) => XmlId;
+function nodeId(
+  filePath: string,
+  position: readonly number[],
+  name: string,
+): XmlId {
+  const hash = createHash('sha1')
+    .update(uuidNamespace)
+    .update(JSON.stringify([filePath, position, name]), 'utf8')
+    .digest();
 
-/**
- * Converts XML parser nodes into ordered Dirvi XML tree nodes.
- *
- * The returned array preserves parser child order exactly. In particular,
- * mixed content such as text, elements, comments, and CDATA remains in its
- * source-document order.
- */
-export function getXmlEntries(
-  treeNodeApi: TreeMethods<XmlId, XmlNodeValue>,
-  xmlNodes: readonly XmlNode[],
-  createXmlId: CreateXmlId,
-): XmlTreeNode[] {
-  return xmlNodes.map((xmlNode) => {
-    const id = createXmlId(getXmlNodeName(xmlNode));
-    const constructors = createConstructors(treeNodeApi);
+  const bytes = Buffer.from(hash.subarray(0, 16));
+  bytes[6] = (bytes[6]! & 0x0f) | 0x50; // UUID version 5
+  bytes[8] = (bytes[8]! & 0x3f) | 0x80; // RFC variant
 
-    if (xmlNode instanceof XmlElement) {
-      const children = getXmlEntries(
-        treeNodeApi,
-        xmlNode.children,
-        createXmlId,
-      );
+  const hex = bytes.toString('hex');
+  const uuid = [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20, 32),
+  ].join('-');
 
-      const node = constructors.element(
-        id,
-        xmlNode.name,
-        Object.entries(xmlNode.attributes).map(([name, value]) => ({
+  return createXmlId(name, uuid);
+}
+
+function nodeName(node: XmlNode): string {
+  if (
+    node instanceof XmlElement ||
+    node instanceof XmlProcessingInstruction ||
+    node instanceof XmlDocumentType
+  ) {
+    return node.name;
+  }
+
+  if (node instanceof XmlText) return '#text';
+  if (node instanceof XmlCdata) return '#cdata';
+  if (node instanceof XmlComment) return '#comment';
+  if (node instanceof XmlDeclaration) return '#declaration';
+
+  throw new Error(`Unsupported XML node type "${node.type}".`);
+}
+
+function describeChild(
+  filePath: string,
+  position: readonly number[],
+  node: XmlNode,
+): AppChild<XmlId, XmlNodeValue> {
+  const id = nodeId(filePath, position, nodeName(node));
+
+  if (node instanceof XmlElement) {
+    return {
+      id,
+      kind: 'unloaded-branch',
+      value: {
+        kind: 'element',
+        name: node.name,
+        attributes: Object.entries(node.attributes).map(([name, value]) => ({
           name,
           value,
         })),
-        children,
-      );
+      },
+    };
+  }
 
-      if (node === undefined) {
-        throw new Error(
-          `Cannot create XML element "${xmlNode.name}": duplicate child IDs.`,
-        );
-      }
+  if (node instanceof XmlText) {
+    return { id, kind: 'leaf', value: { kind: 'text', text: node.text } };
+  }
 
-      return node;
-    }
+  if (node instanceof XmlCdata) {
+    return { id, kind: 'leaf', value: { kind: 'cdata', text: node.text } };
+  }
 
-    if (xmlNode instanceof XmlText) {
-      return constructors.text(id, xmlNode.text);
-    }
+  if (node instanceof XmlComment) {
+    return {
+      id,
+      kind: 'leaf',
+      value: { kind: 'comment', text: node.content },
+    };
+  }
 
-    if (xmlNode instanceof XmlCdata) {
-      return constructors.cdata(id, xmlNode.text);
-    }
+  if (node instanceof XmlProcessingInstruction) {
+    return {
+      id,
+      kind: 'leaf',
+      value: {
+        kind: 'processing-instruction',
+        target: node.name,
+        data: node.content,
+      },
+    };
+  }
 
-    if (xmlNode instanceof XmlComment) {
-      return constructors.comment(id, xmlNode.content);
-    }
+  if (node instanceof XmlDeclaration) {
+    return {
+      id,
+      kind: 'leaf',
+      value: {
+        kind: 'declaration',
+        version: node.version,
+        encoding: node.encoding,
+        standalone: node.standalone,
+      },
+    };
+  }
 
-    if (xmlNode instanceof XmlProcessingInstruction) {
-      return constructors.processingInstruction(
-        id,
-        xmlNode.name,
-        xmlNode.content,
-      );
-    }
+  if (node instanceof XmlDocumentType) {
+    return {
+      id,
+      kind: 'leaf',
+      value: {
+        kind: 'doctype',
+        name: node.name,
+        publicId: node.publicId,
+        systemId: node.systemId,
+        internalSubset: node.internalSubset,
+      },
+    };
+  }
 
-    if (xmlNode instanceof XmlDeclaration) {
-      return constructors.declaration(
-        id,
-        xmlNode.version,
-        xmlNode.encoding,
-        xmlNode.standalone,
-      );
-    }
+  throw new Error(`Unsupported XML node type "${node.type}".`);
+}
 
-    if (xmlNode instanceof XmlDocumentType) {
-      return constructors.doctype(
-        id,
-        xmlNode.name,
-        xmlNode.publicId,
-        xmlNode.systemId,
-        xmlNode.internalSubset,
-      );
-    }
-
-    throw new Error(`Unsupported XML node type "${xmlNode.type}".`);
-  });
+export function createXmlRoot(filePath: string): AppRoot<XmlId, XmlNodeValue> {
+  return {
+    id: nodeId(filePath, [], '#document'),
+    value: { kind: 'document' },
+  };
 }
 
 /**
- * Returns the XML name where one exists, otherwise a synthetic node label.
- *
- * Namespace prefixes are preserved, for example "svg:path".
+ * Returns direct children in parser order. Paths are relative to the document
+ * root; an empty path selects the document itself.
  */
-function getXmlNodeName(xmlNode: XmlNode): string {
-  if (
-    xmlNode instanceof XmlElement ||
-    xmlNode instanceof XmlProcessingInstruction ||
-    xmlNode instanceof XmlDocumentType
-  ) {
-    return xmlNode.name;
+export function getXmlEntries(
+  filePath: string,
+  source: string,
+  path: readonly XmlId[],
+): readonly AppChild<XmlId, XmlNodeValue>[] {
+  const document = parseXml(source);
+  let children: readonly XmlNode[] = document.children;
+  let position: readonly number[] = [];
+
+  for (const segment of path) {
+    const index = children.findIndex(
+      (node, i) =>
+        nodeId(filePath, [...position, i], nodeName(node)) === segment,
+    );
+
+    if (index === -1) {
+      throw new Error(`XML path not found: ${path.join(' / ')}`);
+    }
+
+    const node = children[index];
+    if (!(node instanceof XmlElement)) {
+      throw new Error(`XML path addresses a leaf: ${path.join(' / ')}`);
+    }
+
+    position = [...position, index];
+    children = node.children;
   }
-  
-  if (xmlNode instanceof XmlText) {
-    return '#text';
-  }
-  
-  if (xmlNode instanceof XmlCdata) {
-    return '#cdata';
-  }
-  
-  if (xmlNode instanceof XmlComment) {
-    return '#comment';
-  }
-  
-  if (xmlNode instanceof XmlDeclaration) {
-    return '#declaration';
-  }
-  
-  throw new Error(`Unsupported XML node type "${xmlNode.type}".`);
+
+  return children.map((node, index) =>
+    describeChild(filePath, [...position, index], node),
+  );
 }

@@ -145,7 +145,20 @@ export const XmlElementValueSchema = z.object({
   attributes: z.array(XmlAttributeSchema).readonly(),
 }) satisfies z.ZodType<XmlElementValue>;
 
-// TODO: add declaration and doctype when schema is needed
+export const XmlDeclarationValueSchema = z.object({
+  kind: z.literal('declaration'),
+  version: z.string(),
+  encoding: z.string().nullable(),
+  standalone: z.enum(['yes', 'no']).nullable(),
+}) satisfies z.ZodType<XmlDeclarationValue>;
+
+export const XmlDoctypeValueSchema = z.object({
+  kind: z.literal('doctype'),
+  name: z.string(),
+  publicId: z.string().nullable(),
+  systemId: z.string().nullable(),
+  internalSubset: z.string().nullable(),
+}) satisfies z.ZodType<XmlDoctypeValue>;
 
 export const XmlTextValueSchema = z.object({
   kind: z.literal('text'),

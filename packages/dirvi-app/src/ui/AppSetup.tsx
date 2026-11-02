@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { AppApi, SerializableKey, State } from 'dirvi-lib';
+import { AppApi, createTreeMethods, SerializableKey, State } from 'dirvi-lib';
 import {
   createEffectToAction,
   createIntentToEffect,
@@ -26,6 +26,22 @@ type LoadingAppProps<Id extends SerializableKey, Value, ViewKey = string> = {
   clipboard?: (value: string) => void;
 };
 
+type LoadState<Id extends SerializableKey, Value, ViewKey> =
+  | {
+      status: 'loading';
+      appApi: AppApi<Id, Value, ViewKey>;
+    }
+  | {
+      status: 'ready';
+      appApi: AppApi<Id, Value, ViewKey>;
+      initialState: State<Id, Value>;
+    }
+  | {
+      status: 'error';
+      appApi: AppApi<Id, Value, ViewKey>;
+      error: Error;
+    };
+
 export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
   appScreenRenderer,
   loadingScreenRenderer,
@@ -35,40 +51,46 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
   stdout,
   clipboard,
 }: LoadingAppProps<Id, Value, ViewKey>) {
+  const [loadState, setLoadState] = useState<LoadState<Id, Value, ViewKey>>();
   const [initialState, setInitialState] = useState<State<Id, Value>>();
 
   // Loading and setting initial state.
   useEffect(() => {
     let mounted = true;
 
-    appApi
-      .createRoot()
-      .then((root) => {
-        if (!mounted) {
-          return;
-        }
-        
-        setInitialState(
-          appApi.stateApi.create(
-            root,
-            appApi.stateApi.foldsApi.create(appApi.rootId, {
-              name: 'default',
-              description: null,
-            }),
-            { path: [] }
-          )
-        )
-      })
-      .catch((cause: unknown) => {
-        const nextError =
-          cause instanceof Error ? cause : new Error(String(cause));
+    setLoadState({ status: 'loading', appApi });
+
+    async function initialize() {
+      try {
+        const root = await appApi.loadRoot();
 
         if (!mounted) {
           return;
         }
 
-        throw nextError;
-      });
+        const rootId = createTreeMethods<Id, Value>().id(root);
+        const folds = appApi.stateApi.foldsApi.create(rootId, {
+          name: 'default',
+          description: null,
+        });
+        const initialState = appApi.stateApi.create(root, folds, { path: [] });
+
+        if (initialState === undefined) {
+          throw new Error('Cannot create initial app state');
+        }
+
+        setLoadState({ status: 'ready', appApi, initialState });
+      } catch (cause: unknown) {
+        if (!mounted) {
+          return;
+        }
+
+        const error = cause instanceof Error ? cause : new Error(String(cause));
+        setLoadState({ status: 'error', appApi, error });
+      }
+    }
+
+    void initialize();
 
     return () => {
       mounted = false;
