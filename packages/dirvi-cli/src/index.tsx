@@ -15,6 +15,7 @@ import {
 } from './infrastructure/get-xdg-paths.js';
 import { InkAppScreen } from './ui/InkAppScreen.js';
 import { InkLoadingScreen } from './ui/InkLoadingScreen.js';
+import { InkShell } from './ui/InkShell.js';
 
 const program = new Command();
 
@@ -109,7 +110,7 @@ program
 
     try {
       const app = render(
-        <Shell
+        <InkShell
           loadingScreenRenderer={InkLoadingScreen}
           appScreenRenderer={InkAppScreen}
           initialAppOptions={options}

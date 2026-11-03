@@ -76,7 +76,6 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
     normalBuffer: '',
   });
   const [feedback, setFeedback] = useState<Feedback>();
-  const [exitStatus, setExitStatus] = useState<string | undefined>();
 
   const [rowCount, setRowCount] = useState(0);
   const handleRowsChange = useCallback((nextRows: number): void => {
@@ -157,7 +156,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
             normalBuffer: '',
           });
           const command = initialization.exCommands.get(effect.name);
-          
+
           if (command === undefined) {
             feedbackApi.addMessage(
               `Command is no longer registered: ${effect.name}`,
@@ -170,18 +169,18 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
             .catch((error: unknown) => {
               const appError =
                 error instanceof Error ? error : new Error(String(error));
-              
+
               feedbackApi.addMessage(
                 `Command "${effect.name}" failed: ${appError.message}`,
                 'error',
               );
             });
-          
+
           return;
         }
-        
+
         case 'quit':
-          setExitStatus(effect.exitMessage);
+          shellApi.quit(effect.exitMessage);
           return;
 
         case 'listApps': {
@@ -196,10 +195,10 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
 
           return;
         }
-        
+
         case 'switchApp':
-          void shellApi.openApp(effect.appId, effect.input)
-          return
+          void shellApi.openApp(effect.appId, effect.input);
+          return;
 
         case 'dispatchEffectAction':
           const effectActionResult = effectToAction(
@@ -363,10 +362,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
         }
 
         case 'emitError':
-          feedbackApi.addMessage(
-            effect.message,
-            'error',
-          );
+          feedbackApi.addMessage(effect.message, 'error');
           return;
       }
     },
@@ -406,7 +402,6 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
       inputState={inputState}
       handleInput={handleInput}
       onRowsChange={handleRowsChange}
-      exitStatus={exitStatus}
     />
   );
 }

@@ -25,8 +25,6 @@ export type AppScreenProps = {
 
   readonly handleInput: (userInput: UserInput) => void;
   readonly onRowsChange: (rows: number) => void;
-
-  readonly exitStatus: string | undefined;
 };
 
 /**

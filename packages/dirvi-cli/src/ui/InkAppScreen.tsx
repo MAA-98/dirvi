@@ -24,7 +24,6 @@ export const InkAppScreen: AppScreenRenderer = ({
   inputState,
   handleInput,
   onRowsChange,
-  exitStatus,
 }: {
   view: View;
   feedback: Feedback | undefined;
@@ -33,7 +32,6 @@ export const InkAppScreen: AppScreenRenderer = ({
   inputState: InputModeState;
   handleInput: (userInput: UserInput) => void;
   onRowsChange: (rows: number) => void;
-  exitStatus: string | undefined;
 }) => {
   const feedbackType: FeedbackType =
     feedback === undefined ? 'message' : feedbackApi.getType(feedback);
@@ -74,23 +72,6 @@ export const InkAppScreen: AppScreenRenderer = ({
       Math.max(0, terminalRows - STATUS_BAR_HEIGHT),
     );
   }, [feedback, terminalColumns, terminalRows]);
-
-  // ===========================================================================
-  // Ink exit hook
-  // ===========================================================================
-  const { exit } = useApp();
-
-  useEffect(() => {
-    if (exitStatus === undefined) {
-      return;
-    }
-
-    exit();
-  }, [exit, exitStatus]);
-
-  if (exitStatus !== undefined) {
-    return null;
-  }
 
   return (
     <Box flexDirection="column" height={terminalRows}>

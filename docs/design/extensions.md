@@ -3,7 +3,7 @@
 This is a record of design decisions and their justifications. Previous design
 choices influence the next, so this is to be interpreted chronologically.
 
-## Extensible configs
+## Extensible configurations
 
 **Requirement:**
 
@@ -34,10 +34,6 @@ and can also be accessed with:
 dirvi;
 ```
 
-The facade is available only while `init.mjs` is being evaluated. It exposes
-configuration operations, rather than direct access to the terminal UI,
-application state, or host infrastructure.
-
 For example, an initialization script may change shared UI options:
 
 ```js
@@ -46,6 +42,8 @@ dirvi.options.set({
   firstIndent: '│ ',
 });
 ```
+
+The facade exposing configuration operations is available only while `init.mjs` is being evaluated.
 
 The startup lifecycle is:
 
@@ -56,7 +54,25 @@ The startup lifecycle is:
 - host consumes the resolved configuration
 - host enters the terminal UI
 
-## App plugins 1
+## Custom Commands
+
+**Requirement:**
+
+1. Custom Ex commands that control dirvi.
+
+**Implications:**
+
+Need a DirviApi object with methods for controlling dirvi.
+
+Need to decide how to deal with conflicts, when two custom commands clash or 
+override a builtin commands.
+
+**_Decision:_**
+
+- DirviApi is made with shell API for control outside of current app
+- Custom commands override builtins, later custom commands override earlier ones.
+
+## Custom Apps
 
 **Requirement:**
 
@@ -71,7 +87,7 @@ The startup lifecycle is:
 
 **Implications:**
 
-An app plugin needs to connect an application-specific data source to
+An app needs to connect an application-specific data source to
 dirvi's shared tree model.
 
 For example, a filesystem app knows how to read directories, identify
@@ -79,7 +95,7 @@ entries, and describe files. An XML app knows how to read and describe
 XML nodes. Neither should need to implement its own cursor, fold-state
 management, navigation runtime, or terminal UI.
 
-The plugin therefore supplies an application definition, rather than
+The app therefore supplies an application definition, rather than
 a replacement tree runtime. Dirvi uses that definition to construct
 the application's runtime API.
 
@@ -89,33 +105,23 @@ need to name them when selecting or running an app.
 
 **_Decision:_**
 
-An app plugin exposes `createAppDefinitionApplicator`. The definition
-supplies at least:
+An app exposes its definition which supplies at least:
 
-- A function for creating the initial root.
-- A function for loading a branch's direct children.
+- A function for creating the inputs for the initial root.
+- A function for loading the inputs for a branch's direct children.
 - A synchronous, side-effect-free function for describing a tree node's
   presentation.
 - A subscription through which the app can request resynchronization.
 
 Dirvi constructs the concrete tree and application APIs from this
-definition. The plugin does not supply implementations of dirvi's
-internal tree structures or runtime.
-
-Functions that create or load nodes receive the application's specialized
-`TreeMethods`. They must return opaque tree nodes created or decoded
-through that API, rather than constructing an alternative node
-representation.
-
-The initial root must be an open branch. Dirvi checks this invariant
-when constructing the initial state.
+definition.
 
 The app describes entry content, while dirvi owns its surrounding
 presentation: indentation, cursor styling, selection styling, and fold
 decorations. Similarly, the app signals when resynchronization is needed,
 while dirvi performs it through the shared runtime.
 
-## App plugins 2
+## Order Semantics
 
 **Requirement:**
 

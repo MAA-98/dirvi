@@ -141,42 +141,17 @@ function parseFoldCommand<Id extends SerializableKey, Value>(
 }
 
 /**
- * Parses a Vim-style Ex command line into an application effect.
+ * Parses a Vim-style Ex command into an application effect.
  *
- * Leading and trailing whitespace is removed, followed by all consecutive
- * leading `:` characters. The remaining text is split on one or more
- * whitespace characters:
+ * Leading `:` characters are optional. Arguments are split on whitespace;
+ * quoting and escaping are not supported.
  *
- * - The first token is treated as the command name.
- * - All remaining tokens are treated as command arguments.
+ * Registered commands take precedence over built-ins and receive their
+ * arguments without validation. This function does not execute them.
  *
- * Registered user commands are matched by exact name before built-in commands,
- * allowing them to override built-ins. A match produces a `userExCommand`
- * effect containing the registered name and argument tokens. This function
- * neither looks up nor executes the registered callback.
- *
- * Otherwise, the command is interpreted as a built-in, with its arguments
- * passed to the command-specific parser where applicable.
- *
- * Parsing is token-based and does not support quoted or escaped arguments.
- * Consequently, whitespace within an argument cannot currently be preserved.
- * Built-in argument validation is handled by the command-specific parsers;
- * registered user-command arguments are forwarded without validation.
- *
- * An empty command produces `undefined`. An unknown command produces an
- * `emitError` effect whose message includes the original `commandLine`.
- *
- * Command parsing is independent of the concrete tree-node value type, but the
- * generic parameters allow its result to compose with the application's
- * `Effect<Id, Value>` pipeline.
- *
- * @typeParam Id - The sibling-unique tree-node ID type.
- * @typeParam Value - Application-owned data stored in each tree node.
- * @param commandLine - The raw Ex command line, whitespace before or after,
- * optionally prefixed with one or more `:` characters.
- * @param registeredCommands - Registered user-command names that take
- * precedence over built-in commands.
- * @returns The parsed application effect, or `undefined` for an empty command.
+ * @param commandLine - The raw command line.
+ * @param registeredCommands - User-command names that override built-ins.
+ * @returns An effect, or `undefined` for an empty command.
  */
 export function parseExCommand<Id extends SerializableKey, Value>(
   commandLine: string,

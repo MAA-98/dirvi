@@ -37,14 +37,15 @@ export type ShellAppProps = {
    */
   readonly loadingScreenRenderer: LoadingScreenRenderer;
   readonly appScreenRenderer: AppScreenRenderer;
-  
+
   readonly initialAppOptions: InitialAppOptions;
   readonly initialization: Initialization;
   readonly packageLoader: PackageLoader;
 
+  /** Requests that the host exit dirvi. */
+  readonly onQuit: (message?: string) => void;
   /** Writes non-interactive application output. */
   readonly stdout?: (message: string) => void;
-
   /** Copies a value to the platform clipboard. */
   readonly clipboard?: (value: string) => void;
 };
@@ -60,6 +61,7 @@ export type ShellAppProps = {
  * AppSetup receives the concrete AppApi and mounts the app-specific tree UI.
  */
 export function Shell({
+  onQuit,
   loadingScreenRenderer,
   appScreenRenderer,
   initialAppOptions,
@@ -72,12 +74,14 @@ export function Shell({
     AppApiApplicator | undefined
   >(undefined);
   const [appError, setAppError] = useState<Error | undefined>(undefined);
-
+  
+  /**
+   * Create the Shell API based on init.mjs setup.
+   */
   const shellApi = useMemo<ShellApi>(() => {
     return {
       openApp: async (appId, input) => {
         const appReference = initialization.app.registered.get(appId);
-
         if (appReference === undefined) {
           throw new Error(`App "${appId}" has not been registered.`);
         }
@@ -92,9 +96,11 @@ export function Shell({
 
         setAppApiApplicator(() => loadedAppApiApplicator);
       },
+      quit: onQuit,
     };
-  }, [packageLoader, initialization.app.registered]);
+  }, [packageLoader, initialization.app.registered, onQuit]);
 
+  /** Load initial app on startup, using the shell API. */
   useEffect(() => {
     void shellApi
       .openApp(
@@ -128,7 +134,6 @@ export function Shell({
     return <LoadingScreenRenderer />;
   }
 
-  // Result type is specified here to be AppSetup
   return appApiApplicator((appApi) => (
     <AppSetup
       appScreenRenderer={appScreenRenderer}
