@@ -1,4 +1,5 @@
 import { ShellApi } from './shell-api.js';
+import { AppApi } from './app-api.js';
 
 /**
  * General API for performing actions in a running Dirvi session.
@@ -12,4 +13,5 @@ import { ShellApi } from './shell-api.js';
  */
 export type DirviApi = {
   shell: ShellApi;
+  app: AppApi;
 };

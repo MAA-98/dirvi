@@ -165,7 +165,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
             return;
           }
           void Promise.resolve()
-            .then(() => command.execute({ shell: shellApi })) // TODO: Add args
+            .then(() => command.execute({ shell: shellApi, app: {} })) // TODO: Add args
             .catch((error: unknown) => {
               const appError =
                 error instanceof Error ? error : new Error(String(error));
@@ -204,12 +204,6 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
                 feedbackApi.addMessage(result.message, 'error');
               }
             })
-            .catch((error: unknown) => {
-              const appError =
-                error instanceof Error ? error : new Error(String(error));
-              
-              feedbackApi.addMessage(appError.message, 'error');
-            });
           return;
 
         case 'dispatchEffectAction':
@@ -378,7 +372,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           return;
       }
     },
-    [appMethods, effectToAction, feedbackApi, navEntry, state, stdout, initialization.app.registered, shellApi, initialization.exCommands],
+    [appMethods, effectToAction, feedbackApi, navEntry, state, stdout, shellApi, initialization.exCommands, initialization.app.registered],
   );
 
   // ===========================================================================

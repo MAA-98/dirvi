@@ -80,7 +80,7 @@ export function Shell({
           return {
             kind: 'notRegistered',
             appId,
-            message: `App "${appId}" has not been registered in configuration.`,
+            message: `App "${appId}" has not been registered in initial configuration script.`,
           };
         }
         
@@ -105,7 +105,7 @@ export function Shell({
       },
       quit: onQuit,
     };
-  }, [packageLoader, initialization.app.registered, onQuit]);
+  }, [packageLoader, onQuit, initialization.app.registered]);
 
   /**
    * Load initial `AppMethods` on startup, using the shell API just created and
@@ -122,12 +122,8 @@ export function Shell({
           setAppError(new Error(result.message));
         }
       })
-      .catch((error: unknown) => {
-        setAppError(error instanceof Error ? error : new Error(String(error)));
-      });
   }, [
-    initialAppOptions.app,
-    initialAppOptions.input,
+    initialAppOptions,
     initialization.app.initial,
     shellApi,
   ]);

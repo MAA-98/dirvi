@@ -19,6 +19,10 @@ export type OpenAppResult =
  * Not specific to any app.
  */
 export type ShellApi = {
+  /** Result type, so can be trusted to not throw errors. */
   readonly loadApp: (appId: string, input: AppInput) => Promise<OpenAppResult>;
+  
+  /** Optional exit message to display. */
   readonly quit: (message?: string) => void;
+  
 };
