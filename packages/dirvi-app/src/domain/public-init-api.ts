@@ -1,17 +1,18 @@
 import { AppPackageReference } from './app-pack-ref.js';
 import { ConfigPatch } from './config.js';
-import { DirviApi } from './ex-command.js';
+import { DirviApi } from './dirvi-api/dirvi-api.js';
 
 /**
- * The startup configuration API exposed to `init.mjs` as the global `dirvi`.
+ * The public API exposed to `init.mjs` as the global `dirvi` object.
  *
- * These types describe the intended API for TypeScript consumers and provide
- * editor guidance and compile-time checking. They do not validate values at
- * runtime: `init.mjs` may be plain JavaScript and can pass values that do not
- * match these types. The runtime must validate inputs at the scripting
- * boundary before relying on them.
+ * An {@link InitRuntime} provides this API while the script runs. It describes
+ * the intended API for TypeScript consumers and provides editor guidance and
+ * compile-time checking. The script uses it to configure Dirvi by evaluation
+ * creating {@link Initialization} object used internally by Dirvi.
  *
- * This is intentionally a narrow facade; it is the public scripting boundary.
+ * WARNING: Does not validate values at runtime: `init.mjs` may be plain
+ * JavaScript and can pass values that do not match these types. The runtime
+ * must validate inputs before relying on them.
  */
 export type PublicInitApi = {
   readonly options: {

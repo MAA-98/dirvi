@@ -9,7 +9,7 @@ import {
 
 import { createFeedbackApi, userInputToIntent } from 'dirvi-lib';
 import type {
-  AppApi,
+  AppMethods,
   Effect,
   EffectToAction,
   InputModeState,
@@ -24,13 +24,13 @@ import type {
 
 import { useView } from './hooks/useView.js';
 import type { AppScreenRenderer } from './app-screen-renderer.js';
-import { ShellApi } from '../domain/shell-api.js';
+import { ShellApi } from '../domain/dirvi-api/shell-api.js';
 import { Initialization } from '../domain/initialization.js';
 
 type AppProps<Id extends SerializableKey, Value, ViewKey = string> = {
   screenRenderer: AppScreenRenderer;
   shellApi: ShellApi;
-  appApi: AppApi<Id, Value, ViewKey>;
+  appMethods: AppMethods<Id, Value, ViewKey>;
   initialization: Initialization;
   initialState: State<Id, Value>;
   reducer: Reducer<Id, Value>;
@@ -44,7 +44,7 @@ type AppProps<Id extends SerializableKey, Value, ViewKey = string> = {
 export function App<Id extends SerializableKey, Value, ViewKey = string>({
   screenRenderer,
   shellApi,
-  appApi,
+  appMethods,
   initialization,
   initialState,
   reducer,
@@ -61,15 +61,15 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   stateRef.current = state;
 
   const navEntry: NavBranch<Id> = useMemo(() => {
-    const root = appApi.stateApi.getRoot(state);
-    const folds = appApi.stateApi.getFolds(state);
-    const navigation = appApi.navMethods.from(root, folds);
+    const root = appMethods.stateApi.getRoot(state);
+    const folds = appMethods.stateApi.getFolds(state);
+    const navigation = appMethods.navMethods.from(root, folds);
 
     if (navigation === undefined) {
       throw new Error('Tree-surfer state root must be a loaded branch.');
     }
     return navigation;
-  }, [appApi.navMethods, appApi.stateApi, state]);
+  }, [appMethods.navMethods, appMethods.stateApi, state]);
 
   const [inputState, setInputState] = useState<InputModeState>({
     inputMode: 'normal',
@@ -98,11 +98,11 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   const view = useView(
     navEntry,
     state,
-    appApi.stateApi,
-    appApi.navMethods,
-    appApi.stateApi.cursorApi,
+    appMethods.stateApi,
+    appMethods.navMethods,
+    appMethods.stateApi.cursorApi,
     rowCount,
-    appApi.presentNode
+    appMethods.presentNode
   );
 
   // ===========================================================================
@@ -111,11 +111,11 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   useEffect(() => {
     let active = true;
 
-    const unsubscribe = appApi.subscribeToResync(() => {
+    const unsubscribe = appMethods.subscribeToResync(() => {
       const oldState = stateRef.current;
 
-      void appApi.stateApi
-        .resync(oldState, appApi.loadChildren)
+      void appMethods.stateApi
+        .resync(oldState, appMethods.loadChildren)
         .then((newState) => {
           if (!active) {
             return;
@@ -138,7 +138,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
       active = false;
       unsubscribe();
     };
-  }, [appApi, onError]);
+  }, [appMethods, onError]);
 
   // ===========================================================================
   // Executing Effects
@@ -197,7 +197,19 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
         }
 
         case 'switchApp':
-          void shellApi.openApp(effect.appId, effect.input);
+          void shellApi
+            .loadApp(effect.appId, effect.input)
+            .then((result) => {
+              if (result.kind !== 'loaded') {
+                feedbackApi.addMessage(result.message, 'error');
+              }
+            })
+            .catch((error: unknown) => {
+              const appError =
+                error instanceof Error ? error : new Error(String(error));
+              
+              feedbackApi.addMessage(appError.message, 'error');
+            });
           return;
 
         case 'dispatchEffectAction':
@@ -235,7 +247,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           return;
 
         case 'loadBranchEntries': {
-          void appApi
+          void appMethods
             .loadChildren(effect.path)
             .then((entries) => {
               dispatch({
@@ -264,7 +276,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           }
 
           const visibleLeavesPaths =
-            appApi.navMethods.visibleLeavesPaths(navigation);
+            appMethods.navMethods.visibleLeavesPaths(navigation);
           stdout?.(
             JSON.stringify({
               type: 'displayed-leaves-paths',
@@ -331,13 +343,13 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
 
         // TODO: Add descriptions with `...` truncation.
         case 'listFolds': {
-          const folds = appApi.stateApi.getFolds(state);
+          const folds = appMethods.stateApi.getFolds(state);
 
-          const foldTrees = [...appApi.stateApi.foldsApi.indexes(folds)].map(
+          const foldTrees = [...appMethods.stateApi.foldsApi.indexes(folds)].map(
             (index) => ({
               index,
-              info: appApi.stateApi.foldsApi.getInfoAtIndex(folds, index),
-              active: appApi.stateApi.foldsApi.isActiveAtIndex(folds, index),
+              info: appMethods.stateApi.foldsApi.getInfoAtIndex(folds, index),
+              active: appMethods.stateApi.foldsApi.isActiveAtIndex(folds, index),
             }),
           );
 
@@ -366,7 +378,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           return;
       }
     },
-    [appApi, effectToAction, feedbackApi, navEntry, state, stdout, initialization.app.registered, shellApi, initialization.exCommands],
+    [appMethods, effectToAction, feedbackApi, navEntry, state, stdout, initialization.app.registered, shellApi, initialization.exCommands],
   );
 
   // ===========================================================================

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { AppApi, createTreeMethods, SerializableKey, State } from 'dirvi-lib';
+import { AppMethods, createTreeMethods, SerializableKey, State } from 'dirvi-lib';
 import {
   createEffectToAction,
   createIntentToEffect,
@@ -9,19 +9,18 @@ import {
 
 import type { LoadingScreenRenderer } from './loading-screen-renderer.js';
 import type { AppScreenRenderer } from './app-screen-renderer.js';
-import type { Config } from '../domain/config.js';
 import { App } from './App.js';
-import { ShellApi } from '../domain/shell-api.js';
+import { ShellApi } from '../domain/dirvi-api/shell-api.js';
 import { Initialization } from '../domain/initialization.js';
 
 // TODO Later: configuration watched for changes
 
-type LoadingAppProps<Id extends SerializableKey, Value, ViewKey = string> = {
+type AppSetupProps<Id extends SerializableKey, Value, ViewKey = string> = {
   appScreenRenderer: AppScreenRenderer;
   loadingScreenRenderer: LoadingScreenRenderer;
   initialization: Initialization;
   shellApi: ShellApi;
-  appApi: AppApi<Id, Value, ViewKey>;
+  appMethods: AppMethods<Id, Value, ViewKey>;
   stdout?: (message: string) => void;
   clipboard?: (value: string) => void;
 };
@@ -29,16 +28,16 @@ type LoadingAppProps<Id extends SerializableKey, Value, ViewKey = string> = {
 type LoadState<Id extends SerializableKey, Value, ViewKey> =
   | {
       status: 'loading';
-      appApi: AppApi<Id, Value, ViewKey>;
+      appMethods: AppMethods<Id, Value, ViewKey>;
     }
   | {
       status: 'ready';
-      appApi: AppApi<Id, Value, ViewKey>;
+      appMethods: AppMethods<Id, Value, ViewKey>;
       initialState: State<Id, Value>;
     }
   | {
       status: 'error';
-      appApi: AppApi<Id, Value, ViewKey>;
+      appMethods: AppMethods<Id, Value, ViewKey>;
       error: Error;
     };
 
@@ -47,45 +46,45 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
   loadingScreenRenderer,
   initialization,
   shellApi,
-  appApi,
+  appMethods,
   stdout,
   clipboard,
-}: LoadingAppProps<Id, Value, ViewKey>) {
+}: AppSetupProps<Id, Value, ViewKey>) {
   const [loadState, setLoadState] = useState<LoadState<Id, Value, ViewKey>>();
 
   // Loading and setting initial state.
   useEffect(() => {
     let mounted = true;
 
-    setLoadState({ status: 'loading', appApi });
+    setLoadState({ status: 'loading', appMethods: appMethods });
 
     async function initialize() {
       try {
-        const root = await appApi.loadRoot();
+        const root = await appMethods.loadRoot();
 
         if (!mounted) {
           return;
         }
 
         const rootId = createTreeMethods<Id, Value>().id(root);
-        const folds = appApi.stateApi.foldsApi.create(rootId, {
+        const folds = appMethods.stateApi.foldsApi.create(rootId, {
           name: 'default',
           description: null,
         });
-        const initialState = appApi.stateApi.create(root, folds, { path: [] });
+        const initialState = appMethods.stateApi.create(root, folds, { path: [] });
 
         if (initialState === undefined) {
           throw new Error('Cannot create initial app state');
         }
 
-        setLoadState({ status: 'ready', appApi, initialState });
+        setLoadState({ status: 'ready', appMethods: appMethods, initialState });
       } catch (cause: unknown) {
         if (!mounted) {
           return;
         }
 
         const error = cause instanceof Error ? cause : new Error(String(cause));
-        setLoadState({ status: 'error', appApi, error });
+        setLoadState({ status: 'error', appMethods: appMethods, error });
       }
     }
 
@@ -94,37 +93,37 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
     return () => {
       mounted = false;
     };
-  }, [appApi]);
+  }, [appMethods]);
 
   // --- Pure function deps ---
 
   const reducer = useMemo(
-    () => createReducer(appApi.stateApi, appApi.navMethods),
-    [appApi.stateApi, appApi.navMethods],
+    () => createReducer(appMethods.stateApi, appMethods.navMethods),
+    [appMethods.stateApi, appMethods.navMethods],
   );
 
   const intentToEffect = useMemo(
     () =>
       createIntentToEffect(
         new Set(initialization.exCommands.keys()),
-        appApi.stateApi,
+        appMethods.stateApi,
       ),
-    [appApi.stateApi, initialization.exCommands],
+    [appMethods.stateApi, initialization.exCommands],
   );
 
   const effectToAction = useMemo(
     () =>
       createEffectToAction(
-        appApi.stateApi,
-        appApi.navMethods,
+        appMethods.stateApi,
+        appMethods.navMethods,
       ),
-    [appApi.navMethods, appApi.stateApi],
+    [appMethods.navMethods, appMethods.stateApi],
   );
 
   // --- JSX ---
   const LoadingScreenRenderer = loadingScreenRenderer;
 
-  if (loadState === undefined || loadState.appApi !== appApi) {
+  if (loadState === undefined || loadState.appMethods !== appMethods) {
     return <LoadingScreenRenderer />;
   }
 
@@ -140,7 +139,7 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
     <App
       screenRenderer={appScreenRenderer}
       shellApi={shellApi}
-      appApi={appApi}
+      appMethods={appMethods}
       initialization={initialization}
       initialState={loadState.initialState}
       reducer={reducer}

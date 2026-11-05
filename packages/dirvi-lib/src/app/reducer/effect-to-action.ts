@@ -6,7 +6,7 @@ import type {
   NavMethods,
   SerializableKey,
   State,
-  StateApi,
+  StateMethods,
 } from '../../state-and-nav/index.js';
 import type {
   EffectAction,
@@ -85,7 +85,7 @@ function resolveFoldTreeIndex<Id extends SerializableKey>(
 }
 
 export function createEffectToAction<Id extends SerializableKey, Value>(
-  stateApi: StateApi<Id, Value>,
+  stateApi: StateMethods<Id, Value>,
   navNodeApi: NavMethods<Id, Value>,
 ): EffectToAction<Id, Value> {
   const { cursorApi, foldsApi } = stateApi;

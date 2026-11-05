@@ -1,7 +1,7 @@
 import type {
   SerializableKey,
   State,
-  StateApi,
+  StateMethods,
 } from '../../state-and-nav/index.js';
 import type { Effect, EffectAction, Intent } from '../domain/index.js';
 
@@ -24,7 +24,7 @@ export type IntentToEffect<Id extends SerializableKey, Value> = (
 
 export function createIntentToEffect<Id extends SerializableKey, Value>(
   registeredCommands: ReadonlySet<string>,
-  stateApi: StateApi<Id, Value>,
+  stateApi: StateMethods<Id, Value>,
 ): IntentToEffect<Id, Value> {
   return (intent, state) => {
     switch (intent.intentType) {
@@ -161,7 +161,7 @@ function normalBufferToEffectResult<Id extends SerializableKey, Value>(
  */
 function normalInteractRightToEffect<Id extends SerializableKey, Value>(
   state: State<Id, Value>,
-  stateApi: StateApi<Id, Value>,
+  stateApi: StateMethods<Id, Value>,
 ): Effect<Id, Value> | undefined {
   const currentEntry = stateApi.getNodeAtCursor(state);
 
@@ -202,7 +202,7 @@ function normalInteractRightToEffect<Id extends SerializableKey, Value>(
  */
 function normalInteractLeftToEffect<Id extends SerializableKey, Value>(
   state: State<Id, Value>,
-  stateApi: StateApi<Id, Value>,
+  stateApi: StateMethods<Id, Value>,
 ): Effect<Id, Value> | undefined {
   if (stateApi.isCursorRoot(state)) {
     return undefined;

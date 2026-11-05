@@ -10,7 +10,7 @@ import type {
 import type {
   SerializableKey,
 } from '../../state-and-nav/index.js';
-import type { State, StateApi } from '../../state-and-nav/index.js';
+import type { State, StateMethods } from '../../state-and-nav/index.js';
 import type { ReducerAction } from './reducer-action.js';
 
 function firstAvailableAdditionalFoldIndex<Id extends SerializableKey>(
@@ -32,7 +32,7 @@ export type Reducer<Id extends SerializableKey, Value> = (
 ) => State<Id, Value>;
 
 export function createReducer<Id extends SerializableKey, Value>(
-  stateApi: StateApi<Id, Value>,
+  stateApi: StateMethods<Id, Value>,
   navNodeApi: NavMethods<Id, Value>,
 ): Reducer<Id, Value> {
   const { treeNodeApi, foldsApi, cursorApi } = stateApi;
@@ -124,7 +124,7 @@ export function createReducer<Id extends SerializableKey, Value>(
 
   function update(
     state: State<Id, Value>,
-    changes: Parameters<StateApi<Id, Value>['update']>[1],
+    changes: Parameters<StateMethods<Id, Value>['update']>[1],
   ): State<Id, Value> {
     const nextState = stateApi.update(state, changes);
 

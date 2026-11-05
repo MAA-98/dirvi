@@ -5,7 +5,7 @@ import type {
   NavBranch,
   NavMethods,
   SerializableKey,
-  State, StateApi,
+  State, StateMethods,
 } from 'dirvi-lib';
 import type { PresentNode } from 'dirvi-apis';
 import { View, type ViewRow } from '../view.js';
@@ -17,7 +17,7 @@ const STATUS_BAR_HEIGHT = 1;
 export function useView<Id extends SerializableKey, Value>(
   navNode: NavBranch<Id>,
   state: State<Id, Value>,
-  stateApi: StateApi<Id, Value>,
+  stateApi: StateMethods<Id, Value>,
   navNodeApi: NavMethods<Id, Value>,
   cursorMethods: CursorMethods<Id>,
   rowCount: number,

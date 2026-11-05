@@ -5,7 +5,7 @@ import type {
 } from '../tree/index.js';
 import type { Folds, FoldMethods } from '../fold-node/index.js';
 import type { Cursor, CursorMethods } from '../cursor.js';
-import type { StateApi, State } from './state.types.js';
+import type { StateMethods, State } from './state.types.js';
 
 // =============================================================================
 // Opaque Type Implementation
@@ -56,7 +56,7 @@ export function createStateApi<Id extends SerializableKey, Value>(
   treeNodeApi: TreeMethods<Id, Value>,
   foldsApi: FoldMethods<Id>,
   cursorApi: CursorMethods<Id>,
-): StateApi<Id, Value> {
+): StateMethods<Id, Value> {
   /**
    * Reloads one node's direct children and recursively reloads descendant
    * branches that were open in the old state.

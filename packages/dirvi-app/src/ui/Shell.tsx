@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { AppApiApplicator } from 'dirvi-lib';
+import type { AppMethodsApplicator } from 'dirvi-lib';
 
 import type { AppScreenRenderer } from './app-screen-renderer.js';
 import type { LoadingScreenRenderer } from './loading-screen-renderer.js';
 import { AppSetup } from './AppSetup.js';
 import type { Initialization } from '../domain/initialization.js';
 import type { PackageLoader } from '../application/package-loader.js';
-import { ShellApi } from '../domain/shell-api.js';
-import { createAppApiApplicator } from '../application/create-app-api.js';
+import { ShellApi } from '../domain/dirvi-api/shell-api.js';
+import { createAppMethodsApplicator } from '../application/create-app-methods.js';
 
 export type InitialAppOptions = Readonly<{
   /**
@@ -42,7 +42,7 @@ export type ShellAppProps = {
   readonly initialization: Initialization;
   readonly packageLoader: PackageLoader;
 
-  /** Requests that the host exit dirvi. */
+  /** Request to exit dirvi with an optional message. */
   readonly onQuit: (message?: string) => void;
   /** Writes non-interactive application output. */
   readonly stdout?: (message: string) => void;
@@ -51,14 +51,7 @@ export type ShellAppProps = {
 };
 
 /**
- * Hosts the currently active application inside the persistent terminal shell.
- *
- * Shell deliberately does not depend on a concrete AppApi type. OpenApp keeps
- * each application's Id, Value, and ViewKey types coherent while hiding those
- * details from shell-level concerns such as startup, app selection, terminal
- * integration, clipboard access, and error reporting.
- *
- * AppSetup receives the concrete AppApi and mounts the app-specific tree UI.
+ * Creates `ShellApi` and the `AppMethods` for a selected application.
  */
 export function Shell({
   onQuit,
@@ -70,43 +63,65 @@ export function Shell({
   stdout,
   clipboard,
 }: ShellAppProps) {
-  const [appApiApplicator, setAppApiApplicator] = useState<
-    AppApiApplicator | undefined
+  const [appMethodsApplicator, setAppMethodsApplicator] = useState<
+    AppMethodsApplicator | undefined
   >(undefined);
   const [appError, setAppError] = useState<Error | undefined>(undefined);
-  
+
   /**
-   * Create the Shell API based on init.mjs setup.
+   * Create the Shell API, based on given {@link Initialization}.
    */
   const shellApi = useMemo<ShellApi>(() => {
     return {
-      openApp: async (appId, input) => {
+      loadApp: async (appId, input) => {
         const appReference = initialization.app.registered.get(appId);
+        
         if (appReference === undefined) {
-          throw new Error(`App "${appId}" has not been registered.`);
+          return {
+            kind: 'notRegistered',
+            appId,
+            message: `App "${appId}" has not been registered in configuration.`,
+          };
         }
+        
+        try {
+          const appPlugin = await packageLoader.loadAppPlugin(appReference);
+          const loadedAppMethodsApplicator = createAppMethodsApplicator(
+            appPlugin.createAppDefinitionApplicator(input),
+          );
+          
+          setAppMethodsApplicator(() => loadedAppMethodsApplicator);
+          return { kind: 'loaded' }
+        } catch(error) {
+          const message =
+            error instanceof Error ? error.message : String(error);
 
-        setAppApiApplicator(undefined);
-        setAppError(undefined);
-
-        const appPlugin = await packageLoader.loadAppPlugin(appReference);
-        const loadedAppApiApplicator = createAppApiApplicator(
-          appPlugin.createAppDefinitionApplicator(input),
-        );
-
-        setAppApiApplicator(() => loadedAppApiApplicator);
+          return {
+            kind: 'loadFailed',
+            appId,
+            message: `Unable to load app "${appId}": ${message}`,
+          };
+        }
       },
       quit: onQuit,
     };
   }, [packageLoader, initialization.app.registered, onQuit]);
 
-  /** Load initial app on startup, using the shell API. */
+  /**
+   * Load initial `AppMethods` on startup, using the shell API just created and
+   * {@link Initialization}.
+   */
   useEffect(() => {
     void shellApi
-      .openApp(
+      .loadApp(
         initialAppOptions.app ?? initialization.app.initial,
         initialAppOptions.input,
       )
+      .then((result) => {
+        if (result.kind !== 'loaded') {
+          setAppError(new Error(result.message));
+        }
+      })
       .catch((error: unknown) => {
         setAppError(error instanceof Error ? error : new Error(String(error)));
       });
@@ -120,27 +135,19 @@ export function Shell({
   if (appError !== undefined) {
     throw appError;
   }
-  const initialAppReference = initialization.app.registered.get(
-    initialization.app.initial,
-  );
-  if (initialAppReference === undefined) {
-    throw new Error(
-      `Startup app "${initialization.app.initial}" has not been registered.`,
-    );
-  }
 
-  if (appApiApplicator === undefined) {
+  if (appMethodsApplicator === undefined) {
     const LoadingScreenRenderer = loadingScreenRenderer;
     return <LoadingScreenRenderer />;
   }
 
-  return appApiApplicator((appApi) => (
+  return appMethodsApplicator((appMethods) => (
     <AppSetup
       appScreenRenderer={appScreenRenderer}
       loadingScreenRenderer={loadingScreenRenderer}
       initialization={initialization}
       shellApi={shellApi}
-      appApi={appApi}
+      appMethods={appMethods}
       {...(stdout === undefined ? {} : { stdout })}
       {...(clipboard === undefined ? {} : { clipboard })}
     />

@@ -16,7 +16,7 @@ export type State<Id extends SerializableKey, Value> = Readonly<{
   }>;
 }>;
 
-export type StateApi<Id extends SerializableKey, Value> = Readonly<{
+export type StateMethods<Id extends SerializableKey, Value> = Readonly<{
   treeNodeApi: TreeMethods<Id, Value>;
   foldsApi: FoldMethods<Id>;
   cursorApi: CursorMethods<Id>;

@@ -15,7 +15,7 @@ export { createCursorMethods } from './cursor.js';
 
 // Main products of module:
 // State
-export type { State, StateApi } from './state/state.types.js';
+export type { State, StateMethods } from './state/state.types.js';
 export { createStateApi } from './state/state.impl.js';
 // Navigation
 export type { NavNode, NavMethods, NavBranch } from './nav/nav.types.js';

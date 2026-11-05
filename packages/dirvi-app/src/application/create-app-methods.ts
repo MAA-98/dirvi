@@ -1,8 +1,8 @@
 import type {
   SerializableKey,
-  AppApi,
-  AppApiApplicator,
-  AppApiConsumer,
+  AppMethods,
+  AppMethodsApplicator,
+  AppMethodsConsumer,
 } from 'dirvi-lib';
 import {
   createFoldMethods, createCursorMethods, createUnorderedNavMethods, createOrderedNavMethods,
@@ -14,27 +14,27 @@ import {
 import type { AppDefinition, AppDefinitionApplicator } from 'dirvi-apis';
 
 /**
- * Turns an app owned `AppDefinition` into a host-owned runtime `AppApi`.
+ * Turns an app owned `AppDefinition` into a host-owned `AppMethods` service.
  *
  * The plugin's concrete generic types remain hidden by the applicator
- * boundary, while the host creates the matching AppApi specialization.
+ * boundary, while the host creates the matching AppMethods specialization.
  */
-export function createAppApiApplicator(
+export function createAppMethodsApplicator(
   appDefinitionApplicator: AppDefinitionApplicator,
-): AppApiApplicator {
+): AppMethodsApplicator {
   return appDefinitionApplicator((appDefinition) => {
-    const appApi = createAppApi(appDefinition);
+    const appMethods = createAppMethods(appDefinition);
     
     return <Result>(
-      appApiConsumer: AppApiConsumer<Result>,
-    ): Result => appApiConsumer(appApi);
+      appMethodsConsumer: AppMethodsConsumer<Result>,
+    ): Result => appMethodsConsumer(appMethods);
   });
 }
 
-export function createAppApi<
+export function createAppMethods<
   Id extends SerializableKey,
   Value
->(appDefinition: AppDefinition<Id, Value>): AppApi<Id, Value> {
+>(appDefinition: AppDefinition<Id, Value>): AppMethods<Id, Value> {
   const treeMethods = createTreeMethods<Id, Value>();
   const foldTreeMethods = createTreeMethods<Id, readonly Id[]>();
   const foldMethods = createFoldMethods(foldTreeMethods);

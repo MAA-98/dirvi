@@ -1,23 +1,19 @@
 import type {
   NavMethods,
   SerializableKey,
-  StateApi,
+  StateMethods,
 } from '../state-and-nav/index.js';
 import { TreeNode } from '../state-and-nav/index.js';
 import { PresentNode } from 'dirvi-apis';
 
 /**
- * Application-specific tree dependencies and operations.
- *
- * This is currently migrated through the generic TreeNode and State APIs.
- * Navigation-specific APIs remain outside this type until NavNodeApi has been
- * migrated from the old structural TreeNode API.
+ * Application-specific tree operations.
  *
  * @typeParam Id - The sibling-unique tree-node ID type.
  * @typeParam Value - Application-owned data stored in each tree node.
  * @typeParam ViewKey - The key used to identify view implementations.
  */
-export type AppApi<
+export type AppMethods<
   Id extends SerializableKey,
   Value,
   ViewKey = string,
@@ -55,7 +51,7 @@ export type AppApi<
    */
   subscribeToResync: (listener: () => void) => () => void;
 
-  stateApi: StateApi<Id, Value>;
+  stateApi: StateMethods<Id, Value>;
 
   /**
    * UI navigation projection and cursor-navigation operations.
@@ -64,20 +60,20 @@ export type AppApi<
 }>;
 
 /**
- * An operation that can consume an AppApi of any valid concrete type and
+ * An operation that can consume `AppMethods` of any valid concrete type and
  * produce a caller-selected result.
  */
-export type AppApiConsumer<Result> = <
+export type AppMethodsConsumer<Result> = <
   Id extends SerializableKey,
   Value,
   ViewKey = string,
 >(
-  appApi: AppApi<Id, Value, ViewKey>,
+  appMethods: AppMethods<Id, Value, ViewKey>,
 ) => Result;
 
 /**
- * Creates and applies the AppApi to a given consumer of it.
+ * Creates and applies the AppMethods to a given consumer of it.
  */
-export type AppApiApplicator = <Result>(
-  appApiConsumer: AppApiConsumer<Result>,
+export type AppMethodsApplicator = <Result>(
+  appMethodsConsumer: AppMethodsConsumer<Result>,
 ) => Result;

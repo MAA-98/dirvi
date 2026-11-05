@@ -5,7 +5,6 @@ import { Command } from 'commander';
 import { render } from 'ink';
 
 import type { InitialAppOptions } from '@mak-98/dirvi-app';
-import { Shell } from '@mak-98/dirvi-app';
 
 import { createInitialization } from './infrastructure/create-initialization.js';
 import { createPackageLoader } from './infrastructure/create-package-loader.js';
@@ -75,20 +74,21 @@ program
     // Input is a generic startup value supplied by the host;
     // its interpretation belongs to the selected app.
     const options = program.opts<InitialAppOptions>();
+
     const initialization = await createInitialization(initPath);
     const packageLoader = createPackageLoader(packagesDirectory);
-    
     const useAlternateScreen = uiOutput.isTTY === true;
     const stdoutIsInteractive = process.stdout.isTTY === true;
+
     if (useAlternateScreen) {
       uiOutput.write(enterAlternateScreen);
       alternateScreenActive = true;
     }
-
+    
+    // Note: if you pipe output you'll need to use FORCE_COLOR=1/2/3
+    // to keep interactive screen colored.
     const stdout = (message: string): void => {
       // The newline makes each message a separate JSON Lines message.
-      // Note: if you pipe output you'll need to use FORCE_COLOR=1/2/3
-      // to keep interactive screen colored.
       process.stdout.write(`${message}\n`);
     };
 
@@ -134,9 +134,13 @@ program
 // =============================================================================
 try {
   await program.parseAsync(process.argv);
-} catch (error) {
+} catch (error: unknown) {
   const message =
-    error instanceof Error ? (error.stack ?? error.message) : String(error);
+    error instanceof Error
+      ? process.env.DIRVI_DEBUG === '1'
+        ? (error.stack ?? error.message)
+        : error.message
+      : String(error);
 
   process.stderr.write(`dirvi error: ${message}\n`);
   process.exitCode = 1;
