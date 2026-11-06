@@ -7,7 +7,7 @@ import {
   useState,
 } from 'react';
 
-import type { AppApi, FeedbackType, ShellApi } from 'dirvi-apis';
+import { AppApi, Config, FeedbackType, ShellApi } from 'dirvi-apis';
 import type {
   AppMethods,
   Effect,
@@ -25,13 +25,14 @@ import { createFeedbackApi, userInputToIntent } from 'dirvi-lib';
 
 import { useView } from './hooks/useView.js';
 import type { AppScreenRenderer } from './app-screen-renderer.js';
-import type { Initialization } from '../domain/initialization.js';
+import { ExCommand } from '../domain/ex-command.js';
 
 type AppProps<Id extends SerializableKey, Value, ViewKey = string> = {
   screenRenderer: AppScreenRenderer;
   shellApi: ShellApi;
   appMethods: AppMethods<Id, Value, ViewKey>;
-  initialization: Initialization;
+  exCommands: ReadonlyMap<string, ExCommand>;
+  config: Readonly<Config>;
   initialState: State<Id, Value>;
   reducer: Reducer<Id, Value>;
   intentToEffect: IntentToEffect<Id, Value>;
@@ -45,7 +46,8 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   screenRenderer,
   shellApi,
   appMethods,
-  initialization,
+  exCommands,
+  config,
   initialState,
   reducer,
   intentToEffect,
@@ -178,7 +180,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
         /** Execute a command, using shell API and app API. */
         case 'userExCommand': {
           setInputState(clearInputState);
-          const command = initialization.exCommands.get(effect.name);
+          const command = exCommands.get(effect.name);
 
           if (command === undefined) {
             appApi.addMessage(
@@ -189,7 +191,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           }
           
           void Promise.resolve()
-            .then(() => command.execute({ shell: shellApi, app: appApi })) // TODO: Add args
+            .then(() => command.execute({ shell: shellApi, app: appApi }, effect.args))
             .catch((error: unknown) => {
               const appError =
                 error instanceof Error ? error : new Error(String(error));
@@ -208,12 +210,9 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           return;
 
         case 'listApps': {
-          const appIds = [...initialization.app.registered.keys()];
-          const lines = appIds.map((id) => `${id}`);
-
+          const appIds = shellApi.listApps();
           setInputState(clearInputState);
-          appApi.addMessage(['Apps:', ...lines].join('\n'));
-
+          appApi.addMessage(['Apps:', ...appIds].join('\n'));
           return;
         }
 
@@ -363,7 +362,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           return;
       }
     },
-    [appMethods, effectToAction, navEntry, state, shellApi, initialization.exCommands, initialization.app.registered, appApi, clearInputState],
+    [appMethods, effectToAction, navEntry, state, shellApi, appApi, clearInputState, exCommands],
   );
 
   // ===========================================================================
@@ -395,7 +394,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
       view={view}
       feedback={feedback}
       feedbackApi={feedbackApi}
-      config={initialization.config}
+      config={config}
       inputState={inputState}
       handleInput={handleInput}
       onRowsChange={handleRowsChange}

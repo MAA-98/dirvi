@@ -63,9 +63,10 @@ export function Shell({
   stdout,
   clipboard,
 }: ShellAppProps) {
-  const [appMethodsApplicator, setAppMethodsApplicator] = useState<
-    AppMethodsApplicator | undefined
-  >(undefined);
+  const [loadedApp, setLoadedApp] = useState<{
+    appId: string;
+    appMethodsApplicator: AppMethodsApplicator;
+  }>();
   const [appError, setAppError] = useState<Error | undefined>(undefined);
 
   /**
@@ -73,6 +74,7 @@ export function Shell({
    */
   const shellApi = useMemo<ShellApi>(() => {
     return {
+      listApps: () => [...initialization.app.registered.keys()],
       loadApp: async (appId, input) => {
         try {
           const appReference = initialization.app.registered.get(appId);
@@ -84,15 +86,18 @@ export function Shell({
               message: `App "${appId}" has not been registered in initial configuration script.`,
             };
           }
-          
+
           const appPlugin = await packageLoader.loadAppPlugin(appReference);
           const loadedAppMethodsApplicator = createAppMethodsApplicator(
             appPlugin.createAppDefinitionApplicator(input),
           );
           
-          setAppMethodsApplicator(() => loadedAppMethodsApplicator);
-          return { kind: 'loaded' }
-        } catch(error) {
+          setLoadedApp({
+            appId,
+            appMethodsApplicator: loadedAppMethodsApplicator,
+          });
+          return { kind: 'loaded' };
+        } catch (error) {
           const message =
             error instanceof Error ? error.message : String(error);
 
@@ -133,15 +138,16 @@ export function Shell({
   }
 
   // TODO Later: Loading messages
-  if (appMethodsApplicator === undefined) {
+  if (loadedApp === undefined) {
     const LoadingScreenRenderer = loadingScreenRenderer;
     return <LoadingScreenRenderer />;
   }
 
-  return appMethodsApplicator((appMethods) => (
+  return loadedApp.appMethodsApplicator((appMethods) => (
     <AppSetup
       appScreenRenderer={appScreenRenderer}
       loadingScreenRenderer={loadingScreenRenderer}
+      appId={loadedApp.appId}
       initialization={initialization}
       shellApi={shellApi}
       appMethods={appMethods}

@@ -12,12 +12,16 @@ import type { AppScreenRenderer } from './app-screen-renderer.js';
 import { App } from './App.js';
 import type { Initialization } from '../domain/initialization.js';
 import type { ShellApi } from 'dirvi-apis';
+import type { ExCommand } from '../domain/ex-command.js';
 
 // TODO Later: configuration watched for changes
+
+const emptyExCommands: ReadonlyMap<string, ExCommand> = new Map();
 
 type AppSetupProps<Id extends SerializableKey, Value, ViewKey = string> = {
   appScreenRenderer: AppScreenRenderer;
   loadingScreenRenderer: LoadingScreenRenderer;
+  appId: string;
   initialization: Initialization;
   shellApi: ShellApi;
   appMethods: AppMethods<Id, Value, ViewKey>;
@@ -44,6 +48,7 @@ type LoadState<Id extends SerializableKey, Value, ViewKey> =
 export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
   appScreenRenderer,
   loadingScreenRenderer,
+  appId,
   initialization,
   shellApi,
   appMethods,
@@ -95,7 +100,11 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
   }, [appMethods]);
 
   // --- Pure function deps ---
-
+  const exCommands = useMemo(
+    () => initialization.exCommands.get(appId) ?? emptyExCommands,
+    [initialization.exCommands, appId],
+  );
+  
   const reducer = useMemo(
     () => createReducer(appMethods.stateMethods, appMethods.navMethods),
     [appMethods.stateMethods, appMethods.navMethods],
@@ -104,10 +113,10 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
   const intentToEffect = useMemo(
     () =>
       createIntentToEffect(
-        new Set(initialization.exCommands.keys()),
+        new Set(exCommands.keys()),
         appMethods.stateMethods,
       ),
-    [appMethods.stateMethods, initialization.exCommands],
+    [appMethods.stateMethods, exCommands],
   );
 
   const effectToAction = useMemo(
@@ -139,7 +148,8 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
       screenRenderer={appScreenRenderer}
       shellApi={shellApi}
       appMethods={appMethods}
-      initialization={initialization}
+      exCommands={exCommands}
+      config={initialization.config}
       initialState={loadState.initialState}
       reducer={reducer}
       intentToEffect={intentToEffect}

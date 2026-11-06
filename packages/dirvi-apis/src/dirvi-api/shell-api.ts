@@ -19,6 +19,9 @@ export type OpenAppResult =
  * Not specific to any app.
  */
 export type ShellApi = {
+  /** Lists all app IDs registered in initialization. */
+  readonly listApps: () => string[];
+  
   /**
    * Loads an app by ID and input.
    *

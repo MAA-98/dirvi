@@ -54,7 +54,7 @@ export function createInitRuntime(): InitRuntime {
   let config = defaultConfig;
   let initialAppId: string | undefined;
   const registeredApps = new Map<string, AppPackageReference>();
-  const exCommands = new Map<string, ExCommand>();
+  const exCommands = new Map<string, Map<string, ExCommand>>();
   let finished = false;
 
   // === Error Helpers =========================================================
@@ -97,19 +97,64 @@ export function createInitRuntime(): InitRuntime {
     },
 
     app: {
-      register: (id, appReference) => {
+      register: (app) => {
         ensureUnfinished();
-        validateNonEmptyString(id, 'App ID');
-
-        if (registeredApps.has(id)) {
-          throw new DuplicateAppRegistrationError(id);
+        
+        if (typeof app !== 'object' || app === null || Array.isArray(app)) {
+          throw new InvalidInitializationValueError('App', 'must be an object');
         }
+        
+        const { id: appId, packRef, ex } = app;
+        validateNonEmptyString(appId, 'App ID');
 
+        if (registeredApps.has(appId)) {
+          throw new DuplicateAppRegistrationError(appId);
+        }
+        
+        let appReference: AppPackageReference;
         try {
-          registeredApps.set(id, AppPackageReferenceMethods.parse(appReference));
+          appReference = AppPackageReferenceMethods.parse(packRef);
         } catch (cause) {
           throw new InvalidAppPackageReferenceError(cause);
         }
+        
+        if (ex !== undefined && !Array.isArray(ex)) {
+          throw new InvalidInitializationValueError(
+            'Ex commands',
+            'must be an array',
+          );
+        }
+        
+        const appExCommands = new Map<string, ExCommand>();
+
+        for (const exCommand of ex ?? []) {
+          if (
+            typeof exCommand !== 'object' ||
+            exCommand === null ||
+            Array.isArray(exCommand)
+          ) {
+            throw new InvalidInitializationValueError(
+              'Ex command',
+              'must be an object',
+            );
+          }
+
+          const { command, execute } = exCommand;
+          validateNonEmptyString(command, 'Ex command name');
+
+          if (typeof execute !== 'function') {
+            throw new InvalidExCommandHandlerError();
+          }
+
+          if (appExCommands.has(command)) {
+            throw new DuplicateExCommandRegistrationError(command);
+          }
+
+          appExCommands.set(command, { name: command, execute });
+        }
+        
+        registeredApps.set(appId, appReference);
+        exCommands.set(appId, appExCommands);
       },
 
       initial: (appId) => {
@@ -117,22 +162,6 @@ export function createInitRuntime(): InitRuntime {
         validateNonEmptyString(appId, 'App ID');
 
         initialAppId = appId;
-      },
-    },
-
-    ex: {
-      register: (name, execute) => {
-        ensureUnfinished();
-        validateNonEmptyString(name, 'Ex command name');
-        if (typeof execute !== 'function') {
-          throw new InvalidExCommandHandlerError();
-        }
-
-        if (exCommands.has(name)) {
-          throw new DuplicateExCommandRegistrationError(name);
-        }
-
-        exCommands.set(name, { name, execute });
       },
     },
   };
@@ -177,7 +206,9 @@ export function createInitRuntime(): InitRuntime {
         initial,
         registered: new Map(registeredApps),
       },
-      exCommands: new Map(exCommands),
+      exCommands: new Map(
+        [...exCommands].map(([appId, commands]) => [appId, new Map(commands)]),
+      ),
     };
   };
 

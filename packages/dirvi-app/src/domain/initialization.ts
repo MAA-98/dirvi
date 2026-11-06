@@ -12,16 +12,19 @@ import { ExCommand } from './ex-command.js';
 export type Initialization = {
   /** Dirvi-wide configuration resolved from the initialization script. */
   readonly config: Readonly<Config>;
-  
+
   /** Registered apps and the app selected for startup. */
   readonly app: {
     /** ID of the app to open initially; must be present in `registered`. */
     initial: string;
-    
+
     /** App package references keyed by app ID. */
     registered: ReadonlyMap<string, AppPackageReference>;
   };
-  
-  /** Ex commands registered by the initialization script, keyed by name. */
-  readonly exCommands: ReadonlyMap<string, ExCommand>;
+
+  /**
+   * Ex commands registered by the initialization script, keyed by appId and
+   * command name.
+   * */
+  readonly exCommands: ReadonlyMap<string, ReadonlyMap<string, ExCommand>>;
 };

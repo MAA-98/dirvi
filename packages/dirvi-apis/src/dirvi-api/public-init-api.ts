@@ -29,25 +29,19 @@ export type PublicInitApi = {
     /**
      * Registers an application made available by init.mjs.
      */
-    register: (id: string, appReference: AppPackageReference) => void;
-  };
-
-  readonly ex: {
-    /**
-     * Registers an Ex command invoked as `:${name}`.
-     *
-     * The closure receives the live DirviApi when the user invokes the command,
-     * not while init.mjs is being evaluated. E.g.
-     *
-     * ```js
-     * dirvi.ex.register('hello', (api) => {
-     *     // Do something with api
-     * });
-     * ```
-     */
-    register: (
-      name: string,
-      execute: (api: DirviApi) => void | Promise<void>,
-    ) => void;
+    register: (app: {
+      id: string;
+      packRef: AppPackageReference;
+      /**
+       * Ex commands invoked as `:${command}` while this app is active.
+       *
+       * Each closure receives the live DirviApi and parsed command arguments
+       * when invoked, not while init.mjs is being evaluated.
+       */
+      ex?: readonly {
+        command: string;
+        execute: (api: DirviApi, args: string[]) => void | Promise<void>;
+      }[];
+    }) => void;
   };
 };
