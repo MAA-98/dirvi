@@ -1,6 +1,6 @@
 {
   "name": "dirvi-apis",
-  "version": "0.11.0-beta.10",
+  "version": "0.11.0-beta.11",
   "description": "Public plugin and configuration APIs for dirvi.",
   "license": "LGPL-3.0-or-later",
   "type": "module",
@@ -18,6 +18,10 @@
     "./config": {
       "types": "./dist/config.d.ts",
       "default": "./dist/config.js"
+    },
+    "./dirvi": {
+      "types": "./dist/dirvi.d.ts",
+      "default": "./dist/dirvi.js"
     }
   },
   "files": [
