@@ -1,6 +1,6 @@
 import { Box, Text } from 'ink';
 
-import type { Config } from '@mak-98/dirvi-app';
+import { Config } from 'dirvi-apis';
 import { colorConfigToInkColor } from '@mak-98/dirvi-app';
 import type { InputModeState } from 'dirvi-lib';
 

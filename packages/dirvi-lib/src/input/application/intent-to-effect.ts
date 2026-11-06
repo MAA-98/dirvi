@@ -175,7 +175,7 @@ function normalInteractRightToEffect<Id extends SerializableKey, Value>(
     return undefined;
   }
 
-  switch (stateApi.treeNodeApi.kind(currentEntry)) {
+  switch (stateApi.treeMethods.kind(currentEntry)) {
     case 'unloaded-branch':
       return {
         effectType: 'loadBranchEntries',

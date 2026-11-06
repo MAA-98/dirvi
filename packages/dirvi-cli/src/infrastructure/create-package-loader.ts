@@ -5,9 +5,8 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
-import type { AppPlugin } from 'dirvi-apis';
+import type { AppPackageReference, AppPlugin } from 'dirvi-apis';
 import type { PackageLoader } from '@mak-98/dirvi-app';
-import { AppPackageReference } from '@mak-98/dirvi-app';
 
 const execFileAsync = promisify(execFile);
 

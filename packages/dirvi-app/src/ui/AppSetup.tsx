@@ -10,8 +10,8 @@ import {
 import type { LoadingScreenRenderer } from './loading-screen-renderer.js';
 import type { AppScreenRenderer } from './app-screen-renderer.js';
 import { App } from './App.js';
-import { ShellApi } from '../domain/dirvi-api/shell-api.js';
-import { Initialization } from '../domain/initialization.js';
+import type { Initialization } from '../domain/initialization.js';
+import type { ShellApi } from 'dirvi-apis';
 
 // TODO Later: configuration watched for changes
 
@@ -52,7 +52,6 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
 }: AppSetupProps<Id, Value, ViewKey>) {
   const [loadState, setLoadState] = useState<LoadState<Id, Value, ViewKey>>();
 
-  // Loading and setting initial state.
   useEffect(() => {
     let mounted = true;
 
@@ -67,11 +66,11 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
         }
 
         const rootId = createTreeMethods<Id, Value>().id(root);
-        const folds = appMethods.stateApi.foldsApi.create(rootId, {
+        const folds = appMethods.stateMethods.foldMethods.create(rootId, {
           name: 'default',
           description: null,
         });
-        const initialState = appMethods.stateApi.create(root, folds, { path: [] });
+        const initialState = appMethods.stateMethods.create(root, folds, { path: [] });
 
         if (initialState === undefined) {
           throw new Error('Cannot create initial app state');
@@ -98,26 +97,26 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
   // --- Pure function deps ---
 
   const reducer = useMemo(
-    () => createReducer(appMethods.stateApi, appMethods.navMethods),
-    [appMethods.stateApi, appMethods.navMethods],
+    () => createReducer(appMethods.stateMethods, appMethods.navMethods),
+    [appMethods.stateMethods, appMethods.navMethods],
   );
 
   const intentToEffect = useMemo(
     () =>
       createIntentToEffect(
         new Set(initialization.exCommands.keys()),
-        appMethods.stateApi,
+        appMethods.stateMethods,
       ),
-    [appMethods.stateApi, initialization.exCommands],
+    [appMethods.stateMethods, initialization.exCommands],
   );
 
   const effectToAction = useMemo(
     () =>
       createEffectToAction(
-        appMethods.stateApi,
+        appMethods.stateMethods,
         appMethods.navMethods,
       ),
-    [appMethods.navMethods, appMethods.stateApi],
+    [appMethods.navMethods, appMethods.stateMethods],
   );
 
   // --- JSX ---

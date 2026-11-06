@@ -1,4 +1,4 @@
-import type { AppInput } from '../app-input.js';
+import type { AppInput } from './app-input.js';
 
 export type OpenAppResult =
   | { readonly kind: 'loaded' }
@@ -19,10 +19,20 @@ export type OpenAppResult =
  * Not specific to any app.
  */
 export type ShellApi = {
-  /** Result type, so can be trusted to not throw errors. */
+  /**
+   * Loads an app by ID and input.
+   *
+   * A successful `loaded` result means the app's methods have been prepared and
+   * the shell update was scheduled. App initialization may still fail if the
+   * app definition methods fail.
+   *
+   * @param appId - ID of the registered app to load.
+   * @param input - Input to be interpreted by the selected app.
+   * @returns A result describing whether the app was loaded or why loading
+   * failed. Loading failures do not cause the promise to throw.
+   */
   readonly loadApp: (appId: string, input: AppInput) => Promise<OpenAppResult>;
-  
+
   /** Optional exit message to display. */
   readonly quit: (message?: string) => void;
-  
 };

@@ -17,9 +17,9 @@ export type State<Id extends SerializableKey, Value> = Readonly<{
 }>;
 
 export type StateMethods<Id extends SerializableKey, Value> = Readonly<{
-  treeNodeApi: TreeMethods<Id, Value>;
-  foldsApi: FoldMethods<Id>;
-  cursorApi: CursorMethods<Id>;
+  treeMethods: TreeMethods<Id, Value>;
+  foldMethods: FoldMethods<Id>;
+  cursorMethods: CursorMethods<Id>;
 
   /**
    * Creates state whose root is a loaded branch.

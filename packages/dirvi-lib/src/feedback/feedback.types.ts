@@ -1,4 +1,4 @@
-export type FeedbackType = 'success' | 'message' | 'error';
+import type { FeedbackType } from 'dirvi-apis';
 
 declare const feedbackBrand: unique symbol;
 

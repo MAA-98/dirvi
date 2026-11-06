@@ -1,20 +1,21 @@
 import { useEffect, useMemo } from 'react';
-import { Box, Text, useApp, useInput, useWindowSize } from 'ink';
+import { Box, Text, useInput, useWindowSize } from 'ink';
+
+import type { Config, FeedbackType } from 'dirvi-apis';
+import type {
+  Feedback,
+  FeedbackApi,
+  InputModeState,
+  UserInput,
+} from 'dirvi-lib';
+import type { AppScreenRenderer } from '@mak-98/dirvi-app';
+import { View } from '@mak-98/dirvi-app';
 
 import { ViewRowComponent } from './components/ViewRowComponent.js';
 import { FeedbackBar } from './components/FeedbackBar.js';
 import { STATUS_BAR_HEIGHT, StatusBar } from './components/StatusBar.js';
 import { inkInputToUserInput } from '../infrastructure/ink-input-to-user-input.js';
 import { createFeedbackDisplay } from './helpers/feedback-display.js';
-import {
-  Feedback,
-  FeedbackApi,
-  FeedbackType,
-  InputModeState,
-  UserInput,
-} from 'dirvi-lib';
-import type { AppScreenRenderer, Config } from '@mak-98/dirvi-app';
-import { View } from '@mak-98/dirvi-app';
 
 export const InkAppScreen: AppScreenRenderer = ({
   view,

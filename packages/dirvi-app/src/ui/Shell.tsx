@@ -7,8 +7,8 @@ import type { LoadingScreenRenderer } from './loading-screen-renderer.js';
 import { AppSetup } from './AppSetup.js';
 import type { Initialization } from '../domain/initialization.js';
 import type { PackageLoader } from '../application/package-loader.js';
-import { ShellApi } from '../domain/dirvi-api/shell-api.js';
 import { createAppMethodsApplicator } from '../application/create-app-methods.js';
+import type { ShellApi } from 'dirvi-apis';
 
 export type InitialAppOptions = Readonly<{
   /**
@@ -74,17 +74,17 @@ export function Shell({
   const shellApi = useMemo<ShellApi>(() => {
     return {
       loadApp: async (appId, input) => {
-        const appReference = initialization.app.registered.get(appId);
-        
-        if (appReference === undefined) {
-          return {
-            kind: 'notRegistered',
-            appId,
-            message: `App "${appId}" has not been registered in initial configuration script.`,
-          };
-        }
-        
         try {
+          const appReference = initialization.app.registered.get(appId);
+
+          if (appReference === undefined) {
+            return {
+              kind: 'notRegistered',
+              appId,
+              message: `App "${appId}" has not been registered in initial configuration script.`,
+            };
+          }
+          
           const appPlugin = await packageLoader.loadAppPlugin(appReference);
           const loadedAppMethodsApplicator = createAppMethodsApplicator(
             appPlugin.createAppDefinitionApplicator(input),
@@ -132,6 +132,7 @@ export function Shell({
     throw appError;
   }
 
+  // TODO Later: Loading messages
   if (appMethodsApplicator === undefined) {
     const LoadingScreenRenderer = loadingScreenRenderer;
     return <LoadingScreenRenderer />;

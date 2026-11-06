@@ -10,6 +10,8 @@ import { AppApi } from './app-api.js';
  * One use is in {@link PublicInitApi}: init.mjs can register closures that
  * receive this API and call its methods to perform actions. Dirvi passes the
  * object to a closure when it runs, not when it is registered.
+ *
+ * Implementation is in {@link App}, where commands call it.
  */
 export type DirviApi = {
   shell: ShellApi;

@@ -7,3 +7,4 @@ export type {
   OptionalForegroundHighlightConfig,
   Theme,
 } from './theme.js';
+export type { Config, ConfigPatch } from './config.js';

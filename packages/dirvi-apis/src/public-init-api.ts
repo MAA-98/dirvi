@@ -1,6 +1,6 @@
 import { AppPackageReference } from './app-pack-ref.js';
-import { ConfigPatch } from './config.js';
-import { DirviApi } from './dirvi-api/dirvi-api.js';
+import { DirviApi } from './dirvi-api/index.js';
+import { ConfigPatch } from './config/index.js';
 
 /**
  * The public API exposed to `init.mjs` as the global `dirvi` object.

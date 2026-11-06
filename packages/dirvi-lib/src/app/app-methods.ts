@@ -51,7 +51,7 @@ export type AppMethods<
    */
   subscribeToResync: (listener: () => void) => () => void;
 
-  stateApi: StateMethods<Id, Value>;
+  stateMethods: StateMethods<Id, Value>;
 
   /**
    * UI navigation projection and cursor-navigation operations.

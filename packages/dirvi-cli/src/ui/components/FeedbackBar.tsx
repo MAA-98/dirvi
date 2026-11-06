@@ -1,7 +1,6 @@
 import { Box, Text } from 'ink';
 
-import type { FeedbackType } from 'dirvi-lib';
-import type { Config } from '@mak-98/dirvi-app';
+import { Config, FeedbackType } from 'dirvi-apis';
 import { colorConfigToInkColor } from '@mak-98/dirvi-app';
 
 import type { FeedbackDisplay } from '../helpers/feedback-display.js';

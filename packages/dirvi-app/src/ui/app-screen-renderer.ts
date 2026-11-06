@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 
+import type { Config } from 'dirvi-apis';
 import type {
   Feedback,
   FeedbackApi,
@@ -7,7 +8,6 @@ import type {
   UserInput,
 } from 'dirvi-lib';
 
-import type { Config } from '../domain/config.js';
 import { View } from './view.js';
 
 /**

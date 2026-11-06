@@ -1,9 +1,5 @@
-export type { Config } from './domain/config.js';
 export type { Initialization } from './domain/initialization.js';
-export type { PublicInitApi } from './domain/public-init-api.js';
 export type { ExCommand } from './domain/ex-command.js';
-export type { ShellApi } from './domain/dirvi-api/shell-api.js';
-export { AppPackageReference } from './domain/app-pack-ref.js';
 
 export type { PackageLoader } from './application/package-loader.js';
 export { createInitRuntime } from './application/init-runtime.js';

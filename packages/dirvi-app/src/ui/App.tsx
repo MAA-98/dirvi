@@ -7,7 +7,7 @@ import {
   useState,
 } from 'react';
 
-import { createFeedbackApi, userInputToIntent } from 'dirvi-lib';
+import type { AppApi, FeedbackType, ShellApi } from 'dirvi-apis';
 import type {
   AppMethods,
   Effect,
@@ -21,11 +21,11 @@ import type {
   Feedback,
   UserInput,
 } from 'dirvi-lib';
+import { createFeedbackApi, userInputToIntent } from 'dirvi-lib';
 
 import { useView } from './hooks/useView.js';
 import type { AppScreenRenderer } from './app-screen-renderer.js';
-import { ShellApi } from '../domain/dirvi-api/shell-api.js';
-import { Initialization } from '../domain/initialization.js';
+import type { Initialization } from '../domain/initialization.js';
 
 type AppProps<Id extends SerializableKey, Value, ViewKey = string> = {
   screenRenderer: AppScreenRenderer;
@@ -61,20 +61,18 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   stateRef.current = state;
 
   const navEntry: NavBranch<Id> = useMemo(() => {
-    const root = appMethods.stateApi.getRoot(state);
-    const folds = appMethods.stateApi.getFolds(state);
+    const root = appMethods.stateMethods.getRoot(state);
+    const folds = appMethods.stateMethods.getFolds(state);
     const navigation = appMethods.navMethods.from(root, folds);
 
     if (navigation === undefined) {
       throw new Error('Tree-surfer state root must be a loaded branch.');
     }
     return navigation;
-  }, [appMethods.navMethods, appMethods.stateApi, state]);
+  }, [appMethods.navMethods, appMethods.stateMethods, state]);
 
-  const [inputState, setInputState] = useState<InputModeState>({
-    inputMode: 'normal',
-    normalBuffer: '',
-  });
+  const clearInputState: InputModeState = { inputMode: 'normal', normalBuffer: '' };
+  const [inputState, setInputState] = useState<InputModeState>(clearInputState);
   const [feedback, setFeedback] = useState<Feedback>();
 
   const [rowCount, setRowCount] = useState(0);
@@ -84,25 +82,14 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
     );
   }, []);
 
-  // ===========================================================================
-  // Display hooks
-  // ===========================================================================
-  const feedbackApi = useMemo(
-    () =>
-      createFeedbackApi((nextFeedback) => {
-        setFeedback(nextFeedback);
-      }),
-    [],
-  );
-
   const view = useView(
     navEntry,
     state,
-    appMethods.stateApi,
+    appMethods.stateMethods,
     appMethods.navMethods,
-    appMethods.stateApi.cursorApi,
+    appMethods.stateMethods.cursorMethods,
     rowCount,
-    appMethods.presentNode
+    appMethods.presentNode,
   );
 
   // ===========================================================================
@@ -114,7 +101,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
     const unsubscribe = appMethods.subscribeToResync(() => {
       const oldState = stateRef.current;
 
-      void appMethods.stateApi
+      void appMethods.stateMethods
         .resync(oldState, appMethods.loadChildren)
         .then((newState) => {
           if (!active) {
@@ -141,6 +128,30 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   }, [appMethods, onError]);
 
   // ===========================================================================
+  // App API
+  // ===========================================================================
+  const feedbackApi = useMemo(
+    () =>
+      createFeedbackApi((nextFeedback) => {
+        setFeedback(nextFeedback);
+      }),
+    [],
+  );
+
+  const appApi = useMemo<AppApi>(
+    () => ({
+      pathAtCursor: () => appMethods.stateMethods.cursorPath(stateRef.current),
+      // TODO: Implement with appMethods
+      visiblePaths: () => 'test',
+      valueAtCursor: () => 'test value',
+      addMessage: (message: string, type?: FeedbackType) => {
+        feedbackApi.addMessage(message, type);
+      },
+    }),
+    [feedbackApi, appMethods.stateMethods],
+  );
+
+  // ===========================================================================
   // Executing Effects
   // ===========================================================================
   const executeEffect = useCallback(
@@ -150,27 +161,26 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
       }
 
       switch (effect.effectType) {
+        /** Execute a command, using shell API and app API. */
         case 'userExCommand': {
-          setInputState({
-            inputMode: 'normal',
-            normalBuffer: '',
-          });
+          setInputState(clearInputState);
           const command = initialization.exCommands.get(effect.name);
 
           if (command === undefined) {
-            feedbackApi.addMessage(
+            appApi.addMessage(
               `Command is no longer registered: ${effect.name}`,
               'error',
             );
             return;
           }
+          
           void Promise.resolve()
-            .then(() => command.execute({ shell: shellApi, app: {} })) // TODO: Add args
+            .then(() => command.execute({ shell: shellApi, app: appApi })) // TODO: Add args
             .catch((error: unknown) => {
               const appError =
                 error instanceof Error ? error : new Error(String(error));
 
-              feedbackApi.addMessage(
+              appApi.addMessage(
                 `Command "${effect.name}" failed: ${appError.message}`,
                 'error',
               );
@@ -187,23 +197,18 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           const appIds = [...initialization.app.registered.keys()];
           const lines = appIds.map((id) => `${id}`);
 
-          setInputState({
-            inputMode: 'normal',
-            normalBuffer: '',
-          });
-          feedbackApi.addMessage(['Apps:', ...lines].join('\n'));
+          setInputState(clearInputState);
+          appApi.addMessage(['Apps:', ...lines].join('\n'));
 
           return;
         }
 
         case 'switchApp':
-          void shellApi
-            .loadApp(effect.appId, effect.input)
-            .then((result) => {
-              if (result.kind !== 'loaded') {
-                feedbackApi.addMessage(result.message, 'error');
-              }
-            })
+          void shellApi.loadApp(effect.appId, effect.input).then((result) => {
+            if (result.kind !== 'loaded') {
+              appApi.addMessage(result.message, 'error');
+            }
+          });
           return;
 
         case 'dispatchEffectAction':
@@ -212,13 +217,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
             navEntry,
             state,
           );
-
-          // A completed normal-mode command or submitted Ex command always
-          // leaves its input buffer, whether it succeeds, is rejected, or no-ops.
-          setInputState({
-            inputMode: 'normal',
-            normalBuffer: '',
-          });
+          setInputState(clearInputState);
 
           switch (effectActionResult.kind) {
             case 'action':
@@ -226,7 +225,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
               return;
 
             case 'rejected':
-              feedbackApi.addMessage(effectActionResult.message, 'error');
+              appApi.addMessage(effectActionResult.message, 'error');
               return;
 
             case 'ignored':
@@ -254,7 +253,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
               const appError =
                 error instanceof Error ? error : new Error(String(error));
 
-              feedbackApi.addMessage(
+              appApi.addMessage(
                 `Unable to open directory: ${appError.message}`,
               );
             });
@@ -262,6 +261,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           return;
         }
 
+        // TODO: Get rid of
         case 'emitVisibleLeavesPaths':
           const navigation = navEntry.children;
 
@@ -277,10 +277,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
               paths: visibleLeavesPaths,
             }),
           );
-          setInputState({
-            inputMode: 'normal',
-            normalBuffer: '',
-          });
+          setInputState(clearInputState);
           return;
 
         case 'saveView': {
@@ -335,17 +332,19 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           return;
         }
 
-        // TODO: Add descriptions with `...` truncation.
         case 'listFolds': {
-          const folds = appMethods.stateApi.getFolds(state);
+          const folds = appMethods.stateMethods.getFolds(state);
 
-          const foldTrees = [...appMethods.stateApi.foldsApi.indexes(folds)].map(
-            (index) => ({
+          const foldTrees = [
+            ...appMethods.stateMethods.foldMethods.indexes(folds),
+          ].map((index) => ({
+            index,
+            info: appMethods.stateMethods.foldMethods.getInfoAtIndex(folds, index),
+            active: appMethods.stateMethods.foldMethods.isActiveAtIndex(
+              folds,
               index,
-              info: appMethods.stateApi.foldsApi.getInfoAtIndex(folds, index),
-              active: appMethods.stateApi.foldsApi.isActiveAtIndex(folds, index),
-            }),
-          );
+            ),
+          }));
 
           const indexWidth = Math.max(
             ...foldTrees.map(({ index }) => String(index).length),
@@ -358,21 +357,18 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
             return `${String(index).padStart(indexWidth)}  ${status.padEnd(8)}  ${name}`;
           });
 
-          setInputState({
-            inputMode: 'normal',
-            normalBuffer: '',
-          });
-          feedbackApi.addMessage(['Fold trees:', ...lines].join('\n'));
+          setInputState(clearInputState);
+          appApi.addMessage(['Fold trees:', ...lines].join('\n'));
 
           return;
         }
 
         case 'emitError':
-          feedbackApi.addMessage(effect.message, 'error');
+          appApi.addMessage(effect.message, 'error');
           return;
       }
     },
-    [appMethods, effectToAction, feedbackApi, navEntry, state, stdout, shellApi, initialization.exCommands, initialization.app.registered],
+    [appMethods, effectToAction, navEntry, state, stdout, shellApi, initialization.exCommands, initialization.app.registered, appApi, clearInputState],
   );
 
   // ===========================================================================

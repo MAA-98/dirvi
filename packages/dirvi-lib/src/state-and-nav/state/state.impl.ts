@@ -220,9 +220,9 @@ export function createStateApi<Id extends SerializableKey, Value>(
   }
 
   return {
-    treeNodeApi,
-    foldsApi,
-    cursorApi,
+    treeMethods: treeNodeApi,
+    foldMethods: foldsApi,
+    cursorMethods: cursorApi,
 
     create(root, folds, cursor) {
       return treeNodeApi.kind(root) === 'loaded-branch'

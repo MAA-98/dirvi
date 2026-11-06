@@ -1,4 +1,4 @@
-import { DirviApi } from './dirvi-api/dirvi-api.js';
+import { DirviApi } from 'dirvi-apis';
 
 // TODO Later: Add arguments
 

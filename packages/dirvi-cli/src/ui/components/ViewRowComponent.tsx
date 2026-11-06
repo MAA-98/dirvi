@@ -1,6 +1,7 @@
 import { Box, Text } from 'ink';
 
-import type { Config, ViewRow } from '@mak-98/dirvi-app';
+import type { Config } from 'dirvi-apis';
+import type { ViewRow } from '@mak-98/dirvi-app';
 import { colorConfigToInkColor } from '@mak-98/dirvi-app';
 
 type ViewRowComponentProps = {

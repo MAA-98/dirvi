@@ -88,7 +88,7 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
   stateApi: StateMethods<Id, Value>,
   navNodeApi: NavMethods<Id, Value>,
 ): EffectToAction<Id, Value> {
-  const { cursorApi, foldsApi } = stateApi;
+  const { cursorMethods, foldMethods } = stateApi;
 
   function action(
     reducerAction: ReducerAction<Id, Value>,
@@ -170,7 +170,7 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
 
       case 'addToFoldTree': {
         const foldTree = resolveFoldTreeIndex(
-          foldsApi,
+          foldMethods,
           folds,
           effectAction.foldTree,
         );
@@ -180,7 +180,7 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
         }
 
         // The root cannot be folded, and a fold marker is already folded.
-        if (!cursorApi.isNodeCursor(cursor) || cursor.path.length === 0) {
+        if (!cursorMethods.isNodeCursor(cursor) || cursor.path.length === 0) {
           return ignored();
         }
 
@@ -189,7 +189,7 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
          * navigation projection, so keep the cursor where it is.
          */
         const nextCursor =
-          foldsApi.isActiveAtIndex(folds, foldTree.index) === true
+          foldMethods.isActiveAtIndex(folds, foldTree.index) === true
             ? navNodeApi.cursorAfterFold(navigation, cursor)
             : cursor;
 
@@ -207,7 +207,7 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
 
       case 'removeFromFoldTree': {
         const foldTree = resolveFoldTreeIndex(
-          foldsApi,
+          foldMethods,
           folds,
           effectAction.foldTree,
         );
@@ -223,7 +223,7 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
           return ignored();
         }
 
-        if (cursorApi.isFoldCursor(cursor)) {
+        if (cursorMethods.isFoldCursor(cursor)) {
           const parent = navNodeApi.getNodeAtPath(navNode, cursor.parentPath);
 
           const foldEntry = parent?.entries.find((entry) => {
@@ -253,7 +253,7 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
           for (const entry of foldEntry.folded) {
             if (
               !navNodeApi.entryIsFold(entry) &&
-              foldsApi.isEntryHiddenInFoldAtPath(
+              foldMethods.isEntryHiddenInFoldAtPath(
                 folds,
                 foldTree.index,
                 cursor.parentPath,
@@ -305,7 +305,7 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
 
       case 'fold': {
         const foldTree = resolveFoldTreeIndex(
-          foldsApi,
+          foldMethods,
           folds,
           effectAction.foldTree,
         );
@@ -320,7 +320,7 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
 
       case 'unfold': {
         const foldTree = resolveFoldTreeIndex(
-          foldsApi,
+          foldMethods,
           folds,
           effectAction.foldTree,
         );
@@ -335,7 +335,7 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
 
       case 'toggleFold': {
         const foldTree = resolveFoldTreeIndex(
-          foldsApi,
+          foldMethods,
           folds,
           effectAction.foldTree,
         );
@@ -349,7 +349,7 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
       }
 
       case 'createFoldTree': {
-        const existingIndex = foldsApi.getIndexByName(folds, effectAction.name);
+        const existingIndex = foldMethods.getIndexByName(folds, effectAction.name);
 
         return existingIndex === undefined
           ? action({
@@ -360,7 +360,7 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
       }
 
       case 'deleteFoldTree': {
-        const foldTreeIndex = foldsApi.getIndexByName(folds, effectAction.name);
+        const foldTreeIndex = foldMethods.getIndexByName(folds, effectAction.name);
 
         if (foldTreeIndex === undefined) {
           return rejected(`Fold tree named "${effectAction.name}" not found.`);

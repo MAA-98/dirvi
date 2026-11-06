@@ -1,8 +1,8 @@
 import type { Initialization } from '../domain/initialization.js';
 import { ConfigSchema, defaultConfig, merge } from '../domain/config.js';
-import type { PublicInitApi } from '../domain/public-init-api.js';
+import type { PublicInitApi } from 'dirvi-apis';
 import type { ExCommand } from '../domain/ex-command.js';
-import { AppPackageReference } from '../domain/app-pack-ref.js';
+import { AppPackageReference } from 'dirvi-apis';
 import {
   DuplicateAppRegistrationError, DuplicateExCommandRegistrationError,
   InitializationAlreadyFinishedError,
@@ -10,6 +10,7 @@ import {
   InvalidInitializationConfigError,
   InvalidInitializationValueError,
 } from './init-runtime.error.js';
+import { AppPackageReferenceMethods } from './app-pack-ref.js';
 
 /**
  * A session for collecting and resolving initialization-script registrations.
@@ -105,7 +106,7 @@ export function createInitRuntime(): InitRuntime {
         }
 
         try {
-          registeredApps.set(id, AppPackageReference.parse(appReference));
+          registeredApps.set(id, AppPackageReferenceMethods.parse(appReference));
         } catch (cause) {
           throw new InvalidAppPackageReferenceError(cause);
         }

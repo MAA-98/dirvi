@@ -1,6 +1,6 @@
-import { Config } from './config.js';
+import { AppPackageReference, Config } from 'dirvi-apis';
+
 import { ExCommand } from './ex-command.js';
-import { AppPackageReference } from './app-pack-ref.js';
 
 /**
  * Resolved startup state produced by evaluating `init.mjs`.

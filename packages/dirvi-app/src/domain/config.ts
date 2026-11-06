@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { defaultTheme, ThemeSchema } from './theme.js';
+import type { Config } from 'dirvi-apis';
 
 // =============================================================================
 // Configuration
@@ -10,36 +11,18 @@ export const ConfigSchema = z.object({
   // An empty string is valid and removes the first indentation prefix.
   firstIndent: z.string().optional(),
   theme: ThemeSchema.default(defaultTheme),
-});
-
-export type Config = z.infer<typeof ConfigSchema>;
+}) satisfies z.ZodType<Config>;
 
 export const defaultConfig: Config = ConfigSchema.parse({});
 
 // =============================================================================
-// Configuration Patch
+// Configuration Patch Methods
 // =============================================================================
-/**
- * A recursively optional form of a configuration value.
- *
- * Config scripts submit patches rather than full Config values, so a script can
- * change a nested option without repeating unrelated defaults. Arrays remain
- * whole values because configuration arrays should be replaced, not merged by
- * index.
- */
-type DeepPartial<Value> = Value extends readonly unknown[]
+export type DeepPartial<Value> = Value extends readonly unknown[]
   ? Value
   : Value extends object
     ? { readonly [Key in keyof Value]?: DeepPartial<Value[Key]> }
     : Value;
-
-/**
- * A partial configuration update accepted from an init.mjs script.
- *
- * Every patch is merged with the current complete configuration and then
- * validated with ConfigSchema before it becomes active.
- */
-export type ConfigPatch = DeepPartial<Config>;
 
 /**
  * Deeply merges plain configuration objects without mutating either input.

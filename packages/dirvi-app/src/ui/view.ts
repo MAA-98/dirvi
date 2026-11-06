@@ -5,12 +5,13 @@ import type {
 
 import type {
   Cursor,
+  NavEntry,
+  NavFold,
   NavBranch,
   NavNode,
   NavMethods,
   SerializableKey, CursorMethods,
 } from 'dirvi-lib';
-import { NavEntry, NavFold } from 'dirvi-lib/dist/state-and-nav/nav/nav.types.js';
 
 type ViewRowBase = {
   id: string;

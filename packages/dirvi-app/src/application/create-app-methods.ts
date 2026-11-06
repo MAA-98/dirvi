@@ -96,7 +96,7 @@ export function createAppMethods<
     },
     presentNode: (id, isBranch) => appDefinition.presentNode(id, isBranch),
     subscribeToResync: appDefinition.subscribeToResync,
-    stateApi,
+    stateMethods: stateApi,
     navMethods,
   };
 }

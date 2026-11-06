@@ -1,4 +1,5 @@
-import type { Feedback, FeedbackApi, FeedbackType } from './feedback.types.js';
+import type { Feedback, FeedbackApi } from './feedback.types.js';
+import type { FeedbackType } from 'dirvi-apis';
 
 type FeedbackValue = Readonly<{
   message: string;

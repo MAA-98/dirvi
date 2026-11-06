@@ -35,7 +35,7 @@ export function createReducer<Id extends SerializableKey, Value>(
   stateApi: StateMethods<Id, Value>,
   navNodeApi: NavMethods<Id, Value>,
 ): Reducer<Id, Value> {
-  const { treeNodeApi, foldsApi, cursorApi } = stateApi;
+  const { treeMethods, foldMethods, cursorMethods } = stateApi;
 
   /**
    * Preserve the cursor if its position remains navigable. Otherwise, move it
@@ -59,11 +59,11 @@ export function createReducer<Id extends SerializableKey, Value>(
       ...navNodeApi.cursors(navigation.children),
     ];
 
-    if (positions.some((position) => cursorApi.equal(position, cursor))) {
+    if (positions.some((position) => cursorMethods.equal(position, cursor))) {
       return state;
     }
 
-    const path = cursorApi.getPath(cursor);
+    const path = cursorMethods.getPath(cursor);
 
     while (path.length > 0) {
       const entryId = path.at(-1);
@@ -98,7 +98,7 @@ export function createReducer<Id extends SerializableKey, Value>(
 
             if (
               positions.some((position) =>
-                cursorApi.equal(position, foldCursor),
+                cursorMethods.equal(position, foldCursor),
               )
             ) {
               return stateApi.update(state, { cursor: foldCursor }) ?? state;
@@ -109,7 +109,7 @@ export function createReducer<Id extends SerializableKey, Value>(
         const nodeCursor: Cursor<Id> = { path: [...path] };
 
         if (
-          positions.some((position) => cursorApi.equal(position, nodeCursor))
+          positions.some((position) => cursorMethods.equal(position, nodeCursor))
         ) {
           return stateApi.update(state, { cursor: nodeCursor }) ?? state;
         }
@@ -137,7 +137,7 @@ export function createReducer<Id extends SerializableKey, Value>(
         return update(state, { cursor: action.cursor });
 
       case 'updateBranch': {
-        const root = treeNodeApi.updateAtPath(
+        const root = treeMethods.updateAtPath(
           stateApi.getRoot(state),
           action.path,
           (node) => {
@@ -146,15 +146,15 @@ export function createReducer<Id extends SerializableKey, Value>(
              * structurally convert any node, but the reducer must not turn a
              * leaf into a branch.
              */
-            if (treeNodeApi.kind(node) === 'leaf') {
+            if (treeMethods.kind(node) === 'leaf') {
               return undefined;
             }
 
             if (action.entries === null) {
-              return treeNodeApi.toUnloadedBranch(node);
+              return treeMethods.toUnloadedBranch(node);
             }
 
-            return treeNodeApi.withLoadedChildren(node, action.entries);
+            return treeMethods.withLoadedChildren(node, action.entries);
           },
         );
 
@@ -162,7 +162,7 @@ export function createReducer<Id extends SerializableKey, Value>(
          * State requires its root to remain a loaded branch. In particular,
          * refuse an accidental updateBranch with path [] and entries null.
          */
-        if (root === undefined || treeNodeApi.kind(root) !== 'loaded-branch') {
+        if (root === undefined || treeMethods.kind(root) !== 'loaded-branch') {
           return state;
         }
 
@@ -186,7 +186,7 @@ export function createReducer<Id extends SerializableKey, Value>(
         }
 
         const parentPath = action.path.slice(0, -1);
-        const folds = foldsApi.hideEntryAtPath(
+        const folds = foldMethods.hideEntryAtPath(
           stateApi.getFolds(state),
           action.foldTreeIndex,
           parentPath,
@@ -207,7 +207,7 @@ export function createReducer<Id extends SerializableKey, Value>(
         let folds = stateApi.getFolds(state);
 
         if (action.entryIds === null) {
-          const nextFolds = foldsApi.showAllHiddenEntriesAtPath(
+          const nextFolds = foldMethods.showAllHiddenEntriesAtPath(
             folds,
             action.foldTreeIndex,
             action.path,
@@ -220,7 +220,7 @@ export function createReducer<Id extends SerializableKey, Value>(
           folds = nextFolds;
         } else {
           for (const entryId of action.entryIds) {
-            const nextFolds = foldsApi.showEntryAtPath(
+            const nextFolds = foldMethods.showEntryAtPath(
               folds,
               action.foldTreeIndex,
               action.path,
@@ -242,7 +242,7 @@ export function createReducer<Id extends SerializableKey, Value>(
       }
 
       case 'fold': {
-        const folds = foldsApi.activateAtIndex(
+        const folds = foldMethods.activateAtIndex(
           stateApi.getFolds(state),
           action.foldTreeIndex,
         );
@@ -251,7 +251,7 @@ export function createReducer<Id extends SerializableKey, Value>(
       }
 
       case 'unfold': {
-        const folds = foldsApi.deactivateAtIndex(
+        const folds = foldMethods.deactivateAtIndex(
           stateApi.getFolds(state),
           action.foldTreeIndex,
         );
@@ -260,7 +260,7 @@ export function createReducer<Id extends SerializableKey, Value>(
       }
 
       case 'toggleFold': {
-        const folds = foldsApi.toggleActiveAtIndex(
+        const folds = foldMethods.toggleActiveAtIndex(
           stateApi.getFolds(state),
           action.foldTreeIndex,
         );
@@ -270,13 +270,13 @@ export function createReducer<Id extends SerializableKey, Value>(
 
       case 'createFoldTree': {
         const currentFolds = stateApi.getFolds(state);
-        const index = firstAvailableAdditionalFoldIndex(foldsApi, currentFolds);
+        const index = firstAvailableAdditionalFoldIndex(foldMethods, currentFolds);
 
-        const folds = foldsApi.setAdditionalFoldAtIndex(
+        const folds = foldMethods.setAdditionalFoldAtIndex(
           currentFolds,
           index,
           // Obtain this through the actual TreeMethods root-ID operation.
-          treeNodeApi.id(stateApi.getRoot(state)),
+          treeMethods.id(stateApi.getRoot(state)),
           {
             name: action.name,
             description: null,
@@ -288,13 +288,13 @@ export function createReducer<Id extends SerializableKey, Value>(
 
       case 'deleteFoldTree': {
         const currentFolds = stateApi.getFolds(state);
-        const index = foldsApi.getIndexByName(currentFolds, action.name);
+        const index = foldMethods.getIndexByName(currentFolds, action.name);
 
         if (index === undefined || index === 0) {
           return state;
         }
 
-        const folds = foldsApi.removeAdditionalFoldAtIndex(currentFolds, index);
+        const folds = foldMethods.removeAdditionalFoldAtIndex(currentFolds, index);
 
         return folds === undefined ? state : update(state, { folds });
       }

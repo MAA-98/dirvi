@@ -1,10 +1,4 @@
-export type NpmAppReference = {
-  readonly source: 'npm';
-  readonly packageName: string;
-  readonly version: string;
-};
-
-export type AppPackageReference = NpmAppReference;
+import type { AppPackageReference } from 'dirvi-apis';
 
 /**
  * Parses and validates an app package reference supplied by init.mjs.
@@ -13,7 +7,7 @@ export type AppPackageReference = NpmAppReference;
  * not sufficient to establish that a received value is safe to interpret as an
  * npm package reference.
  */
-export const AppPackageReference = {
+export const AppPackageReferenceMethods = {
   parse(input: unknown): AppPackageReference {
     if (!isRecord(input)) {
       throw new Error('Dirvi app package reference must be an object.');

@@ -1,7 +1,8 @@
 import { access } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 
-import type { Initialization, PublicInitApi } from '@mak-98/dirvi-app';
+import type { PublicInitApi } from 'dirvi-apis';
+import type { Initialization } from '@mak-98/dirvi-app';
 import { createInitRuntime } from '@mak-98/dirvi-app';
 
 /**
