@@ -130,6 +130,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   // ===========================================================================
   // App API
   // ===========================================================================
+  
   const feedbackApi = useMemo(
     () =>
       createFeedbackApi((nextFeedback) => {
@@ -141,14 +142,27 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   const appApi = useMemo<AppApi>(
     () => ({
       pathAtCursor: () => appMethods.stateMethods.cursorPath(stateRef.current),
+      visiblePaths: () => {
+        const state = stateRef.current;
+        const root = appMethods.stateMethods.getRoot(state);
+        const folds = appMethods.stateMethods.getFolds(state);
+        const navigation = appMethods.navMethods.from(root, folds);
+
+        if (navigation === undefined) {
+          throw new Error('Tree-surfer state root must be a loaded branch.');
+        }
+
+        return navigation.children === null
+          ? []
+          : appMethods.navMethods.visiblePaths(navigation.children);
+      },
       // TODO: Implement with appMethods
-      visiblePaths: () => 'test',
       valueAtCursor: () => 'test value',
       addMessage: (message: string, type?: FeedbackType) => {
         feedbackApi.addMessage(message, type);
       },
     }),
-    [feedbackApi, appMethods.stateMethods],
+    [feedbackApi, appMethods.stateMethods, appMethods.navMethods],
   );
 
   // ===========================================================================
@@ -261,25 +275,6 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           return;
         }
 
-        // TODO: Get rid of
-        case 'emitVisibleLeavesPaths':
-          const navigation = navEntry.children;
-
-          if (navigation === null) {
-            return;
-          }
-
-          const visibleLeavesPaths =
-            appMethods.navMethods.visibleLeavesPaths(navigation);
-          stdout?.(
-            JSON.stringify({
-              type: 'displayed-leaves-paths',
-              paths: visibleLeavesPaths,
-            }),
-          );
-          setInputState(clearInputState);
-          return;
-
         case 'saveView': {
           // void appApi.viewApi
           //   .save(appApi.viewKey, effect.name, stateRef.current)
@@ -368,7 +363,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           return;
       }
     },
-    [appMethods, effectToAction, navEntry, state, stdout, shellApi, initialization.exCommands, initialization.app.registered, appApi, clearInputState],
+    [appMethods, effectToAction, navEntry, state, shellApi, initialization.exCommands, initialization.app.registered, appApi, clearInputState],
   );
 
   // ===========================================================================

@@ -41,9 +41,6 @@ export type Effect<Id extends SerializableKey, Value> =
       name: string;
     }>
   | Readonly<{
-      effectType: 'emitVisibleLeavesPaths';
-    }>
-  | Readonly<{
       effectType: 'listFolds';
     }>
   | Readonly<{

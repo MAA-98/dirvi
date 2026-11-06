@@ -1,4 +1,4 @@
-import type { SerializableKey } from '../../state-and-nav/index.js';
+import { SerializableKey } from 'dirvi-apis';
 import type { Effect } from '../domain/index.js';
 
 // const DEFAULT_VIEW_NAME = 'default';
@@ -185,11 +185,6 @@ export function parseExCommand<Id extends SerializableKey, Value>(
 
     case 'fold':
       return parseFoldCommand<Id, Value>(commandArgs);
-
-    case 'evlp':
-      return {
-        effectType: 'emitVisibleLeavesPaths',
-      };
 
     // case 'mkview!':
     //   return {

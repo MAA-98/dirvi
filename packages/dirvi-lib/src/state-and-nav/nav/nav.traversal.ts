@@ -273,7 +273,7 @@ export function createNavTraversalMethods<Id extends SerializableKey, Value>(
     };
   }
 
-  function visibleLeavesPaths(
+  function visiblePaths(
     navigation: NavNode<Id>,
     parentPath: readonly Id[] = [],
   ): Id[][] {
@@ -283,20 +283,16 @@ export function createNavTraversalMethods<Id extends SerializableKey, Value>(
       if (entryIsFold(entry)) {
         continue;
       }
-
+      
       const entryPath = [...parentPath, entry.id];
-
-      if (!entryIsBranch(entry)) {
-        paths.push(entryPath);
-        continue;
-      }
+      paths.push(entryPath);
 
       /*
        * A null value means the source branch is not loaded/opened. It has no
        * currently visible descendants.
        */
-      if (entry.children !== null) {
-        paths.push(...visibleLeavesPaths(entry.children, entryPath));
+      if (entryIsBranch(entry) && entry.children !== null) {
+        paths.push(...visiblePaths(entry.children, entryPath));
       }
     }
 
@@ -313,6 +309,6 @@ export function createNavTraversalMethods<Id extends SerializableKey, Value>(
     cursorAfterFold,
     parentCursor,
     cursors,
-    visibleLeavesPaths,
+    visiblePaths,
   };
 }

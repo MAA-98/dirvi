@@ -151,8 +151,9 @@ export type NavMethods<Id extends SerializableKey, Value> = {
    */
   cursors(navigation: NavNode<Id>, parentPath?: readonly Id[]): Cursor<Id>[];
 
-  visibleLeavesPaths(
-    navigation: NavNode<Id>,
-    parentPath?: readonly Id[],
-  ): Id[][];
+  /**
+   * Returns visible node paths in depth-first display order, excluding the
+   * root and folded entries. Includes both leaves and branches.
+   */
+  visiblePaths(navigation: NavNode<Id>, parentPath?: readonly Id[]): Id[][];
 };
