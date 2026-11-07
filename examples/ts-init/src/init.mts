@@ -19,7 +19,7 @@ dirvi.app.register({
   ex: [
     {
       command: 'show-path',
-      execute: (api, _args) => {
+      execute: (api, _rawArg) => {
         const path = api.app.pathAtCursor();
         api.app.addMessage(path.join('/'));
       },
