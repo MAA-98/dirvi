@@ -102,7 +102,9 @@ export class NoAppsRegisteredError extends InitRuntimeError {
   constructor() {
     super(
       'NO_APPS_REGISTERED',
-      'Initialization did not register any apps. Call dirvi.app.register(id, appReference) at least once in init.mjs.',
+      'Initialization did not register any apps.' +
+      'Call dirvi.app.register(app) at least once in init.mjs.' +
+      'See /examples/ts-init/ for writing an init.mjs in TypeScript.',
     );
   }
 }

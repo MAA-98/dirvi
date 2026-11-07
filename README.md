@@ -1,15 +1,13 @@
 # dirvi
 
-A TUI for navigating and interacting with tree structures. Heavily inspired by Vim/Neovim,
-to provide a similar extensible editing environment, but for trees rather than text buffers.
+A TUI for interactive tree structures, called "dirvi apps". Inspired by Vim/Neovim to provide a similar extensible editing environment, for trees rather than text buffers.
 
 ## Design Goals
 
-- Focused, composable, extendable. **Be really good at one thing: navigating trees.**
-- Simple configurations and APIs. **Fearless improvements until out of beta.**
+- Focused, composable, extendable. **Be really good at one thing: interacting with trees.**
+- Simple and powerful configurations and APIs. **Fearless improvements until out of beta.**
 - Modal editing, adapted from Vim for tree structures.
-- Example of an unordered `dirvi` app: file system editor.
-- Example of an ordered `dirvi` app: XML editor.
+- Two examples of `dirvi` apps: file system editor and XML editor.
 
 Answering the question:
 https://vi.stackexchange.com/questions/29417/how-can-i-edit-trees-in-vim
@@ -22,7 +20,23 @@ Install `dirvi` globally with npm:
 npm install -g @mak-98/dirvi-cli
 ```
 
+Requirements:
+- Node.js (>= v.22)
+
 ## Usage
+
+Add a starting `init.mjs`, for example, a dirvi directory app with:
+
+```js
+dirvi.app.register({
+  id: 'fs',
+  packRef: {
+    source: 'npm',
+    packageName: '@mak-98/posix-fs-dirvi-app',
+    version: '0.11.0-beta.13',
+  },
+});
+```
 
 Launch `dirvi` from the directory you want to browse:
 
@@ -30,14 +44,16 @@ Launch `dirvi` from the directory you want to browse:
 dirvi
 ```
 
+It will install the npm package on first load and open the app.
+
 ## Controls
 
-`dirvi` has two input modes:
+`dirvi` has two modes:
 
 - **Normal mode** is used for navigating and interacting with the directory tree.
 - **Command-line mode** is used to enter commands beginning with `:`.
 
-The current input mode and pending input are shown in the status bar at the bottom of the terminal.
+The current mode and pending input are shown in the status bar at the bottom of the terminal.
 
 ### Normal mode
 
@@ -52,7 +68,7 @@ Normal mode is the default mode when `dirvi` starts.
 | `h` / Left  | Move to the parent directory                                             |
 | `l` / Right | Open or close a directory; send a file path when the cursor is on a file |
 | `:`         | Enter command-line mode                                                  |
-| `Esc`       | Clear a pending normal-mode command                                      |
+| `Esc`       | Clear a pending command                                                  |
 
 #### Multi-key
 
