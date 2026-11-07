@@ -66,7 +66,7 @@ const packagesDirectory = join(dirviDataDirectory, 'site', 'pack');
 program
   .name('dirvi')
   .description('View and manage trees.')
-  .version('0.11.0-beta.14')
+  .version('0.11.0-beta.15')
   .helpOption('--help')
   .option('-a, --app <id>', 'App name to open at startup.')
   .option('-i, --input <value>', 'Input for the app at startup.')
@@ -85,12 +85,9 @@ program
       alternateScreenActive = true;
     }
     
-    // Note: if you pipe output you'll need to use FORCE_COLOR=1/2/3
-    // to keep interactive screen colored.
-    const stdout = (message: string): void => {
-      // The newline makes each message a separate JSON Lines message.
-      process.stdout.write(`${message}\n`);
-    };
+    // Note: if you pipe output you'll need to use FORCE_COLOR=1/2/3 to keep
+    // interactive screen colored.
+    const stdoutWrite = process.stdout.write;
 
     const clipboard = (value: string): void => {
       if (process.platform !== 'darwin') {
@@ -116,7 +113,7 @@ program
           initialAppOptions={options}
           initialization={initialization}
           packageLoader={packageLoader}
-          {...(stdoutIsInteractive ? {} : { stdout })}
+          {...(stdoutIsInteractive ? {} : { stdout: stdoutWrite })}
           clipboard={clipboard}
         />,
         { 

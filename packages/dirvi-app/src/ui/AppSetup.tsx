@@ -25,7 +25,6 @@ type AppSetupProps<Id extends SerializableKey, Value, ViewKey = string> = {
   initialization: Initialization;
   shellApi: ShellApi;
   appMethods: AppMethods<Id, Value, ViewKey>;
-  stdout?: (message: string) => void;
   clipboard?: (value: string) => void;
 };
 
@@ -52,7 +51,6 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
   initialization,
   shellApi,
   appMethods,
-  stdout,
   clipboard,
 }: AppSetupProps<Id, Value, ViewKey>) {
   const [loadState, setLoadState] = useState<LoadState<Id, Value, ViewKey>>();
@@ -154,7 +152,6 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
       reducer={reducer}
       intentToEffect={intentToEffect}
       effectToAction={effectToAction}
-      {...(stdout === undefined ? {} : { stdout })}
       {...(clipboard === undefined ? {} : { clipboard })}
     />
   );

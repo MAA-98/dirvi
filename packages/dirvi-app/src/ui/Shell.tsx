@@ -44,8 +44,12 @@ export type ShellAppProps = {
 
   /** Request to exit dirvi with an optional message. */
   readonly onQuit: (message?: string) => void;
-  /** Writes non-interactive application output. */
-  readonly stdout?: (message: string) => void;
+  /** Stdout write handle. */
+  readonly stdout?: (
+    str: Uint8Array | string,
+    encoding?: BufferEncoding,
+    cb?: (err?: Error | null) => void,
+  ) => boolean;
   /** Copies a value to the platform clipboard. */
   readonly clipboard?: (value: string) => void;
 };
@@ -54,12 +58,12 @@ export type ShellAppProps = {
  * Creates `ShellApi` and the `AppMethods` for a selected application.
  */
 export function Shell({
-  onQuit,
   loadingScreenRenderer,
   appScreenRenderer,
   initialAppOptions,
   initialization,
   packageLoader,
+  onQuit,
   stdout,
   clipboard,
 }: ShellAppProps) {
@@ -91,7 +95,7 @@ export function Shell({
           const loadedAppMethodsApplicator = createAppMethodsApplicator(
             appPlugin.createAppDefinitionApplicator(input),
           );
-          
+
           setLoadedApp({
             appId,
             appMethodsApplicator: loadedAppMethodsApplicator,
@@ -108,9 +112,10 @@ export function Shell({
           };
         }
       },
+      ...(stdout === undefined ? {} : { stdout }),
       quit: onQuit,
     };
-  }, [packageLoader, onQuit, initialization.app.registered]);
+  }, [packageLoader, onQuit, initialization.app.registered, stdout]);
 
   /**
    * Load initial `AppMethods` on startup, using the shell API just created and
@@ -126,12 +131,8 @@ export function Shell({
         if (result.kind !== 'loaded') {
           setAppError(new Error(result.message));
         }
-      })
-  }, [
-    initialAppOptions,
-    initialization.app.initial,
-    shellApi,
-  ]);
+      });
+  }, [initialAppOptions, initialization.app.initial, shellApi]);
 
   if (appError !== undefined) {
     throw appError;
@@ -151,7 +152,6 @@ export function Shell({
       initialization={initialization}
       shellApi={shellApi}
       appMethods={appMethods}
-      {...(stdout === undefined ? {} : { stdout })}
       {...(clipboard === undefined ? {} : { clipboard })}
     />
   ));

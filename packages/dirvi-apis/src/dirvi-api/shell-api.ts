@@ -1,4 +1,5 @@
 import type { AppInput } from './app-input.js';
+import type { BufferEncoding } from './buffer-encoding.js';
 
 export type OpenAppResult =
   | { readonly kind: 'loaded' }
@@ -36,6 +37,13 @@ export type ShellApi = {
    */
   readonly loadApp: (appId: string, input: AppInput) => Promise<OpenAppResult>;
 
+  /** Stdout write handle, copies Node's process.atdout.write signature. */
+  readonly stdout?: (
+    str: Uint8Array | string,
+    encoding?: BufferEncoding,
+    cb?: (err?: Error | null) => void,
+  ) => boolean;
+  
   /** Optional exit message to display. */
   readonly quit: (message?: string) => void;
 };
