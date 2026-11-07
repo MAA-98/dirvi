@@ -119,7 +119,11 @@ program
           {...(stdoutIsInteractive ? {} : { stdout })}
           clipboard={clipboard}
         />,
-        { stdout: uiOutput },
+        { 
+          stdout: uiOutput,
+          incrementalRendering: true,
+        },
+
       );
 
       // Errors thrown while leaving this await still execute the finally block.
