@@ -50,7 +50,7 @@ export type Effect<Id extends SerializableKey, Value> =
   | Readonly<{
       effectType: 'userExCommand';
       name: string;
-      args: readonly string[];
+      rawArgs: string | undefined;
     }>
   | Readonly<{
       effectType: 'emitError';

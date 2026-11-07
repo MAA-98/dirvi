@@ -35,12 +35,15 @@ export type PublicInitApi = {
       /**
        * Ex commands invoked as `:${command}` while this app is active.
        *
-       * Each closure receives the live DirviApi and parsed command arguments
+       * Each closure receives the live DirviApi and the unparsed argument text
        * when invoked, not while init.mjs is being evaluated.
+       *
+       * `rawArgs` is undefined if no additional arguments were given to the
+       * command.
        */
       ex?: readonly {
         command: string;
-        execute: (api: DirviApi, args: string[]) => void | Promise<void>;
+        execute: (api: DirviApi, rawArgs?: string) => void | Promise<void>;
       }[];
     }) => void;
   };

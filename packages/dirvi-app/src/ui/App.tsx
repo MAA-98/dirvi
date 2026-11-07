@@ -191,7 +191,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           }
           
           void Promise.resolve()
-            .then(() => command.execute({ shell: shellApi, app: appApi }, effect.args))
+            .then(() => command.execute({ shell: shellApi, app: appApi }, effect.rawArgs))
             .catch((error: unknown) => {
               const appError =
                 error instanceof Error ? error : new Error(String(error));

@@ -5,5 +5,5 @@ import { DirviApi } from 'dirvi-apis';
  */
 export type ExCommand = {
   readonly name: string;
-  readonly execute: (api: DirviApi, args: readonly string[]) => void | Promise<void>;
+  readonly execute: (api: DirviApi, rawArgs: string | undefined) => void | Promise<void>;
 };

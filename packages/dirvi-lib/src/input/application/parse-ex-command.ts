@@ -157,21 +157,34 @@ export function parseExCommand<Id extends SerializableKey, Value>(
   commandLine: string,
   registeredCommands: ReadonlySet<string>,
 ): Effect<Id, Value> | undefined {
-  const command = commandLine.trim().replace(/^:+/, '');
+  const command = commandLine.trimStart().replace(/^:+/, '').trimStart();
 
   if (command === '') {
     return undefined;
   }
 
-  const [commandName, ...commandArgs] = command.split(/\s+/);
-  
+  const match = /^(\S+)(?:\s+([\s\S]*))?$/.exec(command);
+
+  if (match === null) {
+    return undefined;
+  }
+
+  const commandName = match[1]!;
+  const rawArgs = match[2];
+
   if (commandName !== undefined && registeredCommands.has(commandName)) {
     return {
       effectType: 'userExCommand',
       name: commandName,
-      args: commandArgs,
+      rawArgs,
     };
   }
+
+  // Built-ins have whitespace-based argument parsing.
+  const commandArgs =
+    rawArgs === undefined || rawArgs.trim() === ''
+      ? []
+      : rawArgs.trim().split(/\s+/);
   
   switch (commandName) {
     case 'q':

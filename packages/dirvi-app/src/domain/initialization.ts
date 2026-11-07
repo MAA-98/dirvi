@@ -24,7 +24,7 @@ export type Initialization = {
 
   /**
    * Ex commands registered by the initialization script, keyed by appId and
-   * command name.
+   * then command name.
    * */
   readonly exCommands: ReadonlyMap<string, ReadonlyMap<string, ExCommand>>;
 };
