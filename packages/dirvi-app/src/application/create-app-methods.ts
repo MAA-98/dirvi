@@ -76,7 +76,6 @@ export function createAppMethods<
   }
   
   return {
-    name: appDefinition.displayName,
     loadChildren: (path) => loadChildren(path),
     loadRoot: async () => {
       const rootData = await appDefinition.loadRoot();
@@ -94,7 +93,7 @@ export function createAppMethods<
 
       return root;
     },
-    presentNode: (id, isBranch) => appDefinition.presentNode(id, isBranch),
+    presentNode: (id, value, isBranch) => appDefinition.presentNode(id, value, isBranch),
     subscribeToResync: appDefinition.subscribeToResync,
     stateMethods: stateApi,
     navMethods,

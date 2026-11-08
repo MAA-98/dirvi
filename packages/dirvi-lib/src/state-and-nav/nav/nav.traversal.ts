@@ -1,5 +1,5 @@
 import type { Cursor, CursorMethods, FoldCursor } from '../cursor.js';
-import type { SerializableKey } from '../tree/index.js';
+import type { SerializableKey } from 'dirvi-apis';
 import type {
   NavBranch,
   NavEntry,
@@ -18,16 +18,16 @@ export function createNavTraversalMethods<Id extends SerializableKey, Value>(
   cursorMethods: CursorMethods<Id>,
   navigateFolds: boolean,
 ): Omit<NavMethods<Id, Value>, 'from'> {
-  function entryIsBranch(entry: NavEntry<Id>): entry is NavBranch<Id> {
+  function entryIsBranch(entry: NavEntry<Id, Value>): entry is NavBranch<Id, Value> {
     return 'children' in entry;
   }
 
-  function entryIsFold(entry: NavEntry<Id>): entry is NavFold<Id> {
+  function entryIsFold(entry: NavEntry<Id, Value>): entry is NavFold<Id, Value> {
     return 'folded' in entry;
   }
 
   function foldCursor(
-    entry: NavFold<Id>,
+    entry: NavFold<Id, Value>,
     parentPath: readonly Id[],
   ): FoldCursor<Id> | undefined {
     const firstEntry = entry.folded[0];
@@ -47,9 +47,9 @@ export function createNavTraversalMethods<Id extends SerializableKey, Value>(
   }
 
   function getNodeAtPath(
-    navigation: NavNode<Id>,
+    navigation: NavNode<Id, Value>,
     path: readonly Id[],
-  ): NavNode<Id> | undefined {
+  ): NavNode<Id, Value> | undefined {
     let node = navigation;
 
     for (const id of path) {
@@ -77,9 +77,9 @@ export function createNavTraversalMethods<Id extends SerializableKey, Value>(
   }
 
   function getEntryAtPath(
-    navigation: NavNode<Id>,
+    navigation: NavNode<Id, Value>,
     path: readonly Id[],
-  ): NavEntry<Id> | undefined {
+  ): NavEntry<Id, Value> | undefined {
     /*
      * A NavNode does not itself correspond to a NavEntry. Therefore [] does
      * not resolve to an entry.
@@ -97,7 +97,7 @@ export function createNavTraversalMethods<Id extends SerializableKey, Value>(
   }
 
   function cursors(
-    navigation: NavNode<Id>,
+    navigation: NavNode<Id, Value>,
     parentPath: readonly Id[] = [],
   ): Cursor<Id>[] {
     const positions: Cursor<Id>[] = [];
@@ -128,7 +128,7 @@ export function createNavTraversalMethods<Id extends SerializableKey, Value>(
     return positions;
   }
 
-  function rootCursors(rootNode: NavBranch<Id>): Cursor<Id>[] {
+  function rootCursors(rootNode: NavBranch<Id, Value>): Cursor<Id>[] {
     return [
       { path: [] },
       ...(rootNode.children === null ? [] : cursors(rootNode.children)),
@@ -136,7 +136,7 @@ export function createNavTraversalMethods<Id extends SerializableKey, Value>(
   }
 
   function nextCursor(
-    rootNode: NavBranch<Id>,
+    rootNode: NavBranch<Id, Value>,
     cursor: Cursor<Id>,
   ): Cursor<Id> | undefined {
     const positions = rootCursors(rootNode);
@@ -152,7 +152,7 @@ export function createNavTraversalMethods<Id extends SerializableKey, Value>(
   }
 
   function previousCursor(
-    rootNode: NavBranch<Id>,
+    rootNode: NavBranch<Id, Value>,
     cursor: Cursor<Id>,
   ): Cursor<Id> | undefined {
     const positions = rootCursors(rootNode);
@@ -168,7 +168,7 @@ export function createNavTraversalMethods<Id extends SerializableKey, Value>(
   }
 
   function cursorAfterFold(
-    rootNode: NavBranch<Id>,
+    rootNode: NavBranch<Id, Value>,
     cursor: Cursor<Id>,
   ): Cursor<Id> | undefined {
     if (
@@ -255,7 +255,7 @@ export function createNavTraversalMethods<Id extends SerializableKey, Value>(
   }
 
   function parentCursor(
-    _navigation: NavNode<Id>,
+    _navigation: NavNode<Id, Value>,
     cursor: Cursor<Id>,
   ): Cursor<Id> | undefined {
     if (cursorMethods.isFoldCursor(cursor)) {
@@ -274,7 +274,7 @@ export function createNavTraversalMethods<Id extends SerializableKey, Value>(
   }
 
   function visiblePaths(
-    navigation: NavNode<Id>,
+    navigation: NavNode<Id, Value>,
     parentPath: readonly Id[] = [],
   ): Id[][] {
     const paths: Id[][] = [];

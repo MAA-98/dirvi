@@ -30,11 +30,6 @@ export type AppChild<Id, Value> = Readonly<{
  */
 export type AppDefinition<Id extends SerializableKey, Value> = Readonly<{
   /**
-   * User-facing application name shown by the host.
-   */
-  readonly displayName: string;
-
-  /**
    * Whether sibling order is meaningful in the application's underlying
    * structure, rather than merely a presentation choice.
    *
@@ -78,7 +73,7 @@ export type AppDefinition<Id extends SerializableKey, Value> = Readonly<{
    * Must be synchronous and side-effect-free. The host owns indentation,
    * cursor styling, selection styling, and fold decorations.
    */
-  readonly presentNode: PresentNode<Id>;
+  readonly presentNode: PresentNode<Id, Value>;
 
   /**
    * Listener for when to reload to add or remove new children in loaded

@@ -15,13 +15,13 @@ const STATUS_BAR_HEIGHT = 1;
 // Hooks that keeps Ref of the viewport's start, and returns View sliced to
 // only the rows that should be visible.
 export function useView<Id extends SerializableKey, Value>(
-  navNode: NavBranch<Id>,
+  navNode: NavBranch<Id, Value>,
   state: State<Id, Value>,
   stateApi: StateMethods<Id, Value>,
   navNodeApi: NavMethods<Id, Value>,
   cursorMethods: CursorMethods<Id>,
   rowCount: number,
-  presentNode: PresentNode<Id>
+  presentNode: PresentNode<Id, Value>
 ): View {
   const viewportStartRef = useRef(0);
   const viewportHeight = Math.max(0, rowCount - STATUS_BAR_HEIGHT);

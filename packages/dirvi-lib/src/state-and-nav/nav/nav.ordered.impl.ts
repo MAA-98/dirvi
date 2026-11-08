@@ -28,9 +28,9 @@ export function createOrderedNavMethods<Id extends SerializableKey, Value>(
     entries: Iterable<TreeNode<Id, Value>>,
     foldRoot: Folds<Id>,
     parentPath: readonly Id[],
-  ): NavNode<Id> {
-    const visibleEntries: NavEntry<Id>[] = [];
-    let foldedEntries: NavFold<Id> | undefined;
+  ): NavNode<Id, Value> {
+    const visibleEntries: NavEntry<Id, Value>[] = [];
+    let foldedEntries: NavFold<Id, Value> | undefined;
 
     for (const entry of entries) {
       const entryId = treeMethods.id(entry);
@@ -78,19 +78,22 @@ export function createOrderedNavMethods<Id extends SerializableKey, Value>(
     entry: TreeNode<Id, Value>,
     foldRoot: Folds<Id>,
     entryPath: readonly Id[],
-  ): NavLeafOrBranch<Id> {
-    return treeMethods.matchByKind<NavLeafOrBranch<Id>>(entry, {
-      leaf: ({ id }) => ({
+  ): NavLeafOrBranch<Id, Value> {
+    return treeMethods.matchByKind<NavLeafOrBranch<Id, Value>>(entry, {
+      leaf: ({ id, value }) => ({
         id,
+        value,
       }),
-
-      unloadedBranch: ({ id }) => ({
+      
+      unloadedBranch: ({ id, value }) => ({
         id,
+        value,
         children: null,
       }),
-
-      loadedBranch: ({ id, children }) => ({
+      
+      loadedBranch: ({ id, value, children }) => ({
         id,
+        value,
         children: createNavNode(children, foldRoot, entryPath),
       }),
     });
@@ -99,17 +102,19 @@ export function createOrderedNavMethods<Id extends SerializableKey, Value>(
   function createRootNavBranch(
     root: TreeNode<Id, Value>,
     foldRoot: Folds<Id>,
-  ): NavBranch<Id> | undefined {
-    return treeMethods.matchByKind<NavBranch<Id> | undefined>(root, {
+  ): NavBranch<Id, Value> | undefined {
+    return treeMethods.matchByKind<NavBranch<Id, Value> | undefined>(root, {
       leaf: () => undefined,
 
-      unloadedBranch: ({ id }) => ({
+      unloadedBranch: ({ id, value }) => ({
         id,
+        value,
         children: null,
       }),
 
-      loadedBranch: ({ id, children }) => ({
+      loadedBranch: ({ id, value, children }) => ({
         id,
+        value,
         children: createNavNode(children, foldRoot, []),
       }),
     });
@@ -121,7 +126,10 @@ export function createOrderedNavMethods<Id extends SerializableKey, Value>(
   };
 }
 
-type NavLeafOrBranch<Id extends SerializableKey> = Exclude<
-  NavEntry<Id>,
-  NavFold<Id>
+type NavLeafOrBranch<
+  Id extends SerializableKey,
+  Value
+> = Exclude<
+  NavEntry<Id, Value>,
+  NavFold<Id, Value>
 >;

@@ -48,11 +48,11 @@ function foldId<Id extends SerializableKey>(
 
 export const View = {
   createRows<Id extends SerializableKey, Value>(
-    rootNode: NavBranch<Id>,
+    rootNode: NavBranch<Id, Value>,
     navNodeApi: NavMethods<Id, Value>,
     cursor: Cursor<Id>,
     cursorMethods: CursorMethods<Id>,
-    presentNode: PresentNode<Id>
+    presentNode: PresentNode<Id, Value>
   ): ViewRow[] {
     const rootCursor: Cursor<Id> = { path: [] };
     
@@ -94,13 +94,13 @@ export const View = {
   },
 
   create<Id extends SerializableKey, Value>(
-    rootNode: NavBranch<Id>,
+    rootNode: NavBranch<Id, Value>,
     navNodeApi: NavMethods<Id, Value>,
     cursor: Cursor<Id>,
     cursorMethods: CursorMethods<Id>,
     viewportHeight: number,
     viewportStart: number,
-    presentNode: PresentNode<Id>
+    presentNode: PresentNode<Id, Value>
   ): View {
     const rows = View.createRows(rootNode, navNodeApi, cursor, cursorMethods, presentNode);
 
@@ -119,13 +119,16 @@ export const View = {
  *   ['src']         root/src
  *   ['src', 'lib']  root/src/lib
  */
-function viewRowsAtNode<Id extends SerializableKey, Value>(
-  node: NavNode<Id>,
+function viewRowsAtNode<
+  Id extends SerializableKey,
+  Value
+>(
+  node: NavNode<Id, Value>,
   parentPath: Id[],
   navNodeApi: NavMethods<Id, Value>,
   cursor: Cursor<Id>,
   cursorMethods: CursorMethods<Id>,
-  presentNode: PresentNode<Id>,
+  presentNode: PresentNode<Id, Value>,
   inlineFoldIds: ReadonlySet<string>
 ): ViewRow[] {
   const rows: ViewRow[] = [];
@@ -154,6 +157,7 @@ function viewRowsAtNode<Id extends SerializableKey, Value>(
       // Reuse the first hidden entry's highlight until folds have a presenter.
       const { highlight } = presentNode(
         firstEntry.id,
+        firstEntry.value,
         navNodeApi.entryIsBranch(firstEntry),
       );
 
@@ -210,11 +214,11 @@ function viewRowsAtNode<Id extends SerializableKey, Value>(
 }
 
 function viewRowForEntry<Id extends SerializableKey, Value>(
-  entry: Exclude<NavEntry<Id>, NavFold<Id>>,
+  entry: Exclude<NavEntry<Id, Value>, NavFold<Id, Value>>,
   parentPath: Id[] | null,
   cursor: boolean,
   navNodeApi: NavMethods<Id, Value>,
-  presentNode: PresentNode<Id>,
+  presentNode: PresentNode<Id, Value>,
   inlineFoldIds: ReadonlySet<string>,
 ): ViewRow {
   const id = entryId(parentPath ?? [], entry.id);
@@ -222,7 +226,7 @@ function viewRowForEntry<Id extends SerializableKey, Value>(
   const selected = false;
 
   if (navNodeApi.entryIsBranch(entry)) {
-    const { content, highlight } = presentNode(entry.id, true);
+    const { content, highlight } = presentNode(entry.id, entry.value, true);
     const entryPath = parentPath === null ? [] : [...parentPath, entry.id];
 
     const foldedCount =
@@ -250,14 +254,14 @@ function viewRowForEntry<Id extends SerializableKey, Value>(
       indent,
       selected,
       cursor,
-      content: content,
+      content,
       highlight,
       type: 'branch',
       foldedCount,
     };
   }
 
-  const { content, highlight } = presentNode(entry.id, false);
+  const { content, highlight } = presentNode(entry.id, entry.value, false);
   return {
     id,
     indent,

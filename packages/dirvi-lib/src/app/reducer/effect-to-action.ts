@@ -29,7 +29,7 @@ export type EffectToActionResult<Id extends SerializableKey, Value> =
 
 export type EffectToAction<Id extends SerializableKey, Value> = (
   effectAction: EffectAction<Id, Value>,
-  navigation: NavBranch<Id>,
+  navigation: NavBranch<Id, Value>,
   state: State<Id, Value>,
 ) => EffectToActionResult<Id, Value>;
 
@@ -114,7 +114,7 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
 
   function effectToAction(
     effectAction: EffectAction<Id, Value>,
-    navigation: NavBranch<Id>,
+    navigation: NavBranch<Id, Value>,
     state: State<Id, Value>,
   ): EffectToActionResult<Id, Value> {
     const cursor = stateApi.getCursor(state);

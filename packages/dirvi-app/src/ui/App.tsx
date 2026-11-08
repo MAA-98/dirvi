@@ -62,7 +62,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   // see current state
   stateRef.current = state;
 
-  const navEntry: NavBranch<Id> = useMemo(() => {
+  const navEntry: NavBranch<Id, Value> = useMemo(() => {
     const root = appMethods.stateMethods.getRoot(state);
     const folds = appMethods.stateMethods.getFolds(state);
     const navigation = appMethods.navMethods.from(root, folds);

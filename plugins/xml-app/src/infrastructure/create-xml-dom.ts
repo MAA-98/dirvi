@@ -9,11 +9,10 @@ import {
 
 import type {
   XmlDeclaration,
-  XmlDocument,
   XmlDocumentChild,
   XmlElement,
   XmlElementChild,
-  XmlName,
+  XmlName, XmlNodePath,
 } from '../domain/xml-doc.js';
 import type { XmlDom } from '../services/xml-dom.js';
 
@@ -92,8 +91,7 @@ const unquoteDoctypeId = (value: string): string | null => {
 };
 
 /**
- * Map an xmldom element to a domain element, including its attributes
- * and recursively mapped children in document order.
+ * Map an xmldom element and its attributes without loading its children.
  */
 const toXmlElement = (node: XmldomElement): XmlElement => ({
   kind: 'element',
@@ -102,7 +100,6 @@ const toXmlElement = (node: XmldomElement): XmlElement => ({
     name: toXmlName(attribute),
     value: attribute.value,
   })),
-  // children: getChildrenXmldomNode(node).map(toXmlElementChild),
 });
 
 const toXmlElementChild = (node: XmldomNode): XmlElementChild => {
@@ -176,11 +173,6 @@ const toXmlDocumentChild = (node: XmldomNode): XmlDocumentChild => {
   }
 };
 
-const toXmlDocument = (document: XmldomNode): XmlDocument => ({
-  kind: 'document',
-  children: getChildrenXmldomNode(document).map(toXmlDocumentChild),
-});
-
 /**
  * Creates the DOM service-level type.
  */
@@ -194,6 +186,39 @@ export const createXmlDom = (source: string): XmlDom => {
   }).parseFromString(source, 'application/xml');
 
   return {
-    getDocument: () => toXmlDocument(document),
+    getDocument: () => ({ kind: 'document' }),
+
+    getChildren: (path: XmlNodePath) => {
+      let node: XmldomNode = document;
+
+      for (const index of path) {
+        if (
+          node.nodeType !== Node.DOCUMENT_NODE &&
+          node.nodeType !== Node.ELEMENT_NODE
+        ) {
+          throw new Error(`XML path addresses a leaf: ${path.join(' / ')}`);
+        }
+
+        const child = getChildrenXmldomNode(node)[index];
+
+        if (!child) {
+          throw new Error(`XML path not found: ${path.join(' / ')}`);
+        }
+
+        node = child;
+      }
+
+      const children = getChildrenXmldomNode(node);
+
+      if (node.nodeType === Node.DOCUMENT_NODE) {
+        return children.map(toXmlDocumentChild);
+      }
+
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        return children.map(toXmlElementChild);
+      }
+
+      throw new Error(`XML path addresses a leaf: ${path.join(' / ')}`);
+    },
   };
 };

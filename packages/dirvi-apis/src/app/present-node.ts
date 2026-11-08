@@ -8,8 +8,9 @@ import { SerializableKey } from './key.js';
  */
 export type HighlightToken = string;
 
-export type PresentNode<Id extends SerializableKey> = (
+export type PresentNode<Id extends SerializableKey, Value> = (
   id: Id,
+  value: Value,
   isBranch: boolean,
 ) => Readonly<{
   content: string;

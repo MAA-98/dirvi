@@ -19,11 +19,6 @@ export type AppMethods<
   ViewKey = string,
 > = Readonly<{
   /**
-   * Name used to distinguish a particular application instance.
-   */
-  name: string;
-
-  /**
    * Loads direct children for the branch addressed by `path`.
    *
    * Returned nodes must be opaque tree values created or decoded through this
@@ -41,7 +36,7 @@ export type AppMethods<
    */
   loadRoot: () => Promise<TreeNode<Id, Value>>;
   
-  presentNode: PresentNode<Id>;
+  presentNode: PresentNode<Id, Value>;
 
   /**
    * Subscribes to external data changes that require tree state to be loaded

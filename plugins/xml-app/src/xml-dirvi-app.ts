@@ -8,7 +8,7 @@ import { xmlIdSchema, xmlValueSchema } from './domain/xml-tree.js';
 import { createXmlFileResyncSubscription } from './infrastructure/create-xml-file-resync.js';
 import { XmlDom } from './services/xml-dom.js';
 import { createXmlDom } from './infrastructure/create-xml-dom.js';
-import { createXmlRoot } from './infrastructure/get-xml-entries.js';
+import { createXmlRoot, getXmlEntries } from './infrastructure/get-xml-entries.js';
 
 export const xmlAppPlugin: AppPlugin = {
   createAppDefinitionApplicator: (input) => {
@@ -40,15 +40,13 @@ export const xmlAppPlugin: AppPlugin = {
     };
 
     const appDefinition = {
-      displayName: `XML: ${input}`,
       semanticOrder: true,
       idSchema: xmlIdSchema,
       valueSchema: xmlValueSchema,
 
       loadChildren: async (path: readonly XmlId[]) => {
         const dom = await getDom();
-        
-        throw new Error('XML child loading is not implemented yet.');
+        return getXmlEntries(xmlAbsolutePath, dom, path);
       },
 
       loadRoot: async () => {
@@ -56,8 +54,8 @@ export const xmlAppPlugin: AppPlugin = {
         return createXmlRoot(xmlAbsolutePath, dom.getDocument());
       },
 
-      presentNode: (id: XmlId, isBranch: boolean) => ({
-        content: id.slice(id.indexOf(':') + 1),
+      presentNode: (_id: XmlId, value: XmlNodeValue, isBranch: boolean) => ({
+        content: value.kind,
         highlight: isBranch ? 'branch' : 'leaf',
       }),
 

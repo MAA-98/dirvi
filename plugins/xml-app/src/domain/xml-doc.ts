@@ -97,4 +97,5 @@ export type XmlElementChild =
   | XmlComment
   | XmlProcessingInstruction;
 
-export type XmlNode = XmlDocument | XmlDocumentChild | XmlElementChild;
+export type XmlChildNode = XmlDocumentChild | XmlElementChild;
+export type XmlNode = XmlDocument | XmlChildNode;

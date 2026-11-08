@@ -2,7 +2,10 @@ import type { SerializableKey, TreeNode } from '../tree/index.js';
 import type { Cursor } from '../cursor.js';
 import type { Folds } from '../fold-node/index.js';
 
-export type NavNode<Id extends SerializableKey> = {
+export type NavNode<
+  Id extends SerializableKey,
+  Value
+> = {
   /**
    * Projected direct children, including fold summaries.
    *
@@ -14,35 +17,49 @@ export type NavNode<Id extends SerializableKey> = {
    * trees, the fold summary is not navigable and the NavMethod implementation
    * should skip it.
    */
-  entries: NavEntry<Id>[];
+  entries: NavEntry<Id, Value>[];
 };
 
-export type NavEntry<Id extends SerializableKey> =
-  | NavLeaf<Id>
-  | NavBranch<Id>
-  | NavFold<Id>;
+export type NavEntry<
+  Id extends SerializableKey,
+  Value
+> =
+  | NavLeaf<Id, Value>
+  | NavBranch<Id, Value>
+  | NavFold<Id, Value>;
 
-export type NavLeaf<Id extends SerializableKey> = {
-  id: Id;
+export type NavLeaf<
+  Id extends SerializableKey,
+  Value
+> = {
+  readonly id: Id;
+  readonly value: Value;
 };
 
-export type NavBranch<Id extends SerializableKey> = {
-  id: Id;
+export type NavBranch<
+  Id extends SerializableKey,
+  Value
+> = {
+  readonly id: Id;
+  readonly value: Value;
 
   /**
    * `null` means this branch's children have not been loaded.
    */
-  children: NavNode<Id> | null;
+  children: NavNode<Id, Value> | null;
 };
 
-export type NavFold<Id extends SerializableKey> = {
+export type NavFold<
+  Id extends SerializableKey,
+  Value
+> = {
   /**
    * Folded entries that are present in the loaded TreeNode.
    *
    * For unordered trees, there is at most one folded entry, and it is the first
    * in nav node's `entries`.
    */
-  folded: NavEntry<Id>[];
+  folded: NavEntry<Id, Value>[];
 };
 
 /**
@@ -59,12 +76,12 @@ export type NavMethods<Id extends SerializableKey, Value> = {
    * `null` when the corresponding source-tree branch has not been loaded or
    * opened.
    */
-  entryIsBranch(entry: NavEntry<Id>): entry is NavBranch<Id>;
+  entryIsBranch(entry: NavEntry<Id, Value>): entry is NavBranch<Id, Value>;
 
   /**
    * Tests whether a navigation entry represents a branch.
    */
-  entryIsFold(entry: NavEntry<Id>): entry is NavFold<Id>;
+  entryIsFold(entry: NavEntry<Id, Value>): entry is NavFold<Id, Value>;
 
   /**
    * Creates a navigation projection rooted at `root`.
@@ -95,7 +112,7 @@ export type NavMethods<Id extends SerializableKey, Value> = {
    * synthetic `folded` entry.
    * @returns The projected root branch, or `undefined` when `root` is a leaf.
    */
-  from(root: TreeNode<Id, Value>, folds: Folds<Id>): NavBranch<Id> | undefined;
+  from(root: TreeNode<Id, Value>, folds: Folds<Id>): NavBranch<Id, Value> | undefined;
 
   /**
    * Finds the navigation node represented by a path relative to `navigation`.
@@ -104,9 +121,9 @@ export type NavMethods<Id extends SerializableKey, Value> = {
    * entries or branches whose children are currently `null`.
    */
   getNodeAtPath(
-    navigation: NavNode<Id>,
+    navigation: NavNode<Id, Value>,
     path: readonly Id[],
-  ): NavNode<Id> | undefined;
+  ): NavNode<Id, Value> | undefined;
 
   /**
    * Finds the navigation entry represented by a path relative to `navigation`.
@@ -114,22 +131,22 @@ export type NavMethods<Id extends SerializableKey, Value> = {
    * An empty path does not identify an entry and returns `undefined`.
    */
   getEntryAtPath(
-    navigation: NavNode<Id>,
+    navigation: NavNode<Id, Value>,
     path: readonly Id[],
-  ): NavEntry<Id> | undefined;
+  ): NavEntry<Id, Value> | undefined;
 
   nextCursor(
-    rootNode: NavBranch<Id>,
+    rootNode: NavBranch<Id, Value>,
     cursor: Cursor<Id>,
   ): Cursor<Id> | undefined;
 
   previousCursor(
-    rootNode: NavBranch<Id>,
+    rootNode: NavBranch<Id, Value>,
     cursor: Cursor<Id>,
   ): Cursor<Id> | undefined;
 
   cursorAfterFold(
-    rootNode: NavBranch<Id>,
+    rootNode: NavBranch<Id, Value>,
     cursor: Cursor<Id>,
   ): Cursor<Id> | undefined;
 
@@ -139,7 +156,7 @@ export type NavMethods<Id extends SerializableKey, Value> = {
    * @param cursor
    */
   parentCursor(
-    navigation: NavNode<Id>,
+    navigation: NavNode<Id, Value>,
     cursor: Cursor<Id>,
   ): Cursor<Id> | undefined;
 
@@ -149,11 +166,11 @@ export type NavMethods<Id extends SerializableKey, Value> = {
    * Unordered navigation skips fold summaries.
    * Ordered navigation includes inline folds as fold cursors.
    */
-  cursors(navigation: NavNode<Id>, parentPath?: readonly Id[]): Cursor<Id>[];
+  cursors(navigation: NavNode<Id, Value>, parentPath?: readonly Id[]): Cursor<Id>[];
 
   /**
    * Returns visible node paths in depth-first display order, excluding the
    * root and folded entries. Includes both leaves and branches.
    */
-  visiblePaths(navigation: NavNode<Id>, parentPath?: readonly Id[]): Id[][];
+  visiblePaths(navigation: NavNode<Id, Value>, parentPath?: readonly Id[]): Id[][];
 };

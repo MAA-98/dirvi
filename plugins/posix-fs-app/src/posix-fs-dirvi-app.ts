@@ -28,7 +28,6 @@ export const posixAppPlugin: AppPlugin = {
     }
     
     const appDefinition = {
-      displayName: `POSIX: ${input}`,
       semanticOrder: false,
       idSchema: posixFilenameSchema,
       valueSchema: posixValueSchema,
@@ -37,7 +36,7 @@ export const posixAppPlugin: AppPlugin = {
         id: rootId,
         value: { kind: 'directory' as const },
       }),
-      presentNode: (id: PosixId, isBranch: boolean) => {
+      presentNode: (id: PosixId, _value: PosixValue, isBranch: boolean) => {
         return {
           content: id,
           highlight: isBranch ? 'directory' : 'leaf',
