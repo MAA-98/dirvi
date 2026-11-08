@@ -17,7 +17,7 @@ A short <summary> containing markup-like text.
     </book>
 
     <!-- Mixed content verifies that source order is preserved. -->
-    <note priority="high">Before <emphasis>important text</emphasis> after.</note>
+    <note priority="high" xml:space="preserve">Before <emphasis>important</emphasis> <emphasis>text</emphasis> after.</note>
 
     <empty-element />
 </library>

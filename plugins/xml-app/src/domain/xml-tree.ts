@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { SerializableKey, TreeNode, TreeMethods } from 'dirvi-lib';
+import type { SerializableKey, TreeNode } from 'dirvi-lib';
 
 // -----------------------------------------------------------------------------
 // Utility
@@ -53,240 +53,105 @@ export function xmlIdName(id: XmlId): string {
 export function xmlIdUuid(id: XmlId): string {
   return id.slice(0, id.indexOf(':'));
 }
-
 // -----------------------------------------------------------------------------
-// XmlNodeValue: node-attached value
+// Node values
 // -----------------------------------------------------------------------------
 
-// Types -----------------------------------------------------------------------
+import type { XmlElement, XmlElementChild, XmlNode } from './xml-doc.js';
 
-export type XmlAttribute = Readonly<{
-  readonly name: string;
-  readonly value: string;
-}>;
-
-export type XmlDocumentValue = Readonly<{
-  readonly kind: 'document';
-}>;
-
-export type XmlDeclarationValue = Readonly<{
-  readonly kind: 'declaration';
-  readonly version: string;
-  readonly encoding: string | null;
-  readonly standalone: 'yes' | 'no' | null;
-}>;
-
-export type XmlDoctypeValue = Readonly<{
-  readonly kind: 'doctype';
-  readonly name: string;
-  readonly publicId: string | null;
-  readonly systemId: string | null;
-  readonly internalSubset: string | null;
-}>;
-
-export type XmlElementValue = Readonly<{
-  readonly kind: 'element';
-  readonly name: string;
-  readonly attributes: readonly XmlAttribute[];
-}>;
-
-export type XmlTextValue = Readonly<{
-  readonly kind: 'text';
-  readonly text: string;
-}>;
-
-export type XmlCommentValue = Readonly<{
-  readonly kind: 'comment';
-  readonly text: string;
-}>;
-
-export type XmlCdataValue = Readonly<{
-  readonly kind: 'cdata';
-  readonly text: string;
-}>;
-
-export type XmlProcessingInstructionValue = Readonly<{
-  readonly kind: 'processing-instruction';
-  readonly target: string;
-  readonly data: string;
-}>;
-
-/**
- * XML semantics carried by a generic tree node.
- *
- * Child ordering is deliberately not represented here.
- */
-export type XmlNodeValue =
-  | XmlDocumentValue
-  | XmlDeclarationValue
-  | XmlDoctypeValue
-  | XmlElementValue
-  | XmlTextValue
-  | XmlCommentValue
-  | XmlCdataValue
-  | XmlProcessingInstructionValue;
-
+export type XmlNodeValue = XmlNode;
 export type XmlTreeNode = TreeNode<XmlId, XmlNodeValue>;
 
-// Schema ----------------------------------------------------------------------
+const xmlNameSchema = z.object({
+  qualifiedName: z.string(),
+  localName: z.string(),
+  prefix: z.string().nullable(),
+  namespaceUri: z.string().nullable(),
+});
 
-export const XmlAttributeSchema = z.object({
-  name: z.string().min(1),
+const xmlAttributeSchema = z.object({
+  name: xmlNameSchema,
   value: z.string(),
-}) satisfies z.ZodType<XmlAttribute>;
+});
 
-export const XmlDocumentValueSchema = z.object({
-  kind: z.literal('document'),
-}) satisfies z.ZodType<XmlDocumentValue>;
-
-export const XmlElementValueSchema = z.object({
-  kind: z.literal('element'),
-  name: z.string().min(1),
-  attributes: z.array(XmlAttributeSchema).readonly(),
-}) satisfies z.ZodType<XmlElementValue>;
-
-export const XmlDeclarationValueSchema = z.object({
+const xmlDeclarationSchema = z.object({
   kind: z.literal('declaration'),
   version: z.string(),
   encoding: z.string().nullable(),
   standalone: z.enum(['yes', 'no']).nullable(),
-}) satisfies z.ZodType<XmlDeclarationValue>;
+});
 
-export const XmlDoctypeValueSchema = z.object({
+const xmlDoctypeSchema = z.object({
   kind: z.literal('doctype'),
   name: z.string(),
   publicId: z.string().nullable(),
   systemId: z.string().nullable(),
   internalSubset: z.string().nullable(),
-}) satisfies z.ZodType<XmlDoctypeValue>;
+});
 
-export const XmlTextValueSchema = z.object({
+const xmlTextSchema = z.object({
   kind: z.literal('text'),
   text: z.string(),
-}) satisfies z.ZodType<XmlTextValue>;
+});
 
-export const XmlCommentValueSchema = z.object({
-  kind: z.literal('comment'),
-  text: z.string(),
-}) satisfies z.ZodType<XmlCommentValue>;
-
-export const XmlCdataValueSchema = z.object({
+const xmlCdataSchema = z.object({
   kind: z.literal('cdata'),
   text: z.string(),
-}) satisfies z.ZodType<XmlCdataValue>;
+});
 
-export const XmlProcessingInstructionValueSchema = z.object({
+const xmlCommentSchema = z.object({
+  kind: z.literal('comment'),
+  text: z.string(),
+});
+
+const xmlProcessingInstructionSchema = z.object({
   kind: z.literal('processing-instruction'),
-  target: z.string().min(1),
+  target: z.string(),
   data: z.string(),
-}) satisfies z.ZodType<XmlProcessingInstructionValue>;
+});
 
-export const xmlValueSchema = z.discriminatedUnion('kind', [
-  XmlDocumentValueSchema,
-  XmlElementValueSchema,
-  XmlTextValueSchema,
-  XmlCommentValueSchema,
-  XmlCdataValueSchema,
-  XmlProcessingInstructionValueSchema,
+// Lazy because elements can contain other elements.
+const xmlElementSchema = z.object({
+  kind: z.literal('element'),
+  name: xmlNameSchema,
+  attributes: z.array(xmlAttributeSchema).readonly(),
+
+  get children(): z.ZodExactOptional<
+    z.ZodReadonly<z.ZodArray<z.ZodType<XmlElementChild>>>
+  > {
+    return z.array(xmlElementChildSchema).readonly().exactOptional();
+  },
+}) satisfies z.ZodType<XmlElement>;
+
+const xmlElementChildSchema = z.union([
+  xmlElementSchema,
+  xmlTextSchema,
+  xmlCdataSchema,
+  xmlCommentSchema,
+  xmlProcessingInstructionSchema,
+]) satisfies z.ZodType<XmlElementChild>;
+
+const xmlDocumentChildSchema = z.union([
+  xmlDeclarationSchema,
+  xmlDoctypeSchema,
+  xmlElementSchema,
+  xmlTextSchema,
+  xmlCommentSchema,
+  xmlProcessingInstructionSchema,
+]);
+
+const xmlDocumentSchema = z.object({
+  kind: z.literal('document'),
+  children: z.array(xmlDocumentChildSchema).readonly().exactOptional(),
+});
+
+export const xmlValueSchema = z.union([
+  xmlDocumentSchema,
+  xmlDeclarationSchema,
+  xmlDoctypeSchema,
+  xmlElementSchema,
+  xmlTextSchema,
+  xmlCdataSchema,
+  xmlCommentSchema,
+  xmlProcessingInstructionSchema,
 ]) satisfies z.ZodType<XmlNodeValue>;
-
-// -----------------------------------------------------------------------------
-// XML domain constructors
-// -----------------------------------------------------------------------------
-
-export function createConstructors(
-  xmlTreeNodeApi: TreeMethods<XmlId, XmlNodeValue>,
-) {
-  return {
-    document(
-      id: XmlId,
-      children: Iterable<XmlTreeNode>,
-    ): XmlTreeNode | undefined {
-      return xmlTreeNodeApi.createLoadedBranch(
-        id,
-        { kind: 'document' },
-        children,
-      );
-    },
-
-    declaration(
-      id: XmlId,
-      version: string,
-      encoding: string | null,
-      standalone: 'yes' | 'no' | null,
-    ): XmlTreeNode {
-      return xmlTreeNodeApi.createLeaf(id, {
-        kind: 'declaration',
-        version,
-        encoding,
-        standalone,
-      });
-    },
-
-    doctype(
-      id: XmlId,
-      name: string,
-      publicId: string | null,
-      systemId: string | null,
-      internalSubset: string | null,
-    ): XmlTreeNode {
-      return xmlTreeNodeApi.createLeaf(id, {
-        kind: 'doctype',
-        name,
-        publicId,
-        systemId,
-        internalSubset,
-      });
-    },
-
-    element(
-      id: XmlId,
-      name: string,
-      attributes: readonly XmlAttribute[],
-      children: Iterable<XmlTreeNode>,
-    ): XmlTreeNode | undefined {
-      return xmlTreeNodeApi.createLoadedBranch(
-        id,
-        {
-          kind: 'element',
-          name,
-          attributes,
-        },
-        children,
-      );
-    },
-
-    text(id: XmlId, text: string): XmlTreeNode {
-      return xmlTreeNodeApi.createLeaf(id, {
-        kind: 'text',
-        text,
-      });
-    },
-
-    comment(id: XmlId, text: string): XmlTreeNode {
-      return xmlTreeNodeApi.createLeaf(id, {
-        kind: 'comment',
-        text,
-      });
-    },
-
-    cdata(id: XmlId, text: string): XmlTreeNode {
-      return xmlTreeNodeApi.createLeaf(id, {
-        kind: 'cdata',
-        text,
-      });
-    },
-
-    processingInstruction(
-      id: XmlId,
-      target: string,
-      data: string,
-    ): XmlTreeNode {
-      return xmlTreeNodeApi.createLeaf(id, {
-        kind: 'processing-instruction',
-        target,
-        data,
-      });
-    },
-  } as const;
-}

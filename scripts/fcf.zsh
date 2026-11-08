@@ -90,6 +90,9 @@ printf '%s\n' "$LAST_EVENT" |
 
 # Format each absolute path.
 while IFS= read -r ABSOLUTE_PATH; do
+  if [[ -d "$ABSOLUTE_PATH" ]]; then
+    continue
+  fi
   if [[ ! -f "$ABSOLUTE_PATH" ]]; then
     echo "Error: not a regular file: $ABSOLUTE_PATH" >&2
     exit 1
