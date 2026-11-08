@@ -61,13 +61,17 @@ export function createCursorSchema<IdSchema extends z.ZodTypeAny>(
   const pathSchema = z.array(idSchema);
 
   return z.union([
-    z.object({
-      path: pathSchema,
-    }).strict(),
-    z.object({
-      parentPath: pathSchema,
-      firstId: idSchema,
-    }).strict(),
+    z
+      .object({
+        path: pathSchema,
+      })
+      .strict(),
+    z
+      .object({
+        parentPath: pathSchema,
+        firstId: idSchema,
+      })
+      .strict(),
   ]);
 }
 
@@ -111,7 +115,7 @@ export function createCursorMethods<Id>(): CursorMethods<Id> {
   function isFoldCursor(cursor: Cursor<Id>): cursor is FoldCursor<Id> {
     return !isNodeCursor(cursor);
   }
-  
+
   function getPath(cursor: Cursor<Id>): Id[] {
     return isNodeCursor(cursor)
       ? [...cursor.path]
@@ -121,12 +125,12 @@ export function createCursorMethods<Id>(): CursorMethods<Id> {
   return {
     isNodeCursor,
     isFoldCursor,
-    
+
     equal(left, right) {
       if (isNodeCursor(left)) {
         return isNodeCursor(right) && idPathEqual(left.path, right.path);
       }
-      
+
       return (
         isFoldCursor(right) &&
         left.firstId === right.firstId &&

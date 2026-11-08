@@ -12,7 +12,8 @@ import type {
   XmlDocumentChild,
   XmlElement,
   XmlElementChild,
-  XmlName, XmlNodePath,
+  XmlName,
+  XmlNodePath,
 } from '../domain/xml-doc.js';
 import type { XmlDom } from '../services/xml-dom.js';
 
@@ -59,7 +60,7 @@ const toXmlDeclaration = (
 
   const version = fields.get('version');
   const standalone = fields.get('standalone');
-  
+
   if (
     !version ||
     (standalone !== undefined && standalone !== 'yes' && standalone !== 'no')

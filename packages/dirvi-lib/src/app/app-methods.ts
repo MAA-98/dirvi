@@ -35,7 +35,7 @@ export type AppMethods<
    * when an initial State is created.
    */
   loadRoot: () => Promise<TreeNode<Id, Value>>;
-  
+
   presentNode: PresentNode<Id, Value>;
 
   /**

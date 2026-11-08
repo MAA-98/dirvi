@@ -1,5 +1,6 @@
 import type {
-  Cursor, FoldIndex,
+  Cursor,
+  FoldIndex,
   SerializableKey,
   State,
   TreeNode,

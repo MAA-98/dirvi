@@ -12,7 +12,7 @@ function parseAppCommand<Id extends SerializableKey, Value>(
     effectType: 'emitError',
     message: `Unrecognized command arguments: app ${commandArgs.join(' ')}`,
   } satisfies Effect<Id, Value>;
-  
+
   switch (firstArgument) {
     case 'list':
       return commandArgs.length === 1
@@ -40,7 +40,7 @@ function parseAppCommand<Id extends SerializableKey, Value>(
       if (firstArgument === undefined || remainingArguments.length > 1) {
         return badArgs;
       }
-      
+
       const input = remainingArguments[0];
 
       return {
@@ -185,7 +185,7 @@ export function parseExCommand<Id extends SerializableKey, Value>(
     rawArgs === undefined || rawArgs.trim() === ''
       ? []
       : rawArgs.trim().split(/\s+/);
-  
+
   switch (commandName) {
     case 'q':
       return {

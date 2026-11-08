@@ -1,7 +1,4 @@
-import type {
-  HighlightToken,
-  PresentNode
-} from 'dirvi-apis';
+import type { HighlightToken, PresentNode } from 'dirvi-apis';
 
 import type {
   Cursor,
@@ -10,7 +7,8 @@ import type {
   NavBranch,
   NavNode,
   NavMethods,
-  SerializableKey, CursorMethods,
+  SerializableKey,
+  CursorMethods,
 } from 'dirvi-lib';
 
 type ViewRowBase = {
@@ -52,10 +50,10 @@ export const View = {
     navNodeApi: NavMethods<Id, Value>,
     cursor: Cursor<Id>,
     cursorMethods: CursorMethods<Id>,
-    presentNode: PresentNode<Id, Value>
+    presentNode: PresentNode<Id, Value>,
   ): ViewRow[] {
     const rootCursor: Cursor<Id> = { path: [] };
-    
+
     const inlineFoldIds = new Set<string>();
 
     if (rootNode.children !== null) {
@@ -65,7 +63,7 @@ export const View = {
         }
       }
     }
-    
+
     const rootRow = viewRowForEntry(
       rootNode,
       null,
@@ -100,9 +98,15 @@ export const View = {
     cursorMethods: CursorMethods<Id>,
     viewportHeight: number,
     viewportStart: number,
-    presentNode: PresentNode<Id, Value>
+    presentNode: PresentNode<Id, Value>,
   ): View {
-    const rows = View.createRows(rootNode, navNodeApi, cursor, cursorMethods, presentNode);
+    const rows = View.createRows(
+      rootNode,
+      navNodeApi,
+      cursor,
+      cursorMethods,
+      presentNode,
+    );
 
     return {
       rows: rows.slice(viewportStart, viewportStart + viewportHeight),
@@ -119,20 +123,17 @@ export const View = {
  *   ['src']         root/src
  *   ['src', 'lib']  root/src/lib
  */
-function viewRowsAtNode<
-  Id extends SerializableKey,
-  Value
->(
+function viewRowsAtNode<Id extends SerializableKey, Value>(
   node: NavNode<Id, Value>,
   parentPath: Id[],
   navNodeApi: NavMethods<Id, Value>,
   cursor: Cursor<Id>,
   cursorMethods: CursorMethods<Id>,
   presentNode: PresentNode<Id, Value>,
-  inlineFoldIds: ReadonlySet<string>
+  inlineFoldIds: ReadonlySet<string>,
 ): ViewRow[] {
   const rows: ViewRow[] = [];
-  
+
   for (const entry of node.entries) {
     if (navNodeApi.entryIsFold(entry)) {
       const firstEntry = entry.folded[0];

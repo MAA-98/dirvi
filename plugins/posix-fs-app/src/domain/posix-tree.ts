@@ -19,17 +19,18 @@ type Assert<True extends true> = True;
  *
  * Validates invariants needed for a tree entry ID, not full POSIX compatibility.
  */
-export const posixFilenameSchema = z.string()
-    .min(1, 'Entry name cannot be empty.')
-    .refine((value) => !value.includes('\0'), {
-      message: 'Entry name must not contain a NUL character.',
-    })
-    .refine((value) => !value.includes('/'), {
-      message: "Entry name must not contain '/'.",
-    })
-    .refine((value) => value !== '.' && value !== '..', {
-      message: "Entry name must not be '.' or '..'.",
-    });
+export const posixFilenameSchema = z
+  .string()
+  .min(1, 'Entry name cannot be empty.')
+  .refine((value) => !value.includes('\0'), {
+    message: 'Entry name must not contain a NUL character.',
+  })
+  .refine((value) => !value.includes('/'), {
+    message: "Entry name must not contain '/'.",
+  })
+  .refine((value) => value !== '.' && value !== '..', {
+    message: "Entry name must not be '.' or '..'.",
+  });
 
 /**
  * `Id` type used for posix-fs-dirvi-app.
@@ -178,7 +179,7 @@ export function createConstructors(
       return treeMethods.toUnloadedBranch(node);
     },
   } as const;
-};
+}
 
 // -----------------------------------------------------------------------------
 // Serializable POSIX model

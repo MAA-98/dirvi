@@ -1,6 +1,6 @@
 # Design Choices: Vim-like Folding in Trees
 
-This is a record of design decisions and their justifications. Previous design 
+This is a record of design decisions and their justifications. Previous design
 choices influence the next, so this is to be interpreted chronologically.
 
 ## Folding children in a parent node

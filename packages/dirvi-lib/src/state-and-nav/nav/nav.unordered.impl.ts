@@ -123,10 +123,7 @@ export function createUnorderedNavMethods<Id extends SerializableKey, Value>(
   };
 }
 
-type NavLeafOrBranch<
-  Id extends SerializableKey,
-  Value
-> = Exclude<
+type NavLeafOrBranch<Id extends SerializableKey, Value> = Exclude<
   NavEntry<Id, Value>,
   NavFold<Id, Value>
 >;

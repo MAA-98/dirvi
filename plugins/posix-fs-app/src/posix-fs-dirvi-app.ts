@@ -3,10 +3,7 @@ import { basename, join } from 'node:path';
 import type { AppPlugin } from 'dirvi-apis';
 
 import type { PosixValue, PosixId } from './domain/posix-tree.js';
-import {
-  posixFilenameSchema,
-  posixValueSchema,
-} from './domain/posix-tree.js';
+import { posixFilenameSchema, posixValueSchema } from './domain/posix-tree.js';
 import { createFsResyncSubscription } from './infrastructure/load-node-posix-app-api.js';
 import { getUnixAbsPath } from './infrastructure/get-unix-abs-path.js';
 import { getDirEntries } from './infrastructure/get-dir-entries.js';
@@ -20,13 +17,11 @@ export const posixAppPlugin: AppPlugin = {
   createAppDefinitionApplicator: (input) => {
     const unixAbsPath = getUnixAbsPath(input ?? process.cwd());
     const rootId = posixFilenameSchema.parse(basename(unixAbsPath));
-    function loadDirectoryEntries(
-      path: readonly PosixId[],
-    ) {
+    function loadDirectoryEntries(path: readonly PosixId[]) {
       const address = join(unixAbsPath, ...path);
       return getDirEntries(address);
     }
-    
+
     const appDefinition = {
       semanticOrder: false,
       idSchema: posixFilenameSchema,

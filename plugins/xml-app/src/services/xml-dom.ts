@@ -1,4 +1,9 @@
-import type { XmlDocument, XmlDocumentChild, XmlElementChild, XmlNodePath } from '../domain/xml-doc.js';
+import type {
+  XmlDocument,
+  XmlDocumentChild,
+  XmlElementChild,
+  XmlNodePath,
+} from '../domain/xml-doc.js';
 
 export type XmlDom = {
   /**

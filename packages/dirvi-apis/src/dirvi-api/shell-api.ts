@@ -22,7 +22,7 @@ export type OpenAppResult =
 export type ShellApi = {
   /** Lists all app IDs registered in initialization. */
   readonly listApps: () => string[];
-  
+
   /**
    * Loads an app by ID and input.
    *
@@ -43,7 +43,7 @@ export type ShellApi = {
     encoding?: BufferEncoding,
     cb?: (err?: Error | null) => void,
   ) => boolean;
-  
+
   /** Optional exit message to display. */
   readonly quit: (message?: string) => void;
 };

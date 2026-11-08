@@ -18,6 +18,12 @@ export { createCursorMethods } from './cursor.js';
 export type { State, StateMethods } from './state/state.types.js';
 export { createStateApi } from './state/state.impl.js';
 // Navigation
-export type { NavEntry, NavFold, NavNode, NavMethods, NavBranch } from './nav/nav.types.js';
+export type {
+  NavEntry,
+  NavFold,
+  NavNode,
+  NavMethods,
+  NavBranch,
+} from './nav/nav.types.js';
 export { createOrderedNavMethods } from './nav/nav.ordered.impl.js';
 export { createUnorderedNavMethods } from './nav/nav.unordered.impl.js';

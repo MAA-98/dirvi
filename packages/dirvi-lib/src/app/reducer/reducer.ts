@@ -4,12 +4,8 @@ import type {
   FoldMethods,
   Folds,
 } from '../../state-and-nav/index.js';
-import type {
-  NavMethods,
-} from '../../state-and-nav/index.js';
-import type {
-  SerializableKey,
-} from '../../state-and-nav/index.js';
+import type { NavMethods } from '../../state-and-nav/index.js';
+import type { SerializableKey } from '../../state-and-nav/index.js';
 import type { State, StateMethods } from '../../state-and-nav/index.js';
 import type { ReducerAction } from './reducer-action.js';
 
@@ -89,7 +85,7 @@ export function createReducer<Id extends SerializableKey, Value>(
           const firstEntry = foldEntry.folded.find(
             (entry) => !navNodeApi.entryIsFold(entry),
           );
-          
+
           if (firstEntry !== undefined && !navNodeApi.entryIsFold(firstEntry)) {
             const foldCursor: Cursor<Id> = {
               parentPath,
@@ -109,7 +105,9 @@ export function createReducer<Id extends SerializableKey, Value>(
         const nodeCursor: Cursor<Id> = { path: [...path] };
 
         if (
-          positions.some((position) => cursorMethods.equal(position, nodeCursor))
+          positions.some((position) =>
+            cursorMethods.equal(position, nodeCursor),
+          )
         ) {
           return stateApi.update(state, { cursor: nodeCursor }) ?? state;
         }
@@ -270,7 +268,10 @@ export function createReducer<Id extends SerializableKey, Value>(
 
       case 'createFoldTree': {
         const currentFolds = stateApi.getFolds(state);
-        const index = firstAvailableAdditionalFoldIndex(foldMethods, currentFolds);
+        const index = firstAvailableAdditionalFoldIndex(
+          foldMethods,
+          currentFolds,
+        );
 
         const folds = foldMethods.setAdditionalFoldAtIndex(
           currentFolds,
@@ -294,7 +295,10 @@ export function createReducer<Id extends SerializableKey, Value>(
           return state;
         }
 
-        const folds = foldMethods.removeAdditionalFoldAtIndex(currentFolds, index);
+        const folds = foldMethods.removeAdditionalFoldAtIndex(
+          currentFolds,
+          index,
+        );
 
         return folds === undefined ? state : update(state, { folds });
       }

@@ -1,8 +1,4 @@
-import type {
-  SerializableKey,
-  TreeNode,
-  TreeMethods,
-} from '../tree/index.js';
+import type { SerializableKey, TreeNode, TreeMethods } from '../tree/index.js';
 import type { Folds, FoldMethods } from '../fold-node/index.js';
 import type { Cursor, CursorMethods } from '../cursor.js';
 import type { StateMethods, State } from './state.types.js';

@@ -61,10 +61,7 @@ export const valueArb = fc.integer({
 
 // Helpers
 
-const createLeafModel = (
-  id: Id,
-  value: Value,
-): ModelWithReachableModels => {
+const createLeafModel = (id: Id, value: Value): ModelWithReachableModels => {
   const model: TreeNodeModel<Id, Value> = {
     id,
     value,
@@ -146,8 +143,10 @@ export const unloadedBranchModelWRMArb: fc.Arbitrary<ModelWithReachableModels> =
  *
  * Both leaves and unloaded branches terminate path traversal.
  */
-const terminalModelWRMArb: fc.Arbitrary<ModelWithReachableModels> =
-  fc.oneof(leafModelWRMArb, unloadedBranchModelWRMArb);
+const terminalModelWRMArb: fc.Arbitrary<ModelWithReachableModels> = fc.oneof(
+  leafModelWRMArb,
+  unloadedBranchModelWRMArb,
+);
 
 /**
  * Generates a leaf, an unloaded branch, or a loaded branch.
@@ -193,9 +192,7 @@ export const modelWithReachableModelsArb: fc.Arbitrary<ModelWithReachableModels>
         })
         .chain((choice) =>
           // 5046 works for getAtPath tests, but too heavy for modifyAtPath tests
-          choice >= 5050
-            ? generatedLoadedBranchModelArb
-            : terminalModelWRMArb,
+          choice >= 5050 ? generatedLoadedBranchModelArb : terminalModelWRMArb,
         ),
     };
   }).node;
@@ -272,4 +269,7 @@ export const childrenModelsArb = siblingModelsWRMArb.map((generatedNodes) =>
  * An array represents a loaded branch, including a loaded branch with no
  * children. `null` represents an unloaded branch.
  */
-export const childrenStateModelArb = fc.oneof(childrenModelsArb, fc.constant(null));
+export const childrenStateModelArb = fc.oneof(
+  childrenModelsArb,
+  fc.constant(null),
+);

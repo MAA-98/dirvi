@@ -18,11 +18,15 @@ export function createNavTraversalMethods<Id extends SerializableKey, Value>(
   cursorMethods: CursorMethods<Id>,
   navigateFolds: boolean,
 ): Omit<NavMethods<Id, Value>, 'from'> {
-  function entryIsBranch(entry: NavEntry<Id, Value>): entry is NavBranch<Id, Value> {
+  function entryIsBranch(
+    entry: NavEntry<Id, Value>,
+  ): entry is NavBranch<Id, Value> {
     return 'children' in entry;
   }
 
-  function entryIsFold(entry: NavEntry<Id, Value>): entry is NavFold<Id, Value> {
+  function entryIsFold(
+    entry: NavEntry<Id, Value>,
+  ): entry is NavFold<Id, Value> {
     return 'folded' in entry;
   }
 
@@ -283,7 +287,7 @@ export function createNavTraversalMethods<Id extends SerializableKey, Value>(
       if (entryIsFold(entry)) {
         continue;
       }
-      
+
       const entryPath = [...parentPath, entry.id];
       paths.push(entryPath);
 

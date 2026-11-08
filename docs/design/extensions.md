@@ -29,7 +29,9 @@ configuration facade at:
 ```js
 globalThis.dirvi;
 ```
+
 and can also be accessed with:
+
 ```js
 dirvi;
 ```
@@ -64,7 +66,7 @@ The startup lifecycle is:
 
 Need a DirviApi object with methods for controlling dirvi.
 
-Need to decide how to deal with conflicts, when two custom commands clash or 
+Need to decide how to deal with conflicts, when two custom commands clash or
 override a builtin commands.
 
 **_Decision:_**
@@ -77,7 +79,7 @@ override a builtin commands.
 **Requirement:**
 
 1. Support applications for different tree structures, such as filesystems,
-   XML, ASTs, and s-expressions. This includes when children order is semantic 
+   XML, ASTs, and s-expressions. This includes when children order is semantic
    or not.
 2. Allow each application to define its own node values, data loading, and
    entry presentation.
@@ -120,9 +122,9 @@ on the dirvi app constructions. Dirvi constructs the concrete tree and
 application APIs from this definition.
 
 The app describes entry content, while dirvi owns its surrounding
-presentation: indentation, cursor, selection, fold styling, etc. 
+presentation: indentation, cursor, selection, fold styling, etc.
 Similarly, the app signals when resynchronization is needed, while
 dirvi performs it through the shared runtime.
 
-Since apps mean different things, it makes sense to allow registering commands 
+Since apps mean different things, it makes sense to allow registering commands
 per app.

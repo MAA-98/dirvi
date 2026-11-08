@@ -5,12 +5,12 @@ import type {
   AppMethodsConsumer,
 } from 'dirvi-lib';
 import {
-  createFoldMethods, createCursorMethods, createUnorderedNavMethods, createOrderedNavMethods,
+  createFoldMethods,
+  createCursorMethods,
+  createUnorderedNavMethods,
+  createOrderedNavMethods,
 } from 'dirvi-lib';
-import {
-  createTreeMethods,
-  createStateApi,
-} from 'dirvi-lib';
+import { createTreeMethods, createStateApi } from 'dirvi-lib';
 import type { AppDefinition, AppDefinitionApplicator } from 'dirvi-apis';
 
 /**
@@ -24,33 +24,32 @@ export function createAppMethodsApplicator(
 ): AppMethodsApplicator {
   return appDefinitionApplicator((appDefinition) => {
     const appMethods = createAppMethods(appDefinition);
-    
-    return <Result>(
-      appMethodsConsumer: AppMethodsConsumer<Result>,
-    ): Result => appMethodsConsumer(appMethods);
+
+    return <Result>(appMethodsConsumer: AppMethodsConsumer<Result>): Result =>
+      appMethodsConsumer(appMethods);
   });
 }
 
-export function createAppMethods<
-  Id extends SerializableKey,
-  Value
->(appDefinition: AppDefinition<Id, Value>): AppMethods<Id, Value> {
+export function createAppMethods<Id extends SerializableKey, Value>(
+  appDefinition: AppDefinition<Id, Value>,
+): AppMethods<Id, Value> {
   const treeMethods = createTreeMethods<Id, Value>();
   const foldTreeMethods = createTreeMethods<Id, readonly Id[]>();
   const foldMethods = createFoldMethods(foldTreeMethods);
-  const cursorMethods = createCursorMethods<Id>()
-  const stateApi = createStateApi<Id, Value>(treeMethods, foldMethods, cursorMethods);
-  const navMethods = appDefinition.semanticOrder ?
-    createOrderedNavMethods<Id, Value>(
-      treeMethods,
-      foldMethods,
-      cursorMethods) :
-    createUnorderedNavMethods(
-      treeMethods,
-      foldMethods,
-      cursorMethods
-    );
-  
+  const cursorMethods = createCursorMethods<Id>();
+  const stateApi = createStateApi<Id, Value>(
+    treeMethods,
+    foldMethods,
+    cursorMethods,
+  );
+  const navMethods = appDefinition.semanticOrder
+    ? createOrderedNavMethods<Id, Value>(
+        treeMethods,
+        foldMethods,
+        cursorMethods,
+      )
+    : createUnorderedNavMethods(treeMethods, foldMethods, cursorMethods);
+
   async function loadChildren(path: readonly Id[]) {
     const children = await appDefinition.loadChildren(path);
     const seenIds = new Set<Id>();
@@ -74,7 +73,7 @@ export function createAppMethods<
       }
     });
   }
-  
+
   return {
     loadChildren: (path) => loadChildren(path),
     loadRoot: async () => {
@@ -93,7 +92,8 @@ export function createAppMethods<
 
       return root;
     },
-    presentNode: (id, value, isBranch) => appDefinition.presentNode(id, value, isBranch),
+    presentNode: (id, value, isBranch) =>
+      appDefinition.presentNode(id, value, isBranch),
     subscribeToResync: appDefinition.subscribeToResync,
     stateMethods: stateApi,
     navMethods,

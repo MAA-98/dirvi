@@ -84,7 +84,7 @@ program
       uiOutput.write(enterAlternateScreen);
       alternateScreenActive = true;
     }
-    
+
     // Note: if you pipe output you'll need to use FORCE_COLOR=1/2/3 to keep
     // interactive screen colored.
     const stdoutWrite = process.stdout.write;
@@ -116,11 +116,10 @@ program
           {...(stdoutIsInteractive ? {} : { stdout: stdoutWrite })}
           clipboard={clipboard}
         />,
-        { 
+        {
           stdout: uiOutput,
           incrementalRendering: true,
         },
-
       );
 
       // Errors thrown while leaving this await still execute the finally block.

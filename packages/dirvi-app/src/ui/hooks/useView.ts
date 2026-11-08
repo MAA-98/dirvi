@@ -5,7 +5,8 @@ import type {
   NavBranch,
   NavMethods,
   SerializableKey,
-  State, StateMethods,
+  State,
+  StateMethods,
 } from 'dirvi-lib';
 import type { PresentNode } from 'dirvi-apis';
 import { View, type ViewRow } from '../view.js';
@@ -21,7 +22,7 @@ export function useView<Id extends SerializableKey, Value>(
   navNodeApi: NavMethods<Id, Value>,
   cursorMethods: CursorMethods<Id>,
   rowCount: number,
-  presentNode: PresentNode<Id, Value>
+  presentNode: PresentNode<Id, Value>,
 ): View {
   const viewportStartRef = useRef(0);
   const viewportHeight = Math.max(0, rowCount - STATUS_BAR_HEIGHT);
@@ -30,7 +31,13 @@ export function useView<Id extends SerializableKey, Value>(
     return { rows: [] };
   }
 
-  const rows = View.createRows(navNode, navNodeApi, stateApi.getCursor(state), cursorMethods, presentNode);
+  const rows = View.createRows(
+    navNode,
+    navNodeApi,
+    stateApi.getCursor(state),
+    cursorMethods,
+    presentNode,
+  );
 
   viewportStartRef.current = viewportStart(
     rows,

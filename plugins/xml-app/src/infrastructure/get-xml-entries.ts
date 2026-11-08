@@ -2,7 +2,11 @@ import { createHash } from 'node:crypto';
 
 import type { AppChild, AppRoot } from 'dirvi-apis';
 
-import type { XmlChildNode, XmlDocument, XmlNodePath } from '../domain/xml-doc.js';
+import type {
+  XmlChildNode,
+  XmlDocument,
+  XmlNodePath,
+} from '../domain/xml-doc.js';
 import type { XmlId, XmlNodeValue } from '../domain/xml-tree.js';
 import { createXmlId } from '../domain/xml-tree.js';
 import { XmlDom } from '../services/xml-dom.js';

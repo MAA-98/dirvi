@@ -73,7 +73,10 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
     return navigation;
   }, [appMethods.navMethods, appMethods.stateMethods, state]);
 
-  const clearInputState: InputModeState = { inputMode: 'normal', normalBuffer: '' };
+  const clearInputState: InputModeState = {
+    inputMode: 'normal',
+    normalBuffer: '',
+  };
   const [inputState, setInputState] = useState<InputModeState>(clearInputState);
   const [feedback, setFeedback] = useState<Feedback>();
 
@@ -132,7 +135,7 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   // ===========================================================================
   // App API
   // ===========================================================================
-  
+
   const feedbackApi = useMemo(
     () =>
       createFeedbackApi((nextFeedback) => {
@@ -189,9 +192,11 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
             );
             return;
           }
-          
+
           void Promise.resolve()
-            .then(() => command.execute({ shell: shellApi, app: appApi }, effect.rawArgs))
+            .then(() =>
+              command.execute({ shell: shellApi, app: appApi }, effect.rawArgs),
+            )
             .catch((error: unknown) => {
               const appError =
                 error instanceof Error ? error : new Error(String(error));
@@ -333,7 +338,10 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
             ...appMethods.stateMethods.foldMethods.indexes(folds),
           ].map((index) => ({
             index,
-            info: appMethods.stateMethods.foldMethods.getInfoAtIndex(folds, index),
+            info: appMethods.stateMethods.foldMethods.getInfoAtIndex(
+              folds,
+              index,
+            ),
             active: appMethods.stateMethods.foldMethods.isActiveAtIndex(
               folds,
               index,
@@ -362,7 +370,16 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
           return;
       }
     },
-    [appMethods, effectToAction, navEntry, state, shellApi, appApi, clearInputState, exCommands],
+    [
+      appMethods,
+      effectToAction,
+      navEntry,
+      state,
+      shellApi,
+      appApi,
+      clearInputState,
+      exCommands,
+    ],
   );
 
   // ===========================================================================

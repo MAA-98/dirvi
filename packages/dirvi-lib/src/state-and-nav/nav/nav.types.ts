@@ -2,10 +2,7 @@ import type { SerializableKey, TreeNode } from '../tree/index.js';
 import type { Cursor } from '../cursor.js';
 import type { Folds } from '../fold-node/index.js';
 
-export type NavNode<
-  Id extends SerializableKey,
-  Value
-> = {
+export type NavNode<Id extends SerializableKey, Value> = {
   /**
    * Projected direct children, including fold summaries.
    *
@@ -20,26 +17,17 @@ export type NavNode<
   entries: NavEntry<Id, Value>[];
 };
 
-export type NavEntry<
-  Id extends SerializableKey,
-  Value
-> =
+export type NavEntry<Id extends SerializableKey, Value> =
   | NavLeaf<Id, Value>
   | NavBranch<Id, Value>
   | NavFold<Id, Value>;
 
-export type NavLeaf<
-  Id extends SerializableKey,
-  Value
-> = {
+export type NavLeaf<Id extends SerializableKey, Value> = {
   readonly id: Id;
   readonly value: Value;
 };
 
-export type NavBranch<
-  Id extends SerializableKey,
-  Value
-> = {
+export type NavBranch<Id extends SerializableKey, Value> = {
   readonly id: Id;
   readonly value: Value;
 
@@ -49,10 +37,7 @@ export type NavBranch<
   children: NavNode<Id, Value> | null;
 };
 
-export type NavFold<
-  Id extends SerializableKey,
-  Value
-> = {
+export type NavFold<Id extends SerializableKey, Value> = {
   /**
    * Folded entries that are present in the loaded TreeNode.
    *
@@ -112,7 +97,10 @@ export type NavMethods<Id extends SerializableKey, Value> = {
    * synthetic `folded` entry.
    * @returns The projected root branch, or `undefined` when `root` is a leaf.
    */
-  from(root: TreeNode<Id, Value>, folds: Folds<Id>): NavBranch<Id, Value> | undefined;
+  from(
+    root: TreeNode<Id, Value>,
+    folds: Folds<Id>,
+  ): NavBranch<Id, Value> | undefined;
 
   /**
    * Finds the navigation node represented by a path relative to `navigation`.
@@ -166,11 +154,17 @@ export type NavMethods<Id extends SerializableKey, Value> = {
    * Unordered navigation skips fold summaries.
    * Ordered navigation includes inline folds as fold cursors.
    */
-  cursors(navigation: NavNode<Id, Value>, parentPath?: readonly Id[]): Cursor<Id>[];
+  cursors(
+    navigation: NavNode<Id, Value>,
+    parentPath?: readonly Id[],
+  ): Cursor<Id>[];
 
   /**
    * Returns visible node paths in depth-first display order, excluding the
    * root and folded entries. Includes both leaves and branches.
    */
-  visiblePaths(navigation: NavNode<Id, Value>, parentPath?: readonly Id[]): Id[][];
+  visiblePaths(
+    navigation: NavNode<Id, Value>,
+    parentPath?: readonly Id[],
+  ): Id[][];
 };

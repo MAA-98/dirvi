@@ -21,6 +21,7 @@ npm install -g @mak-98/dirvi-cli
 ```
 
 Requirements:
+
 - Node.js (>= v.22)
 
 ## Usage
@@ -100,17 +101,17 @@ The status bar displays the command line at the bottom left.
 
 Currently supported commands:
 
-| Command                | Action                                                               |
-| ---------------------- | -------------------------------------------------------------------- |
-| `:q`                   | Quit `dirvi`                                                         |
-| `:fold list`           | List fold trees in the current view                                  |
-| `:fold create <name>`  | Create a named fold tree                                             |
-| `:fold delete <name>`  | Delete a named fold tree                                             |
-| `:fold enable [name]`  | Enable a fold tree so its entries are hidden                         |
-| `:fold disable [name]` | Disable a fold tree so it no longer hides entries                    |
-| `:fold close [name]`   | Alias for `:fold enable`                                             |
-| `:fold open [name]`    | Alias for `:fold disable`                                            |
-| `:fold toggle [name]`  | Toggle whether a fold tree is enabled                                |
+| Command                | Action                                            |
+| ---------------------- | ------------------------------------------------- |
+| `:q`                   | Quit `dirvi`                                      |
+| `:fold list`           | List fold trees in the current view               |
+| `:fold create <name>`  | Create a named fold tree                          |
+| `:fold delete <name>`  | Delete a named fold tree                          |
+| `:fold enable [name]`  | Enable a fold tree so its entries are hidden      |
+| `:fold disable [name]` | Disable a fold tree so it no longer hides entries |
+| `:fold close [name]`   | Alias for `:fold enable`                          |
+| `:fold open [name]`    | Alias for `:fold disable`                         |
+| `:fold toggle [name]`  | Toggle whether a fold tree is enabled             |
 
 When a fold command omits `name`, it targets the fold tree named `default`.
 
@@ -124,20 +125,20 @@ Loading and unloading affect the materialized tree in the TUI:
 - Unloading a parent removes its descendants from the buffer.
 - Loading a parent does not automatically load its child descendants.
 
-> WARNING: Folding is a separate mechanism. It controls the visibility of entries while 
+> WARNING: Folding is a separate mechanism. It controls the visibility of entries while
 > they are loaded. Unloading does not automatically fold or unfold the descendants.
 
 ## Folding
 
 Folding is separate from (un)loading directories. A active app has a collection of
-named **fold trees**. A fold tree contains entries that it should hide if active, 
+named **fold trees**. A fold tree contains entries that it should hide if active,
 and each fold tree can be independently made active or inactive.
 
 An entry is hidden when it belongs to at least one active fold tree. Disabling
 one fold tree reveals its entries only when no other enabled fold tree also
 contains them.
 
-For unordered trees, folded children are represented on their parent branch, 
+For unordered trees, folded children are represented on their parent branch,
 conserving vertical space. A branch with folded children shows a folded-entry
 count, for example:
 
@@ -147,7 +148,7 @@ directory/ … 1
   file1
 ```
 
-For ordered trees, folded children are displayed inline in a contiguous block, 
+For ordered trees, folded children are displayed inline in a contiguous block,
 closer to how Vim/Neovim displays folded lines.
 
 ```text
@@ -182,7 +183,7 @@ visibility; they do not alter its membership.
 
 ### Relationship to directory opening
 
-Folding a parent with loaded children does not unload it. Its descendants 
+Folding a parent with loaded children does not unload it. Its descendants
 retain their own load and fold state.
 
 Fold state is independent of the materialized directory buffer:
@@ -207,7 +208,7 @@ In the making, I do believe the UX is better than a Vim/Neovim plugin.
 
 - Why write it using TypeScript/React/Ink?
 
-As for the answer above, it was the easiest way for me to get started. It had the 
+As for the answer above, it was the easiest way for me to get started. It had the
 consequence of making plugins and scripts for commands very approachable. It also
 allows possible future rewrites in Rust to be incremental.
 

@@ -83,8 +83,8 @@ independently of sibling position.
 Unordered navigation can use these paths for all cursor destinations,
 because its fold summaries are not navigable.
 
-Ordered navigation additionally needs positions identifying inline 
-contiguous folds. 
+Ordered navigation additionally needs positions identifying inline
+contiguous folds.
 
 ## Loaded Data and Fold State
 

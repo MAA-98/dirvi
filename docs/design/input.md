@@ -27,12 +27,12 @@ the bottom as in Neo/Vim.
 
 **Implications:**
 
-While the arrow keys for directional navigation work as a conventional starting point, naive mapping of `h, j, k, l` to 
-the directional navigation starts to actually be counter-intuitive once we want to add more of the standard motions for 
-navigation. 
+While the arrow keys for directional navigation work as a conventional starting point, naive mapping of `h, j, k, l` to
+the directional navigation starts to actually be counter-intuitive once we want to add more of the standard motions for
+navigation.
 
-For example, if we want to add `0` and `$` in a way analogous to Vim, the most intuitive meaning would be to move to the 
-first and last child of the current entries' parent. This then implies a metaphor: a line in Vim is a parent's children 
+For example, if we want to add `0` and `$` in a way analogous to Vim, the most intuitive meaning would be to move to the
+first and last child of the current entries' parent. This then implies a metaphor: a line in Vim is a parent's children
 in `dirvi`. But, that disagrees with `j` going to next entry down rather than going to next parent's children.
 
 **_Decision:_**
@@ -46,8 +46,8 @@ The parent's children are a line.
 as a guiding principle for Vim-like keybindings. This has immediate consequences:
 
 - `j`, `k` move to next/previous parent's children,
-- `h`, `l` move to next/previous child in current parent, with overflow going to next/previous parent's children, or just 
-the next/previous child in the parent's parent, 
+- `h`, `l` move to next/previous child in current parent, with overflow going to next/previous parent's children, or just
+  the next/previous child in the parent's parent,
 - `0`, `^`, `$` move within the parent's children,
 - `{`, `}` move to the next child of the parent that is not an open branch with children.
 

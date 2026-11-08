@@ -1,7 +1,10 @@
 import { describe, it } from 'vitest';
 import * as fc from 'fast-check';
 
-import { modelWithReachableModelsArb, siblingModelsWRMArb } from './tree-node.arb.js';
+import {
+  modelWithReachableModelsArb,
+  siblingModelsWRMArb,
+} from './tree-node.arb.js';
 
 /**
  * Manual inspection of generated models and their reachable paths.

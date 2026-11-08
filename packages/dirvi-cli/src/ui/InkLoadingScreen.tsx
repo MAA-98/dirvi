@@ -13,7 +13,7 @@ export const InkLoadingScreen: LoadingScreenRenderer = ({}) => {
 
     return () => clearInterval(timer);
   }, []);
-  
+
   const spinner = ['|', '/', '-', '\\'][frame % 4];
 
   return (

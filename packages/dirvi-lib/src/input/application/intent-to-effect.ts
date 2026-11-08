@@ -32,10 +32,7 @@ export function createIntentToEffect<Id extends SerializableKey, Value>(
         return normalBufferToEffectResult<Id, Value>(intent.normalBuffer);
 
       case 'normalRight':
-        return normalInteractRightToEffect(
-          state,
-          stateApi,
-        );
+        return normalInteractRightToEffect(state, stateApi);
 
       case 'normalLeft':
         return normalInteractLeftToEffect(state, stateApi);

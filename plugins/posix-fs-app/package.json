@@ -22,7 +22,7 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "format": "prettier src --write",
-    "publish": "pnpm --filter @mak-98/posix-fs-dirvi-app publish --access public"
+    "publish": "pnpm --filter @mak-98/posix-fs-dirvi-app publish --access public --no-git-checks"
   },
   "dependencies": {
     "dirvi-apis": "workspace:*",

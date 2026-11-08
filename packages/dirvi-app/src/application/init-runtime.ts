@@ -4,9 +4,12 @@ import type { PublicInitApi } from 'dirvi-apis';
 import type { ExCommand } from '../domain/ex-command.js';
 import { AppPackageReference } from 'dirvi-apis';
 import {
-  DuplicateAppRegistrationError, DuplicateExCommandRegistrationError,
+  DuplicateAppRegistrationError,
+  DuplicateExCommandRegistrationError,
   InitializationAlreadyFinishedError,
-  InitRuntimeInvariantError, InvalidAppPackageReferenceError, InvalidExCommandHandlerError,
+  InitRuntimeInvariantError,
+  InvalidAppPackageReferenceError,
+  InvalidExCommandHandlerError,
   InvalidInitializationConfigError,
   InvalidInitializationValueError,
 } from './init-runtime.error.js';
@@ -99,32 +102,32 @@ export function createInitRuntime(): InitRuntime {
     app: {
       register: (app) => {
         ensureUnfinished();
-        
+
         if (typeof app !== 'object' || app === null || Array.isArray(app)) {
           throw new InvalidInitializationValueError('App', 'must be an object');
         }
-        
+
         const { id: appId, packRef, ex } = app;
         validateNonEmptyString(appId, 'App ID');
 
         if (registeredApps.has(appId)) {
           throw new DuplicateAppRegistrationError(appId);
         }
-        
+
         let appReference: AppPackageReference;
         try {
           appReference = AppPackageReferenceMethods.parse(packRef);
         } catch (cause) {
           throw new InvalidAppPackageReferenceError(cause);
         }
-        
+
         if (ex !== undefined && !Array.isArray(ex)) {
           throw new InvalidInitializationValueError(
             'Ex commands',
             'must be an array',
           );
         }
-        
+
         const appExCommands = new Map<string, ExCommand>();
 
         for (const exCommand of ex ?? []) {
@@ -152,7 +155,7 @@ export function createInitRuntime(): InitRuntime {
 
           appExCommands.set(command, { name: command, execute });
         }
-        
+
         registeredApps.set(appId, appReference);
         exCommands.set(appId, appExCommands);
       },
@@ -231,7 +234,7 @@ function getLastRegisteredAppId(
 ): string {
   const appIds = [...apps.keys()];
   const lastAppId = appIds.at(-1);
-  
+
   if (lastAppId === undefined) {
     throw new InitRuntimeInvariantError(
       'Expected at least one registered app when selecting the startup app.',

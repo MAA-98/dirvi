@@ -1,8 +1,4 @@
-import type {
-  SerializableKey,
-  TreeNode,
-  TreeMethods,
-} from '../tree/index.js';
+import type { SerializableKey, TreeNode, TreeMethods } from '../tree/index.js';
 import type {
   FoldNodeModel,
   FoldsModel,

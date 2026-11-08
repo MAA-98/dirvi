@@ -6,7 +6,7 @@ dirvi.app.register({
     source: 'npm',
     packageName: '@mak-98/xml-dirvi-app',
     version: '0.11.0-beta.13',
-  }
+  },
 });
 
 dirvi.app.register({

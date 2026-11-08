@@ -8,7 +8,10 @@ import { xmlIdSchema, xmlValueSchema } from './domain/xml-tree.js';
 import { createXmlFileResyncSubscription } from './infrastructure/create-xml-file-resync.js';
 import { XmlDom } from './services/xml-dom.js';
 import { createXmlDom } from './infrastructure/create-xml-dom.js';
-import { createXmlRoot, getXmlEntries } from './infrastructure/get-xml-entries.js';
+import {
+  createXmlRoot,
+  getXmlEntries,
+} from './infrastructure/get-xml-entries.js';
 
 export const xmlAppPlugin: AppPlugin = {
   createAppDefinitionApplicator: (input) => {
@@ -17,7 +20,7 @@ export const xmlAppPlugin: AppPlugin = {
     }
 
     const xmlAbsolutePath = resolve(input);
-    
+
     // Create dom async on first need, cache afterward
     let dom: XmlDom | undefined;
     let domPromise: Promise<XmlDom> | undefined;

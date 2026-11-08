@@ -37,7 +37,7 @@ import type { SerializableKey } from 'dirvi-apis';
  * type MyTreeModel = TreeNodeModel<MyId, MyItem>;
  * ```
  */
-export type { SerializableKey }
+export type { SerializableKey };
 
 /**
  * Validates a serializable primitive suitable for use as a tree-node ID.

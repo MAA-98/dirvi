@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { AppMethods, createTreeMethods, SerializableKey, State } from 'dirvi-lib';
+import {
+  AppMethods,
+  createTreeMethods,
+  SerializableKey,
+  State,
+} from 'dirvi-lib';
 import {
   createEffectToAction,
   createIntentToEffect,
@@ -73,7 +78,9 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
           name: 'default',
           description: null,
         });
-        const initialState = appMethods.stateMethods.create(root, folds, { path: [] });
+        const initialState = appMethods.stateMethods.create(root, folds, {
+          path: [],
+        });
 
         if (initialState === undefined) {
           throw new Error('Cannot create initial app state');
@@ -102,7 +109,7 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
     () => initialization.exCommands.get(appId) ?? emptyExCommands,
     [initialization.exCommands, appId],
   );
-  
+
   const reducer = useMemo(
     () => createReducer(appMethods.stateMethods, appMethods.navMethods),
     [appMethods.stateMethods, appMethods.navMethods],
@@ -110,19 +117,12 @@ export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
 
   const intentToEffect = useMemo(
     () =>
-      createIntentToEffect(
-        new Set(exCommands.keys()),
-        appMethods.stateMethods,
-      ),
+      createIntentToEffect(new Set(exCommands.keys()), appMethods.stateMethods),
     [appMethods.stateMethods, exCommands],
   );
 
   const effectToAction = useMemo(
-    () =>
-      createEffectToAction(
-        appMethods.stateMethods,
-        appMethods.navMethods,
-      ),
+    () => createEffectToAction(appMethods.stateMethods, appMethods.navMethods),
     [appMethods.navMethods, appMethods.stateMethods],
   );
 

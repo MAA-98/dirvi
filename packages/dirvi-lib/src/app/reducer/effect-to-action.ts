@@ -349,7 +349,10 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
       }
 
       case 'createFoldTree': {
-        const existingIndex = foldMethods.getIndexByName(folds, effectAction.name);
+        const existingIndex = foldMethods.getIndexByName(
+          folds,
+          effectAction.name,
+        );
 
         return existingIndex === undefined
           ? action({
@@ -360,7 +363,10 @@ export function createEffectToAction<Id extends SerializableKey, Value>(
       }
 
       case 'deleteFoldTree': {
-        const foldTreeIndex = foldMethods.getIndexByName(folds, effectAction.name);
+        const foldTreeIndex = foldMethods.getIndexByName(
+          folds,
+          effectAction.name,
+        );
 
         if (foldTreeIndex === undefined) {
           return rejected(`Fold tree named "${effectAction.name}" not found.`);

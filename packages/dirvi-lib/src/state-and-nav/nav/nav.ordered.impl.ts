@@ -84,13 +84,13 @@ export function createOrderedNavMethods<Id extends SerializableKey, Value>(
         id,
         value,
       }),
-      
+
       unloadedBranch: ({ id, value }) => ({
         id,
         value,
         children: null,
       }),
-      
+
       loadedBranch: ({ id, value, children }) => ({
         id,
         value,
@@ -126,10 +126,7 @@ export function createOrderedNavMethods<Id extends SerializableKey, Value>(
   };
 }
 
-type NavLeafOrBranch<
-  Id extends SerializableKey,
-  Value
-> = Exclude<
+type NavLeafOrBranch<Id extends SerializableKey, Value> = Exclude<
   NavEntry<Id, Value>,
   NavFold<Id, Value>
 >;
