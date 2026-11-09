@@ -21,6 +21,9 @@ export const xmlAppPlugin: AppPlugin = {
 
     const xmlAbsolutePath = resolve(input);
 
+    // TODO: Make the `xmldom` nodes the IDs, but need to first get rid of the
+    // `SerializableKey` requirement.
+
     // Create dom async on first need, cache afterward
     let dom: XmlDom | undefined;
     let domPromise: Promise<XmlDom> | undefined;

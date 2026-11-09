@@ -44,6 +44,9 @@ export type ShellApi = {
     cb?: (err?: Error | null) => void,
   ) => boolean;
 
+  /** Requests that text be copied to the platform clipboard, when available. */
+  readonly clipboard?: (value: string) => void;
+  
   /** Optional exit message to display. */
   readonly quit: (message?: string) => void;
 };

@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { Command } from 'commander';
 import { render } from 'ink';
@@ -12,6 +11,7 @@ import {
   getXdgDataHome,
   getXdgConfigHome,
 } from './infrastructure/get-xdg-paths.js';
+import { createClipboard } from './infrastructure/create-clipboard.js';
 import { InkAppScreen } from './ui/InkAppScreen.js';
 import { InkLoadingScreen } from './ui/InkLoadingScreen.js';
 import { InkShell } from './ui/InkShell.js';
@@ -87,23 +87,9 @@ program
 
     // Note: if you pipe output you'll need to use FORCE_COLOR=1/2/3 to keep
     // interactive screen colored.
-    const stdoutWrite = process.stdout.write;
+    const stdoutWrite = process.stdout.write.bind(process.stdout);
 
-    const clipboard = (value: string): void => {
-      if (process.platform !== 'darwin') {
-        return;
-      }
-
-      const child = spawn('pbcopy');
-
-      child.once('error', (error) => {
-        process.stderr.write(
-          `dirvi: unable to copy to clipboard: ${error.message}\n`,
-        );
-      });
-
-      child.stdin.end(value);
-    };
+    const clipboard = createClipboard();
 
     try {
       const app = render(
@@ -114,7 +100,7 @@ program
           initialization={initialization}
           packageLoader={packageLoader}
           {...(stdoutIsInteractive ? {} : { stdout: stdoutWrite })}
-          clipboard={clipboard}
+          {...(clipboard === undefined ? {} : { clipboard })}
         />,
         {
           stdout: uiOutput,

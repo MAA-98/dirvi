@@ -112,10 +112,11 @@ export function Shell({
           };
         }
       },
+      ...(clipboard === undefined ? {} : { clipboard }),
       ...(stdout === undefined ? {} : { stdout }),
       quit: onQuit,
     };
-  }, [packageLoader, onQuit, initialization.app.registered, stdout]);
+  }, [packageLoader, onQuit, initialization.app.registered, stdout, clipboard]);
 
   /**
    * Load initial `AppMethods` on startup, using the shell API just created and
