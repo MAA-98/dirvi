@@ -78,4 +78,4 @@ export function createClipboard(): ((value: string) => void) | undefined {
 
     child.stdin.end(input);
   };
-};
+}

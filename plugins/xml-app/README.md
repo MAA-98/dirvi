@@ -1,13 +1,13 @@
 # XML dirvi app plugin
 
-The XML dirvi app plugin lets dirvi load, browse and edit XML data as interactive tree srtuctures. 
+The XML dirvi app plugin lets dirvi load, browse and edit XML data as interactive tree srtuctures.
 
 ## Default view
 
 By default, shows the document structure without applying specialized leaf rules.
 
 Elements can be expanded to reveal their child nodes, including text, CDATA,
-comments, and processing instructions. Whitespace-only text nodes are visible, 
+comments, and processing instructions. Whitespace-only text nodes are visible,
 including what would be considered newlines for formatting:
 
 ```xml
@@ -17,6 +17,7 @@ including what would be considered newlines for formatting:
 ```
 
 would give by default:
+
 ```txt
 library
   text
@@ -25,8 +26,8 @@ library
   text
 ```
 
-This is usually not desirable, and a way to filter the nodes to only show such 
- whitespace formatting in subtrees with `xml:space="preserve"` is provided.
+This is usually not desirable, and a way to filter the nodes to only show such
+whitespace formatting in subtrees with `xml:space="preserve"` is provided.
 
 Attributes are not child nodes of elements, but are inspectable and changeable.
 
