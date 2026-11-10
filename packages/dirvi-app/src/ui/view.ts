@@ -8,10 +8,10 @@ import type {
   NavNode,
   NavMethods,
   CursorMethods,
+  FoldCursor,
 } from 'dirvi-lib';
 
 type ViewRowBase = {
-  // id: string;
   indent: number;
   content: string;
   cursor: boolean;
@@ -36,26 +36,32 @@ export type View = {
   rows: ViewRow[];
 };
 
-function foldId<Id>(parentPath: readonly Id[], firstId: Id): string {
-  return `fold:${JSON.stringify([...parentPath, firstId])}`;
-}
-
 export const View = {
+  /**
+   * Creates all the view rows for a given root nav node.
+   * @param rootNode
+   * @param navMethods
+   * @param cursor
+   * @param cursorMethods
+   * @param presentNode
+   */
   createRows<Id, Value>(
     rootNode: NavBranch<Id, Value>,
-    navNodeApi: NavMethods<Id, Value>,
+    navMethods: NavMethods<Id, Value>,
     cursor: Cursor<Id>,
     cursorMethods: CursorMethods<Id>,
     presentNode: PresentNode<Id, Value>,
   ): ViewRow[] {
     const rootCursor: Cursor<Id> = { path: [] };
 
-    const inlineFoldIds = new Set<string>();
+    // Collect all FoldCursors in the tree, stays empty when unordered since
+    // there's no fold cursors.
+    const allFoldCursors: FoldCursor<Id>[] = [];
 
     if (rootNode.children !== null) {
-      for (const position of navNodeApi.cursors(rootNode.children)) {
+      for (const position of navMethods.cursors(rootNode.children)) {
         if (cursorMethods.isFoldCursor(position)) {
-          inlineFoldIds.add(foldId(position.parentPath, position.firstId));
+          allFoldCursors.push(position);
         }
       }
     }
@@ -64,9 +70,10 @@ export const View = {
       rootNode,
       null,
       cursorMethods.equal(cursor, rootCursor),
-      navNodeApi,
+      navMethods,
+      cursorMethods,
       presentNode,
-      inlineFoldIds,
+      allFoldCursors,
     );
 
     if (rootNode.children === null) {
@@ -78,11 +85,11 @@ export const View = {
       ...viewRowsAtNode(
         rootNode.children,
         [],
-        navNodeApi,
+        navMethods,
         cursor,
         cursorMethods,
         presentNode,
-        inlineFoldIds,
+        allFoldCursors,
       ),
     ];
   },
@@ -110,6 +117,22 @@ export const View = {
   },
 };
 
+function isInlineFold<Id>(
+  inlineFoldCursors: readonly FoldCursor<Id>[],
+  parentPath: readonly Id[],
+  firstId: Id,
+  cursorMethods: CursorMethods<Id>,
+): boolean {
+  const entryCursor: Cursor<Id> = {
+    parentPath: [...parentPath],
+    firstId,
+  };
+
+  return inlineFoldCursors.some((position) =>
+    cursorMethods.equal(position, entryCursor),
+  );
+}
+
 /**
  * Converts one NavNode and its descendants into display ViewRows.
  *
@@ -122,27 +145,29 @@ export const View = {
 function viewRowsAtNode<Id, Value>(
   node: NavNode<Id, Value>,
   parentPath: Id[],
-  navNodeApi: NavMethods<Id, Value>,
+  navMethods: NavMethods<Id, Value>,
   cursor: Cursor<Id>,
   cursorMethods: CursorMethods<Id>,
   presentNode: PresentNode<Id, Value>,
-  inlineFoldIds: ReadonlySet<string>,
+  foldCursors: FoldCursor<Id>[],
 ): ViewRow[] {
   const rows: ViewRow[] = [];
 
   for (const entry of node.entries) {
-    if (navNodeApi.entryIsFold(entry)) {
+    if (navMethods.entryIsFold(entry)) {
       const firstEntry = entry.folded[0];
 
       // Match navigation's guard for empty or richer future fold contents.
-      if (firstEntry === undefined || navNodeApi.entryIsFold(firstEntry)) {
+      if (firstEntry === undefined || navMethods.entryIsFold(firstEntry)) {
         continue;
       }
 
-      const id = foldId(parentPath, firstEntry.id);
+      const id = [...parentPath, firstEntry.id];
 
       // Unordered summaries belong to the parent, not separate rows.
-      if (!inlineFoldIds.has(id)) {
+      if (
+        !isInlineFold(foldCursors, parentPath, firstEntry.id, cursorMethods)
+      ) {
         continue;
       }
 
@@ -155,11 +180,10 @@ function viewRowsAtNode<Id, Value>(
       const { highlight } = presentNode(
         firstEntry.id,
         firstEntry.value,
-        navNodeApi.entryIsBranch(firstEntry),
+        navMethods.entryIsBranch(firstEntry),
       );
 
       rows.push({
-        // id,
         indent: parentPath.length + 1,
         content: `… ${entry.folded.length} folded`,
         cursor: cursorMethods.equal(cursor, entryCursor),
@@ -183,14 +207,15 @@ function viewRowsAtNode<Id, Value>(
         entry,
         parentPath,
         isCursor,
-        navNodeApi,
+        navMethods,
+        cursorMethods,
         presentNode,
-        inlineFoldIds,
+        foldCursors,
       ),
     );
 
     // Case where there's no branches
-    if (!navNodeApi.entryIsBranch(entry) || entry.children === null) {
+    if (!navMethods.entryIsBranch(entry) || entry.children === null) {
       continue;
     }
 
@@ -198,11 +223,11 @@ function viewRowsAtNode<Id, Value>(
       ...viewRowsAtNode(
         entry.children,
         [...parentPath, entry.id],
-        navNodeApi,
+        navMethods,
         cursor,
         cursorMethods,
         presentNode,
-        inlineFoldIds,
+        foldCursors,
       ),
     );
   }
@@ -210,44 +235,42 @@ function viewRowsAtNode<Id, Value>(
   return rows;
 }
 
+/**
+ * Creates one row for a node. For branches, summarizes direct child folds
+ * that do not have their own inline rows.
+ * @param entry
+ * @param parentPath
+ * @param cursor
+ * @param navMethods
+ * @param cursorMethods
+ * @param presentNode
+ * @param foldCursors
+ */
 function viewRowForEntry<Id, Value>(
   entry: Exclude<NavEntry<Id, Value>, NavFold<Id, Value>>,
   parentPath: Id[] | null,
   cursor: boolean,
-  navNodeApi: NavMethods<Id, Value>,
+  navMethods: NavMethods<Id, Value>,
+  cursorMethods: CursorMethods<Id>,
   presentNode: PresentNode<Id, Value>,
-  inlineFoldIds: ReadonlySet<string>,
+  foldCursors: FoldCursor<Id>[],
 ): ViewRow {
-  // const id = entryId(parentPath ?? [], entry.id);
   const indent = parentPath ? parentPath.length + 1 : 0;
   const selected = false;
 
-  if (navNodeApi.entryIsBranch(entry)) {
+  if (navMethods.entryIsBranch(entry)) {
     const { content, highlight } = presentNode(entry.id, entry.value, true);
     const entryPath = parentPath === null ? [] : [...parentPath, entry.id];
 
+    // For unordered trees: count folded entries to display, by assuming the
+    // `NavFold` is the first in the `NavNode` entries.
+    const firstEntry = entry.children?.entries[0];
     const foldedCount =
-      entry.children?.entries.reduce((count, entry) => {
-        if (!navNodeApi.entryIsFold(entry)) {
-          return count;
-        }
-
-        const firstEntry = entry.folded[0];
-
-        if (firstEntry === undefined || navNodeApi.entryIsFold(firstEntry)) {
-          return count;
-        }
-
-        // Ordered folds already have their own rows.
-        if (inlineFoldIds.has(foldId(entryPath, firstEntry.id))) {
-          return count;
-        }
-
-        return count + entry.folded.length;
-      }, 0) ?? 0;
+      firstEntry !== undefined && navMethods.entryIsFold(firstEntry)
+        ? firstEntry.folded.length
+        : 0;
 
     return {
-      //id,
       indent,
       selected,
       cursor,
@@ -260,7 +283,6 @@ function viewRowForEntry<Id, Value>(
 
   const { content, highlight } = presentNode(entry.id, entry.value, false);
   return {
-    //id,
     indent,
     selected,
     cursor,
@@ -268,11 +290,4 @@ function viewRowForEntry<Id, Value>(
     highlight,
     type: 'leaf',
   };
-}
-
-function entryId<Id extends PropertyKey>(
-  parentPath: Id[],
-  entryName: Id,
-): string {
-  return `entry:${JSON.stringify([...parentPath, entryName])}`;
 }

@@ -8,7 +8,7 @@ export type { TreeMethods } from './tree/index.js';
 export { createTreeMethods } from './tree/index.js';
 export type { FoldIndex, FoldMethods } from './fold-node/index.js';
 export { createFoldMethods } from './fold-node/index.js';
-export type { CursorMethods } from './cursor.js';
+export type { CursorMethods, FoldCursor } from './cursor.js';
 export { createCursorMethods } from './cursor.js';
 
 // Main products of module:

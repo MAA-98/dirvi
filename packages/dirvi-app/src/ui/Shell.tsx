@@ -91,9 +91,10 @@ export function Shell({
             };
           }
 
-          const appPlugin = await packageLoader.loadAppPlugin(appReference);
+          const createAppDefinitionApplicator =
+            await packageLoader.loadAppPlugin(appReference);
           const loadedAppMethodsApplicator = createAppMethodsApplicator(
-            appPlugin.createAppDefinitionApplicator(input),
+            createAppDefinitionApplicator(input),
           );
 
           setLoadedApp({

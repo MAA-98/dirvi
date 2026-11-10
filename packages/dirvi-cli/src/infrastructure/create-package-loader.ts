@@ -5,7 +5,10 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
-import type { AppPackageReference, AppPlugin } from 'dirvi-apis';
+import type {
+  AppPackageReference,
+  CreateAppDefinitionApplicator,
+} from 'dirvi-apis';
 import type { PackageLoader } from '@mak-98/dirvi-app';
 
 const execFileAsync = promisify(execFile);
@@ -54,7 +57,10 @@ function getAppPackageDirectory(
  * <dirvi data>/site/pack/dirvi/opt
  */
 export function createPackageLoader(packagesDirectory: string): PackageLoader {
-  const loadingPluginsByPath = new Map<string, Promise<AppPlugin>>();
+  const loadingPluginsByPath = new Map<
+    string,
+    Promise<CreateAppDefinitionApplicator>
+  >();
 
   return {
     loadAppPlugin: (reference) => {
@@ -87,7 +93,7 @@ export function createPackageLoader(packagesDirectory: string): PackageLoader {
 async function loadAppPluginFromDirectory(
   appPackageDirectory: string,
   reference: AppPackageReference,
-): Promise<AppPlugin> {
+): Promise<CreateAppDefinitionApplicator> {
   await ensureAppPackageDirectory(appPackageDirectory);
 
   if (!(await hasInstalledVersion(appPackageDirectory, reference))) {
@@ -190,7 +196,7 @@ async function installWithNpm(
 async function loadInstalledAppPlugin(
   appPackageDirectory: string,
   reference: AppPackageReference,
-): Promise<AppPlugin> {
+): Promise<CreateAppDefinitionApplicator> {
   const requireFromAppPackageDirectory = createRequire(
     join(appPackageDirectory, 'package.json'),
   );
@@ -216,18 +222,15 @@ async function loadInstalledAppPlugin(
 function parseAppPlugin(
   value: unknown,
   reference: AppPackageReference,
-): AppPlugin {
-  if (
-    !isRecord(value) ||
-    typeof value.createAppDefinitionApplicator !== 'function'
-  ) {
+): CreateAppDefinitionApplicator {
+  if (typeof value !== 'function') {
     throw new Error(
-      `Dirvi app package "${reference.packageName}" must default-export an ` +
-        'AppPlugin with createAppDefinitionApplicator(input).',
+      `Dirvi app package "${reference.packageName}" must default-export a ` +
+        'CreateAppDefinitionApplicator(input).',
     );
   }
 
-  return value as AppPlugin;
+  return value as CreateAppDefinitionApplicator;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

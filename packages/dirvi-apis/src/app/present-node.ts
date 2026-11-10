@@ -2,7 +2,7 @@
  * A semantic highlight name, not a concrete terminal color.
  *
  * Dot-separated names allow fallback to broader categories:
- * "filesystem.directory" can fall back to "filesystem".
+ * "branch.unloaded" can fall back to "branch".
  */
 export type HighlightToken = string;
 
