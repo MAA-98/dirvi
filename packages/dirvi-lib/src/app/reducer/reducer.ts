@@ -5,11 +5,10 @@ import type {
   Folds,
 } from '../../state-and-nav/index.js';
 import type { NavMethods } from '../../state-and-nav/index.js';
-import type { SerializableKey } from '../../state-and-nav/index.js';
 import type { State, StateMethods } from '../../state-and-nav/index.js';
 import type { ReducerAction } from './reducer-action.js';
 
-function firstAvailableAdditionalFoldIndex<Id extends SerializableKey>(
+function firstAvailableAdditionalFoldIndex<Id>(
   foldsApi: FoldMethods<Id>,
   folds: Folds<Id>,
 ): FoldIndex {
@@ -22,12 +21,12 @@ function firstAvailableAdditionalFoldIndex<Id extends SerializableKey>(
   return index;
 }
 
-export type Reducer<Id extends SerializableKey, Value> = (
+export type Reducer<Id, Value> = (
   state: State<Id, Value>,
   action: ReducerAction<Id, Value>,
 ) => State<Id, Value>;
 
-export function createReducer<Id extends SerializableKey, Value>(
+export function createReducer<Id, Value>(
   stateApi: StateMethods<Id, Value>,
   navNodeApi: NavMethods<Id, Value>,
 ): Reducer<Id, Value> {

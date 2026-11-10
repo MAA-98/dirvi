@@ -4,7 +4,6 @@ import type {
   CursorMethods,
   NavBranch,
   NavMethods,
-  SerializableKey,
   State,
   StateMethods,
 } from 'dirvi-lib';
@@ -15,7 +14,7 @@ const STATUS_BAR_HEIGHT = 1;
 
 // Hooks that keeps Ref of the viewport's start, and returns View sliced to
 // only the rows that should be visible.
-export function useView<Id extends SerializableKey, Value>(
+export function useView<Id, Value>(
   navNode: NavBranch<Id, Value>,
   state: State<Id, Value>,
   stateApi: StateMethods<Id, Value>,

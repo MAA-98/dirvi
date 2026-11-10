@@ -1,4 +1,4 @@
-import type { SerializableKey, TreeNode, TreeMethods } from '../tree/index.js';
+import type { TreeNode, TreeMethods } from '../tree/index.js';
 import type { FoldMethods, Folds } from '../fold-node/index.js';
 import type { Cursor, CursorMethods } from '../cursor.js';
 
@@ -9,14 +9,14 @@ declare const stateBrand: unique symbol;
  *
  * Used by consumers as React State.
  */
-export type State<Id extends SerializableKey, Value> = Readonly<{
+export type State<Id, Value> = Readonly<{
   [stateBrand]: Readonly<{
     id: Id;
     value: Value;
   }>;
 }>;
 
-export type StateMethods<Id extends SerializableKey, Value> = Readonly<{
+export type StateMethods<Id, Value> = Readonly<{
   treeMethods: TreeMethods<Id, Value>;
   foldMethods: FoldMethods<Id>;
   cursorMethods: CursorMethods<Id>;

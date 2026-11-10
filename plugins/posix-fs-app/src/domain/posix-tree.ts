@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { SerializableKey, TreeNode, TreeMethods } from 'dirvi-lib';
+import type { TreeNode, TreeMethods } from 'dirvi-lib';
 
 import { UnixPath, UnixPathSchema } from './unix-path.js';
 
@@ -36,10 +36,6 @@ export const posixFilenameSchema = z
  * `Id` type used for posix-fs-dirvi-app.
  */
 export type PosixId = z.output<typeof posixFilenameSchema>;
-
-type PosixIdIsSerializableKey = Assert<
-  PosixId extends SerializableKey ? true : false
->;
 
 // -----------------------------------------------------------------------------
 // PosixEntry: node-attached value

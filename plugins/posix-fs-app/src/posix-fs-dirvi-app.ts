@@ -24,7 +24,6 @@ export const posixAppPlugin: AppPlugin = {
 
     const appDefinition = {
       semanticOrder: false,
-      idSchema: posixFilenameSchema,
       valueSchema: posixValueSchema,
       loadChildren: (path: readonly PosixId[]) => loadDirectoryEntries(path),
       loadRoot: async () => ({

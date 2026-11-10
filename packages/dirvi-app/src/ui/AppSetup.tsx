@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import {
-  AppMethods,
-  createTreeMethods,
-  SerializableKey,
-  State,
-} from 'dirvi-lib';
+import { AppMethods, createTreeMethods, State } from 'dirvi-lib';
 import {
   createEffectToAction,
   createIntentToEffect,
@@ -23,7 +18,7 @@ import type { ExCommand } from '../domain/ex-command.js';
 
 const emptyExCommands: ReadonlyMap<string, ExCommand> = new Map();
 
-type AppSetupProps<Id extends SerializableKey, Value, ViewKey = string> = {
+type AppSetupProps<Id, Value, ViewKey = string> = {
   appScreenRenderer: AppScreenRenderer;
   loadingScreenRenderer: LoadingScreenRenderer;
   appId: string;
@@ -33,7 +28,7 @@ type AppSetupProps<Id extends SerializableKey, Value, ViewKey = string> = {
   clipboard?: (value: string) => void;
 };
 
-type LoadState<Id extends SerializableKey, Value, ViewKey> =
+type LoadState<Id, Value, ViewKey> =
   | {
       status: 'loading';
       appMethods: AppMethods<Id, Value, ViewKey>;
@@ -49,7 +44,7 @@ type LoadState<Id extends SerializableKey, Value, ViewKey> =
       error: Error;
     };
 
-export function AppSetup<Id extends SerializableKey, Value, ViewKey = string>({
+export function AppSetup<Id, Value, ViewKey = string>({
   appScreenRenderer,
   loadingScreenRenderer,
   appId,

@@ -1,17 +1,13 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-import type { AppDefinition, AppPlugin } from 'dirvi-apis';
+import type { AppChild, AppDefinition, AppPlugin } from 'dirvi-apis';
 
 import type { XmlId, XmlNodeValue } from './domain/xml-tree.js';
-import { xmlIdSchema, xmlValueSchema } from './domain/xml-tree.js';
+import { xmlValueSchema } from './domain/xml-tree.js';
 import { createXmlFileResyncSubscription } from './infrastructure/create-xml-file-resync.js';
 import { XmlDom } from './services/xml-dom.js';
 import { createXmlDom } from './infrastructure/create-xml-dom.js';
-import {
-  createXmlRoot,
-  getXmlEntries,
-} from './infrastructure/get-xml-entries.js';
 
 export const xmlAppPlugin: AppPlugin = {
   createAppDefinitionApplicator: (input) => {
@@ -21,8 +17,7 @@ export const xmlAppPlugin: AppPlugin = {
 
     const xmlAbsolutePath = resolve(input);
 
-    // TODO: Make the `xmldom` nodes the IDs, but need to first get rid of the
-    // `SerializableKey` requirement.
+    // TODO: Make the `xmldom` nodes the IDs.
 
     // Create dom async on first need, cache afterward
     let dom: XmlDom | undefined;
@@ -47,17 +42,23 @@ export const xmlAppPlugin: AppPlugin = {
 
     const appDefinition = {
       semanticOrder: true,
-      idSchema: xmlIdSchema,
       valueSchema: xmlValueSchema,
 
       loadChildren: async (path: readonly XmlId[]) => {
         const dom = await getDom();
-        return getXmlEntries(xmlAbsolutePath, dom, path);
+
+        return dom.getChildren(path.at(-1)).map(
+          ({ id, value }): AppChild<XmlId, XmlNodeValue> => ({
+            id,
+            kind: value.kind === 'element' ? 'unloaded-branch' : 'leaf',
+            value,
+          }),
+        );
       },
 
       loadRoot: async () => {
         const dom = await getDom();
-        return createXmlRoot(xmlAbsolutePath, dom.getDocument());
+        return dom.getDocument();
       },
 
       presentNode: (_id: XmlId, value: XmlNodeValue, isBranch: boolean) => ({

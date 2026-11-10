@@ -1,5 +1,4 @@
 import type {
-  SerializableKey,
   AppMethods,
   AppMethodsApplicator,
   AppMethodsConsumer,
@@ -30,7 +29,7 @@ export function createAppMethodsApplicator(
   });
 }
 
-export function createAppMethods<Id extends SerializableKey, Value>(
+export function createAppMethods<Id, Value>(
   appDefinition: AppDefinition<Id, Value>,
 ): AppMethods<Id, Value> {
   const treeMethods = createTreeMethods<Id, Value>();

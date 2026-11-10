@@ -1,58 +1,17 @@
 import { z } from 'zod';
-import type { SerializableKey, TreeNode } from 'dirvi-lib';
+import type { TreeNode } from 'dirvi-lib';
 
 // -----------------------------------------------------------------------------
-// Utility
+// Node IDs
 // -----------------------------------------------------------------------------
 
-type Assert<True extends true> = True;
-
-// -----------------------------------------------------------------------------
-// Position: Id extends SerializableKey
-// -----------------------------------------------------------------------------
-
-const uuidSchema = z.uuid();
+declare const xmlIdBrand: unique symbol;
 
 /**
- * A node key containing its UUID and display name.
- *
- * This is not XML document order. XML sibling order is held by the source
- * TreeNode child sequence.
- *
- * Changing the name changes the complete tree key.
+ * An opaque, reference-identity ID for a node in the current XML document.
  */
-export const xmlIdSchema = z.string().refine(
-  (value) => {
-    const separator = value.indexOf(':');
+export type XmlId = object & { readonly [xmlIdBrand]: true };
 
-    return (
-      separator > 0 &&
-      uuidSchema.safeParse(value.slice(0, separator)).success &&
-      value.slice(separator + 1).trim().length > 0
-    );
-  },
-  {
-    message: 'Expected an XML node ID in the form <uuid>:<node-name>.',
-  },
-);
-
-export type XmlId = z.infer<typeof xmlIdSchema>;
-
-type XmlIdIsSerializableKey = Assert<
-  XmlId extends SerializableKey ? true : false
->;
-
-export function createXmlId(name: string, uuid: string): XmlId {
-  return xmlIdSchema.parse(`${uuid}:${name}`);
-}
-
-export function xmlIdName(id: XmlId): string {
-  return id.slice(id.indexOf(':') + 1);
-}
-
-export function xmlIdUuid(id: XmlId): string {
-  return id.slice(0, id.indexOf(':'));
-}
 // -----------------------------------------------------------------------------
 // Node values
 // -----------------------------------------------------------------------------

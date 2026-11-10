@@ -4,7 +4,7 @@ import type {
   MatchByKind,
   TreeNodeKind,
 } from './tree.types.js';
-import type { SerializableKey, TreeNodeModel } from './tree-node.model.js';
+import type { TreeNodeModel } from './tree-node.model.js';
 
 // =============================================================================
 // Opaque Type Implementation
@@ -13,24 +13,24 @@ import type { SerializableKey, TreeNodeModel } from './tree-node.model.js';
 // type is opaque, so consumers must use `TreeNodeApi` operations rather than
 // depending on these object properties.
 
-type TreeNodeData<Id extends SerializableKey, Value> =
+type TreeNodeData<Id, Value> =
   | LeafTreeNodeData<Id, Value>
   | UnloadedBranchTreeNodeData<Id, Value>
   | LoadedBranchTreeNodeData<Id, Value>;
 
-type LeafTreeNodeData<Id extends SerializableKey, Value> = Readonly<{
+type LeafTreeNodeData<Id, Value> = Readonly<{
   id: Id;
   value: Value;
   children?: never;
 }>;
 
-type UnloadedBranchTreeNodeData<Id extends SerializableKey, Value> = Readonly<{
+type UnloadedBranchTreeNodeData<Id, Value> = Readonly<{
   id: Id;
   value: Value;
   children: null;
 }>;
 
-type LoadedBranchTreeNodeData<Id extends SerializableKey, Value> = Readonly<{
+type LoadedBranchTreeNodeData<Id, Value> = Readonly<{
   id: Id;
   value: Value;
   children: readonly TreeNode<Id, Value>[];
@@ -42,16 +42,14 @@ type LoadedBranchTreeNodeData<Id extends SerializableKey, Value> = Readonly<{
  * This cast is intentionally centralized here. Public callers should never
  * need to know that tree nodes currently use `{ id, value, children }`.
  */
-function toData<Id extends SerializableKey, Value>(
-  node: TreeNode<Id, Value>,
-): TreeNodeData<Id, Value> {
+function toData<Id, Value>(node: TreeNode<Id, Value>): TreeNodeData<Id, Value> {
   return node as unknown as TreeNodeData<Id, Value>;
 }
 
 /**
  * Crosses from the private representation into the opaque public type.
  */
-function fromData<Id extends SerializableKey, Value>(
+function fromData<Id, Value>(
   data: TreeNodeData<Id, Value>,
 ): TreeNode<Id, Value> {
   return data as unknown as TreeNode<Id, Value>;
@@ -61,19 +59,19 @@ function fromData<Id extends SerializableKey, Value>(
 // Helpers
 // =============================================================================
 
-function isLeafData<Id extends SerializableKey, Value>(
+function isLeafData<Id, Value>(
   node: TreeNodeData<Id, Value>,
 ): node is LeafTreeNodeData<Id, Value> {
   return !('children' in node);
 }
 
-function isUnloadedBranchData<Id extends SerializableKey, Value>(
+function isUnloadedBranchData<Id, Value>(
   node: TreeNodeData<Id, Value>,
 ): node is UnloadedBranchTreeNodeData<Id, Value> {
   return 'children' in node && node.children === null;
 }
 
-function isLoadedBranchData<Id extends SerializableKey, Value>(
+function isLoadedBranchData<Id, Value>(
   node: TreeNodeData<Id, Value>,
 ): node is LoadedBranchTreeNodeData<Id, Value> {
   return 'children' in node && node.children !== null;
@@ -83,7 +81,7 @@ function isLoadedBranchData<Id extends SerializableKey, Value>(
  * Returns a reusable iterable over child nodes in their stored order without
  * exposing the internal child array.
  */
-function asChildrenIterable<Id extends SerializableKey, Value>(
+function asChildrenIterable<Id, Value>(
   children: readonly TreeNode<Id, Value>[],
 ): Iterable<TreeNode<Id, Value>> {
   return Object.freeze({
@@ -101,7 +99,7 @@ function asChildrenIterable<Id extends SerializableKey, Value>(
  * exceptional implementation failure. This matches the public API contract
  * for `createLoadedBranch` and `withLoadedChildren`.
  */
-function copyUniqueChildren<Id extends SerializableKey, Value>(
+function copyUniqueChildren<Id, Value>(
   children: Iterable<TreeNode<Id, Value>>,
   getId: (node: TreeNode<Id, Value>) => Id,
 ): readonly TreeNode<Id, Value>[] | undefined {
@@ -122,7 +120,7 @@ function copyUniqueChildren<Id extends SerializableKey, Value>(
   return Object.freeze(copiedChildren);
 }
 
-function createLeafData<Id extends SerializableKey, Value>(
+function createLeafData<Id, Value>(
   id: Id,
   value: Value,
 ): LeafTreeNodeData<Id, Value> {
@@ -132,7 +130,7 @@ function createLeafData<Id extends SerializableKey, Value>(
   });
 }
 
-function createUnloadedBranchData<Id extends SerializableKey, Value>(
+function createUnloadedBranchData<Id, Value>(
   id: Id,
   value: Value,
 ): UnloadedBranchTreeNodeData<Id, Value> {
@@ -143,7 +141,7 @@ function createUnloadedBranchData<Id extends SerializableKey, Value>(
   });
 }
 
-function createLoadedBranchData<Id extends SerializableKey, Value>(
+function createLoadedBranchData<Id, Value>(
   id: Id,
   value: Value,
   children: readonly TreeNode<Id, Value>[],
@@ -170,10 +168,7 @@ function createLoadedBranchData<Id extends SerializableKey, Value>(
  * Tree updates preserve object identity for unrelated nodes. New ancestor
  * nodes and child collections are created only along an updated path.
  */
-export function createTreeMethods<
-  Id extends SerializableKey,
-  Value,
->(): TreeMethods<Id, Value> {
+export function createTreeMethods<Id, Value>(): TreeMethods<Id, Value> {
   function getLoadedChildrenData(
     node: TreeNode<Id, Value>,
   ): readonly TreeNode<Id, Value>[] | undefined {

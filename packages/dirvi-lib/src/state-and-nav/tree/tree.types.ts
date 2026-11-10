@@ -1,4 +1,4 @@
-import type { SerializableKey, TreeNodeModel } from './tree-node.model.js';
+import type { TreeNodeModel } from './tree-node.model.js';
 
 /**
  * A private type-level marker used to make {@link TreeNode} opaque.
@@ -73,7 +73,7 @@ declare const treeNodeBrand: unique symbol;
  * type DirectoryTree = TreeNode<DirectoryId, DirectoryEntry>;
  * ```
  */
-export type TreeNode<Id extends SerializableKey, Value> = {
+export type TreeNode<Id, Value> = {
   /**
    * A phantom type-level witness for `Id` and `Value`.
    *
@@ -150,7 +150,7 @@ export type TreeNodeKind = 'leaf' | 'unloaded-branch' | 'loaded-branch';
  * });
  * ```
  */
-export type MatchByKind<Id extends SerializableKey, Value, Result> = Readonly<{
+export type MatchByKind<Id, Value, Result> = Readonly<{
   leaf: (
     node: Readonly<{
       id: Id;
@@ -215,7 +215,7 @@ export type MatchByKind<Id extends SerializableKey, Value, Result> = Readonly<{
  * @typeParam Id - The type used to identify nodes among siblings.
  * @typeParam Value - The application-specific value stored at each node.
  */
-export type TreeMethods<Id extends SerializableKey, Value> = Readonly<{
+export type TreeMethods<Id, Value> = Readonly<{
   /**
    * Creates a leaf node.
    *

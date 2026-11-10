@@ -1,4 +1,3 @@
-import type { SerializableKey } from 'dirvi-apis';
 import type { EffectAction } from '../domain/index.js';
 import {
   tokenizeNormalCommand,
@@ -6,7 +5,7 @@ import {
   type Token,
 } from './tokenize-normal-command.js';
 
-export type ParseNormalCommandResult<Id extends SerializableKey, Value> =
+export type ParseNormalCommandResult<Id, Value> =
   | {
       kind: 'incomplete';
     }
@@ -18,7 +17,7 @@ export type ParseNormalCommandResult<Id extends SerializableKey, Value> =
       kind: 'invalid';
     };
 
-export function parseNormalCommand<Id extends SerializableKey, Value>(
+export function parseNormalCommand<Id, Value>(
   normalBuffer: string,
 ): ParseNormalCommandResult<Id, Value> {
   const tokens = tokenizeNormalCommand(normalBuffer);
@@ -68,7 +67,7 @@ function isInvalidToken(token: Token): boolean {
   );
 }
 
-function tokenToResult<Id extends SerializableKey, Value>(
+function tokenToResult<Id, Value>(
   token: Token,
   index: number,
 ): ParseNormalCommandResult<Id, Value> {
@@ -93,7 +92,7 @@ function tokenToResult<Id extends SerializableKey, Value>(
   }
 }
 
-function foldCommandToAction<Id extends SerializableKey, Value>(
+function foldCommandToAction<Id, Value>(
   foldCommand: FoldCommand,
   index: number,
 ): EffectAction<Id, Value> {

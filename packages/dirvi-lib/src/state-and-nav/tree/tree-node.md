@@ -11,10 +11,9 @@ hierarchical data such as:
 - s-expressions; and
 - other application-specific tree structures.
 
-Children form an ordered sequence. The API preserves this order during
-construction, inspection, updates, and model conversion.
-
-Whether child order has application-level meaning is outside this layer.
+Children of a node form an ordered sequence. The API preserves this order
+throughout but whether child order has application-level meaning is up to
+the consumer.
 
 ## Node Identity
 
@@ -22,15 +21,8 @@ Every node has an `id` that identifies it among its direct siblings,
 independently of its position and application-owned value.
 Sibling IDs must be unique, but need not be unique across the tree.
 
-The library uses the following ID type for serializability and fast lookup:
-
-```ts
-export type SerializableKey = string | number;
-```
-
-Numeric IDs must be finite. `NaN`, `Infinity`, and `-Infinity` are not valid
-IDs. TypeScript cannot express the exclusion of these values from `number`, so
-values received at the app boundary should be validated at runtime.
+Two values have to be excluded from potentially being an Id: `NaN` and
+`undefined`, which are edge cases in implementation.
 
 Applications should define more specific ID types, such as branded types.
 Using different branded ID types prevents IDs from unrelated domains from

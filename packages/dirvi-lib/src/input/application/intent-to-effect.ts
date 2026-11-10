@@ -1,8 +1,4 @@
-import type {
-  SerializableKey,
-  State,
-  StateMethods,
-} from '../../state-and-nav/index.js';
+import type { State, StateMethods } from '../../state-and-nav/index.js';
 import type { Effect, EffectAction, Intent } from '../domain/index.js';
 
 import { parseExCommand } from './parse-ex-command.js';
@@ -17,12 +13,12 @@ import { parseNormalCommand } from './parse-normal-command.js';
  * @typeParam Id - The sibling-unique tree-node ID type.
  * @typeParam Value - Application-owned data stored in each tree node.
  */
-export type IntentToEffect<Id extends SerializableKey, Value> = (
+export type IntentToEffect<Id, Value> = (
   intent: Intent,
   state: State<Id, Value>,
 ) => Effect<Id, Value> | undefined;
 
-export function createIntentToEffect<Id extends SerializableKey, Value>(
+export function createIntentToEffect<Id, Value>(
   registeredCommands: ReadonlySet<string>,
   stateApi: StateMethods<Id, Value>,
 ): IntentToEffect<Id, Value> {
@@ -92,9 +88,7 @@ export function createIntentToEffect<Id extends SerializableKey, Value>(
 // Normal mode
 // =============================================================================
 
-function keepNormalBuffer<Id extends SerializableKey, Value>(
-  normalBuffer: string,
-): Effect<Id, Value> {
+function keepNormalBuffer<Id, Value>(normalBuffer: string): Effect<Id, Value> {
   return {
     effectType: 'setInputState',
     inputState: {
@@ -104,7 +98,7 @@ function keepNormalBuffer<Id extends SerializableKey, Value>(
   };
 }
 
-function dispatchAction<Id extends SerializableKey, Value>(
+function dispatchAction<Id, Value>(
   action: EffectAction<Id, Value>,
 ): Effect<Id, Value> {
   return {
@@ -113,7 +107,7 @@ function dispatchAction<Id extends SerializableKey, Value>(
   };
 }
 
-function clearBuffer<Id extends SerializableKey, Value>(): Effect<Id, Value> {
+function clearBuffer<Id, Value>(): Effect<Id, Value> {
   return {
     effectType: 'setInputState',
     inputState: {
@@ -132,7 +126,7 @@ function clearBuffer<Id extends SerializableKey, Value>(): Effect<Id, Value> {
  * - The buffer is a prefix of a possible motion: retain it.
  * - The buffer is not a valid prefix: clear it.
  */
-function normalBufferToEffectResult<Id extends SerializableKey, Value>(
+function normalBufferToEffectResult<Id, Value>(
   updatedNormalBuffer: string,
 ): Effect<Id, Value> {
   const commandResult = parseNormalCommand<Id, Value>(updatedNormalBuffer);
@@ -156,7 +150,7 @@ function normalBufferToEffectResult<Id extends SerializableKey, Value>(
  * - An open branch dispatches an action that closes/unloads its children.
  * - A leaf has no right-interaction effect.
  */
-function normalInteractRightToEffect<Id extends SerializableKey, Value>(
+function normalInteractRightToEffect<Id, Value>(
   state: State<Id, Value>,
   stateApi: StateMethods<Id, Value>,
 ): Effect<Id, Value> | undefined {
@@ -197,7 +191,7 @@ function normalInteractRightToEffect<Id extends SerializableKey, Value>(
  * Left from the root has no effect. Otherwise dispatch navigation to the
  * parent entry.
  */
-function normalInteractLeftToEffect<Id extends SerializableKey, Value>(
+function normalInteractLeftToEffect<Id, Value>(
   state: State<Id, Value>,
   stateApi: StateMethods<Id, Value>,
 ): Effect<Id, Value> | undefined {

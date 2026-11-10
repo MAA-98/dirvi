@@ -81,7 +81,8 @@ export const InkAppScreen: AppScreenRenderer = ({
           <Text dimColor>Empty.</Text>
         ) : (
           view.rows.map((row) => (
-            <ViewRowComponent key={row.id} row={row} config={config} />
+            // TODO Later: A key could improve rendering
+            <ViewRowComponent row={row} config={config} />
           ))
         )}
       </Box>

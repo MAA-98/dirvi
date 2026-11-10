@@ -14,7 +14,7 @@ import type {
  * Fold summaries exist in either projection, but only ordered navigation
  * exposes them as cursor destinations.
  */
-export function createNavTraversalMethods<Id extends SerializableKey, Value>(
+export function createNavTraversalMethods<Id, Value>(
   cursorMethods: CursorMethods<Id>,
   navigateFolds: boolean,
 ): Omit<NavMethods<Id, Value>, 'from'> {

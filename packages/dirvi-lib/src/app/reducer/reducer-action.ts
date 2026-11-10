@@ -1,12 +1,11 @@
 import type {
   Cursor,
   FoldIndex,
-  SerializableKey,
   State,
   TreeNode,
 } from '../../state-and-nav/index.js';
 
-export type ReducerAction<Id extends SerializableKey, Value> =
+export type ReducerAction<Id, Value> =
   | {
       kind: 'changeCursor';
       cursor: Cursor<Id>;

@@ -1,61 +1,4 @@
 import { z } from 'zod';
-import type { SerializableKey } from 'dirvi-apis';
-
-/**
- * A serializable primitive suitable for use as a stable tree-node ID.
- *
- * @remarks
- *
- * A node ID identifies a node among its direct siblings. It is not required
- * to be globally unique across the whole tree: two nodes in different
- * branches may have the same ID.
- *
- * Numeric IDs must be finite. TypeScript cannot represent the exclusion of
- * `NaN`, `Infinity`, and `-Infinity` from `number`, so values received from
- * an untrusted source should be validated at an application boundary, for
- * example with `serializableKeySchema`.
- *
- * Applications should normally define a narrower domain-specific ID type.
- * Branded ID types prevent IDs from unrelated domains from being mixed
- * accidentally, even when both use strings at runtime.
- *
- * @example
- *
- * ```ts
- * const myIdSchema = z
- *   .string()
- *   .min(1)
- *   .brand<'MyId'>();
- *
- * type MyId = z.output<typeof myIdSchema>;
- *
- * type MyItem = Readonly<{
- *   label: string;
- *   href?: string;
- * }>;
- *
- * type MyTreeModel = TreeNodeModel<MyId, MyItem>;
- * ```
- */
-export type { SerializableKey };
-
-/**
- * Validates a serializable primitive suitable for use as a tree-node ID.
- *
- * Strings are accepted without additional restrictions. Numbers must be
- * finite: `NaN`, `Infinity`, and `-Infinity` are rejected.
- *
- * Applications can derive narrower schemas to impose domain-specific
- * restrictions or produce branded ID types.
- *
- * @remarks
- *
- * Requires Zod v4, where `z.number()` rejects non-finite values.
- */
-export const serializableKeySchema: z.ZodType<SerializableKey> = z.union([
-  z.string(),
-  z.number(),
-]);
 
 /**
  * A structural model for persisting or exchanging a tree node.
@@ -87,7 +30,7 @@ export const serializableKeySchema: z.ZodType<SerializableKey> = z.union([
  * @typeParam Id - The type identifying each node among its direct siblings.
  * @typeParam Value - Application-owned data associated with each node.
  */
-export type TreeNodeModel<Id extends SerializableKey, Value> =
+export type TreeNodeModel<Id, Value> =
   | LeafTreeNodeModel<Id, Value>
   | UnloadedBranchTreeNodeModel<Id, Value>
   | LoadedBranchTreeNodeModel<Id, Value>;
@@ -101,7 +44,7 @@ export type TreeNodeModel<Id extends SerializableKey, Value> =
  * @typeParam Id - The type identifying this node among its direct siblings.
  * @typeParam Value - Application-owned data associated with this node.
  */
-export type LeafTreeNodeModel<Id extends SerializableKey, Value> = Readonly<{
+export type LeafTreeNodeModel<Id, Value> = Readonly<{
   id: Id;
   value: Value;
   children?: never;
@@ -116,10 +59,7 @@ export type LeafTreeNodeModel<Id extends SerializableKey, Value> = Readonly<{
  * @typeParam Id - The type identifying this node among its direct siblings.
  * @typeParam Value - Application-owned data associated with this node.
  */
-export type UnloadedBranchTreeNodeModel<
-  Id extends SerializableKey,
-  Value,
-> = Readonly<{
+export type UnloadedBranchTreeNodeModel<Id, Value> = Readonly<{
   id: Id;
   value: Value;
   children: null;
@@ -134,10 +74,7 @@ export type UnloadedBranchTreeNodeModel<
  * @typeParam Id - The type identifying this node among its direct siblings.
  * @typeParam Value - Application-owned data associated with this node.
  */
-export type LoadedBranchTreeNodeModel<
-  Id extends SerializableKey,
-  Value,
-> = Readonly<{
+export type LoadedBranchTreeNodeModel<Id, Value> = Readonly<{
   id: Id;
   value: Value;
   children: readonly TreeNodeModel<Id, Value>[];
@@ -209,7 +146,7 @@ export type LoadedBranchTreeNodeModel<
  * });
  * ```
  */
-export function createTreeNodeModelSchema<Id extends SerializableKey, Value>(
+export function createTreeNodeModelSchema<Id, Value>(
   idSchema: z.ZodType<Id>,
   valueSchema: z.ZodType<Value>,
 ): z.ZodType<TreeNodeModel<Id, Value>> {

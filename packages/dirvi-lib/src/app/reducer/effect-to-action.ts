@@ -4,7 +4,6 @@ import type {
   Folds,
   NavBranch,
   NavMethods,
-  SerializableKey,
   State,
   StateMethods,
 } from '../../state-and-nav/index.js';
@@ -14,7 +13,7 @@ import type {
 } from '../../input/domain/index.js';
 import type { ReducerAction } from './reducer-action.js';
 
-export type EffectToActionResult<Id extends SerializableKey, Value> =
+export type EffectToActionResult<Id, Value> =
   | Readonly<{
       kind: 'action';
       action: ReducerAction<Id, Value>;
@@ -27,7 +26,7 @@ export type EffectToActionResult<Id extends SerializableKey, Value> =
       kind: 'ignored';
     }>;
 
-export type EffectToAction<Id extends SerializableKey, Value> = (
+export type EffectToAction<Id, Value> = (
   effectAction: EffectAction<Id, Value>,
   navigation: NavBranch<Id, Value>,
   state: State<Id, Value>,
@@ -43,7 +42,7 @@ type FoldTreeResolution =
       message: string;
     }>;
 
-function resolveFoldTreeIndex<Id extends SerializableKey>(
+function resolveFoldTreeIndex<Id>(
   foldsApi: FoldMethods<Id>,
   folds: Folds<Id>,
   foldTree: FoldTreeReference,
@@ -84,7 +83,7 @@ function resolveFoldTreeIndex<Id extends SerializableKey>(
   }
 }
 
-export function createEffectToAction<Id extends SerializableKey, Value>(
+export function createEffectToAction<Id, Value>(
   stateApi: StateMethods<Id, Value>,
   navNodeApi: NavMethods<Id, Value>,
 ): EffectToAction<Id, Value> {

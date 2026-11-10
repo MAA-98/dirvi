@@ -1,5 +1,3 @@
-export type { SerializableKey } from './tree/index.js';
-
 // Opaque types
 // Used for passing data without exposing internals
 export type { TreeNode } from './tree/index.js';

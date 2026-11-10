@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-import type { SerializableKey } from '../tree/index.js';
-
 /**
  * Returns whether every value appears at most once.
  *
@@ -39,7 +37,7 @@ function hasUniqueValues<Value>(values: readonly Value[]): boolean {
  * This means `src` is hidden directly under `root`, while fold state below
  * `src` is retained for when it is shown again.
  */
-export type FoldNodeModel<Id extends SerializableKey> = Readonly<{
+export type FoldNodeModel<Id> = Readonly<{
   /**
    * The source-tree node ID represented by this fold-state node.
    */
@@ -79,7 +77,7 @@ export type FoldNodeModel<Id extends SerializableKey> = Readonly<{
  * Those rules require access to the source tree and belong in a fold service,
  * not in this serialization schema.
  */
-export function createFoldNodeModelSchema<Id extends SerializableKey>(
+export function createFoldNodeModelSchema<Id>(
   idSchema: z.ZodType<Id>,
 ): z.ZodType<FoldNodeModel<Id>> {
   let nodeSchema: z.ZodType<FoldNodeModel<Id>>;
@@ -115,7 +113,7 @@ export function createFoldNodeModelSchema<Id extends SerializableKey>(
  * `description: null` means that this fold tree has no description.
  * An empty string is a supplied description with no text.
  */
-export type FoldSlotModel<Id extends SerializableKey> = Readonly<{
+export type FoldSlotModel<Id> = Readonly<{
   /**
    * User-facing name of this fold tree.
    */
@@ -146,7 +144,7 @@ export type FoldSlotModel<Id extends SerializableKey> = Readonly<{
  * `null` represents an unoccupied non-primary slot. Do not use `undefined`:
  * JSON serialization converts undefined array entries to null anyway.
  */
-export type FoldsModel<Id extends SerializableKey> = Readonly<{
+export type FoldsModel<Id> = Readonly<{
   slots: readonly [FoldSlotModel<Id>, ...(FoldSlotModel<Id> | null)[]];
 }>;
 
@@ -165,7 +163,7 @@ export type FoldsModel<Id extends SerializableKey> = Readonly<{
  * It does not validate fold-tree names for uniqueness. That is a domain rule
  * only if the fold service decides names must be unique.
  */
-export function createFoldsModelSchema<Id extends SerializableKey>(
+export function createFoldsModelSchema<Id>(
   idSchema: z.ZodType<Id>,
 ): z.ZodType<FoldsModel<Id>> {
   const foldNodeSchema = createFoldNodeModelSchema(idSchema);

@@ -7,12 +7,11 @@ import type {
   NavBranch,
   NavNode,
   NavMethods,
-  SerializableKey,
   CursorMethods,
 } from 'dirvi-lib';
 
 type ViewRowBase = {
-  id: string;
+  // id: string;
   indent: number;
   content: string;
   cursor: boolean;
@@ -37,15 +36,12 @@ export type View = {
   rows: ViewRow[];
 };
 
-function foldId<Id extends SerializableKey>(
-  parentPath: readonly Id[],
-  firstId: Id,
-): string {
+function foldId<Id>(parentPath: readonly Id[], firstId: Id): string {
   return `fold:${JSON.stringify([...parentPath, firstId])}`;
 }
 
 export const View = {
-  createRows<Id extends SerializableKey, Value>(
+  createRows<Id, Value>(
     rootNode: NavBranch<Id, Value>,
     navNodeApi: NavMethods<Id, Value>,
     cursor: Cursor<Id>,
@@ -91,7 +87,7 @@ export const View = {
     ];
   },
 
-  create<Id extends SerializableKey, Value>(
+  create<Id, Value>(
     rootNode: NavBranch<Id, Value>,
     navNodeApi: NavMethods<Id, Value>,
     cursor: Cursor<Id>,
@@ -123,7 +119,7 @@ export const View = {
  *   ['src']         root/src
  *   ['src', 'lib']  root/src/lib
  */
-function viewRowsAtNode<Id extends SerializableKey, Value>(
+function viewRowsAtNode<Id, Value>(
   node: NavNode<Id, Value>,
   parentPath: Id[],
   navNodeApi: NavMethods<Id, Value>,
@@ -163,7 +159,7 @@ function viewRowsAtNode<Id extends SerializableKey, Value>(
       );
 
       rows.push({
-        id,
+        // id,
         indent: parentPath.length + 1,
         content: `… ${entry.folded.length} folded`,
         cursor: cursorMethods.equal(cursor, entryCursor),
@@ -214,7 +210,7 @@ function viewRowsAtNode<Id extends SerializableKey, Value>(
   return rows;
 }
 
-function viewRowForEntry<Id extends SerializableKey, Value>(
+function viewRowForEntry<Id, Value>(
   entry: Exclude<NavEntry<Id, Value>, NavFold<Id, Value>>,
   parentPath: Id[] | null,
   cursor: boolean,
@@ -222,7 +218,7 @@ function viewRowForEntry<Id extends SerializableKey, Value>(
   presentNode: PresentNode<Id, Value>,
   inlineFoldIds: ReadonlySet<string>,
 ): ViewRow {
-  const id = entryId(parentPath ?? [], entry.id);
+  // const id = entryId(parentPath ?? [], entry.id);
   const indent = parentPath ? parentPath.length + 1 : 0;
   const selected = false;
 
@@ -251,7 +247,7 @@ function viewRowForEntry<Id extends SerializableKey, Value>(
       }, 0) ?? 0;
 
     return {
-      id,
+      //id,
       indent,
       selected,
       cursor,
@@ -264,7 +260,7 @@ function viewRowForEntry<Id extends SerializableKey, Value>(
 
   const { content, highlight } = presentNode(entry.id, entry.value, false);
   return {
-    id,
+    //id,
     indent,
     selected,
     cursor,
@@ -274,9 +270,9 @@ function viewRowForEntry<Id extends SerializableKey, Value>(
   };
 }
 
-function entryId<Name extends PropertyKey>(
-  parentPath: Name[],
-  entryName: Name,
+function entryId<Id extends PropertyKey>(
+  parentPath: Id[],
+  entryName: Id,
 ): string {
   return `entry:${JSON.stringify([...parentPath, entryName])}`;
 }

@@ -1,10 +1,9 @@
-import { SerializableKey } from 'dirvi-apis';
 import type { Effect } from '../domain/index.js';
 
 // const DEFAULT_VIEW_NAME = 'default';
 const DEFAULT_FOLD_TREE_NAME = 'default';
 
-function parseAppCommand<Id extends SerializableKey, Value>(
+function parseAppCommand<Id, Value>(
   commandArgs: readonly string[],
 ): Effect<Id, Value> {
   const [firstArgument, ...remainingArguments] = commandArgs;
@@ -52,7 +51,7 @@ function parseAppCommand<Id extends SerializableKey, Value>(
   }
 }
 
-function parseFoldCommand<Id extends SerializableKey, Value>(
+function parseFoldCommand<Id, Value>(
   commandArgs: readonly string[],
 ): Effect<Id, Value> {
   const [subcommand, name] = commandArgs;
@@ -153,7 +152,7 @@ function parseFoldCommand<Id extends SerializableKey, Value>(
  * @param registeredCommands - User-command names that override built-ins.
  * @returns An effect, or `undefined` for an empty command.
  */
-export function parseExCommand<Id extends SerializableKey, Value>(
+export function parseExCommand<Id, Value>(
   commandLine: string,
   registeredCommands: ReadonlySet<string>,
 ): Effect<Id, Value> | undefined {

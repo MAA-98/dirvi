@@ -1,20 +1,15 @@
-import type { SerializableKey, TreeNode, TreeMethods } from '../tree/index.js';
+import type { TreeNode, TreeMethods } from '../tree/index.js';
 import type {
   FoldNodeModel,
   FoldsModel,
   FoldSlotModel,
 } from './fold-node.model.js';
-import type {
-  FoldIndex,
-  FoldInfo,
-  Folds,
-  FoldMethods,
-} from './fold-node.types.js';
+import type { FoldIndex, Folds, FoldMethods } from './fold-node.types.js';
 
 /**
  * IDs of direct source-tree entries hidden at one source-tree branch.
  */
-type HiddenEntryIds<Id extends SerializableKey> = readonly Id[];
+type HiddenEntryIds<Id> = readonly Id[];
 
 /**
  * Private runtime representation of one fold tree.
@@ -22,29 +17,26 @@ type HiddenEntryIds<Id extends SerializableKey> = readonly Id[];
  * The representation remains private: callers receive only opaque `Folds`
  * values and interact with them through `FoldsApi`.
  */
-type FoldTree<Id extends SerializableKey> = TreeNode<Id, HiddenEntryIds<Id>>;
+type FoldTree<Id> = TreeNode<Id, HiddenEntryIds<Id>>;
 
-type FoldSlot<Id extends SerializableKey> = Readonly<{
+type FoldSlot<Id> = Readonly<{
   name: string;
   description: string | null;
   active: boolean;
   tree: FoldTree<Id>;
 }>;
 
-type FoldSlots<Id extends SerializableKey> = readonly [
-  FoldSlot<Id>,
-  ...(FoldSlot<Id> | undefined)[],
-];
+type FoldSlots<Id> = readonly [FoldSlot<Id>, ...(FoldSlot<Id> | undefined)[]];
 
-type FoldsData<Id extends SerializableKey> = Readonly<{
+type FoldsData<Id> = Readonly<{
   slots: FoldSlots<Id>;
 }>;
 
-function toData<Id extends SerializableKey>(folds: Folds<Id>): FoldsData<Id> {
+function toData<Id>(folds: Folds<Id>): FoldsData<Id> {
   return folds as unknown as FoldsData<Id>;
 }
 
-function fromData<Id extends SerializableKey>(data: FoldsData<Id>): Folds<Id> {
+function fromData<Id>(data: FoldsData<Id>): Folds<Id> {
   return data as unknown as Folds<Id>;
 }
 
@@ -63,7 +55,7 @@ function hasUniqueValues<Value>(values: readonly Value[]): boolean {
  * Each fold tree preserves its own hidden-entry definition. An entry is hidden
  * by the aggregate when at least one active fold tree hides it.
  */
-export function createFoldMethods<Id extends SerializableKey>(
+export function createFoldMethods<Id>(
   foldTreeApi: TreeMethods<Id, HiddenEntryIds<Id>>,
 ): FoldMethods<Id> {
   function createEmptyFoldTree(rootId: Id): FoldTree<Id> {

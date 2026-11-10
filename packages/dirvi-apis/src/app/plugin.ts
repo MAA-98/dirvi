@@ -1,5 +1,4 @@
 import type { AppDefinition } from './app-definition.js';
-import type { SerializableKey } from './key.js';
 
 /**
  * Creates and applies the AppDefinition to a given consumer of it.
@@ -13,7 +12,7 @@ export type AppDefinitionApplicator = <Result>(
 /**
  * The function that creates an AppApi from AppDefinition will be the consumer.
  */
-export type AppDefinitionConsumer<Result> = <Id extends SerializableKey, Value>(
+export type AppDefinitionConsumer<Result> = <Id, Value>(
   appDefinition: AppDefinition<Id, Value>,
 ) => Result;
 

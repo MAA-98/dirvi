@@ -1,5 +1,3 @@
-import { SerializableKey } from './key.js';
-
 /**
  * A semantic highlight name, not a concrete terminal color.
  *
@@ -8,7 +6,7 @@ import { SerializableKey } from './key.js';
  */
 export type HighlightToken = string;
 
-export type PresentNode<Id extends SerializableKey, Value> = (
+export type PresentNode<Id, Value> = (
   id: Id,
   value: Value,
   isBranch: boolean,

@@ -5,7 +5,7 @@ setopt pipefail
 
 usage() {
   cat <<'EOF'
-Usage: formatted-context-files [CONTEXT_FILE]
+Usage: fcf [CONTEXT_FILE]
 
 Read the last JSON event from CONTEXT_FILE, extract its
 "displayed-leaves-paths" paths, convert them to absolute paths relative

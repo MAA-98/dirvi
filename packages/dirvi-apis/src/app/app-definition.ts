@@ -1,5 +1,4 @@
 import type { ZodType } from 'zod';
-import type { SerializableKey } from './key.js';
 import type { PresentNode } from './present-node.js';
 
 /**
@@ -28,7 +27,7 @@ export type AppChild<Id, Value> = Readonly<{
 /**
  * The needed information for dirvi to create an App instance.
  */
-export type AppDefinition<Id extends SerializableKey, Value> = Readonly<{
+export type AppDefinition<Id, Value> = Readonly<{
   /**
    * Whether sibling order is meaningful in the application's underlying
    * structure, rather than merely a presentation choice.
@@ -45,7 +44,6 @@ export type AppDefinition<Id extends SerializableKey, Value> = Readonly<{
   /**
    * Validates application tree node data.
    */
-  readonly idSchema: ZodType<Id>;
   readonly valueSchema: ZodType<Value>;
 
   /**

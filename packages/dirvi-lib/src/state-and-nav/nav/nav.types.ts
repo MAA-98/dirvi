@@ -1,8 +1,8 @@
-import type { SerializableKey, TreeNode } from '../tree/index.js';
+import type { TreeNode } from '../tree/index.js';
 import type { Cursor } from '../cursor.js';
 import type { Folds } from '../fold-node/index.js';
 
-export type NavNode<Id extends SerializableKey, Value> = {
+export type NavNode<Id, Value> = {
   /**
    * Projected direct children, including fold summaries.
    *
@@ -17,17 +17,17 @@ export type NavNode<Id extends SerializableKey, Value> = {
   entries: NavEntry<Id, Value>[];
 };
 
-export type NavEntry<Id extends SerializableKey, Value> =
+export type NavEntry<Id, Value> =
   | NavLeaf<Id, Value>
   | NavBranch<Id, Value>
   | NavFold<Id, Value>;
 
-export type NavLeaf<Id extends SerializableKey, Value> = {
+export type NavLeaf<Id, Value> = {
   readonly id: Id;
   readonly value: Value;
 };
 
-export type NavBranch<Id extends SerializableKey, Value> = {
+export type NavBranch<Id, Value> = {
   readonly id: Id;
   readonly value: Value;
 
@@ -37,7 +37,7 @@ export type NavBranch<Id extends SerializableKey, Value> = {
   children: NavNode<Id, Value> | null;
 };
 
-export type NavFold<Id extends SerializableKey, Value> = {
+export type NavFold<Id, Value> = {
   /**
    * Folded entries that are present in the loaded TreeNode.
    *
@@ -53,7 +53,7 @@ export type NavFold<Id extends SerializableKey, Value> = {
  * @typeParam Id - The type identifying a node among its direct siblings.
  * @typeParam Value - Application-owned data stored in each source TreeNode.
  */
-export type NavMethods<Id extends SerializableKey, Value> = {
+export type NavMethods<Id, Value> = {
   /**
    * Tests whether a navigation entry represents a branch.
    *

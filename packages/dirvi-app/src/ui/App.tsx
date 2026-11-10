@@ -16,7 +16,6 @@ import type {
   IntentToEffect,
   NavBranch,
   Reducer,
-  SerializableKey,
   State,
   Feedback,
   UserInput,
@@ -27,7 +26,7 @@ import { useView } from './hooks/useView.js';
 import type { AppScreenRenderer } from './app-screen-renderer.js';
 import { ExCommand } from '../domain/ex-command.js';
 
-type AppProps<Id extends SerializableKey, Value, ViewKey = string> = {
+type AppProps<Id, Value, ViewKey = string> = {
   screenRenderer: AppScreenRenderer;
   shellApi: ShellApi;
   appMethods: AppMethods<Id, Value, ViewKey>;
@@ -37,12 +36,10 @@ type AppProps<Id extends SerializableKey, Value, ViewKey = string> = {
   reducer: Reducer<Id, Value>;
   intentToEffect: IntentToEffect<Id, Value>;
   effectToAction: EffectToAction<Id, Value>;
-  stdout?: (message: string) => void;
-  clipboard?: (value: string) => void;
   onError?: (error: Error) => void;
 };
 
-export function App<Id extends SerializableKey, Value, ViewKey = string>({
+export function App<Id, Value, ViewKey = string>({
   screenRenderer,
   shellApi,
   appMethods,
@@ -52,8 +49,6 @@ export function App<Id extends SerializableKey, Value, ViewKey = string>({
   reducer,
   intentToEffect,
   effectToAction,
-  stdout,
-  clipboard,
   onError,
 }: AppProps<Id, Value, ViewKey>) {
   const ScreenRenderer = screenRenderer;

@@ -2,24 +2,23 @@ import type {
   XmlDocument,
   XmlDocumentChild,
   XmlElementChild,
-  XmlNodePath,
 } from '../domain/xml-doc.js';
+import { XmlId } from '../domain/xml-tree.js';
+
+export type XmlDomEntry<Value> = {
+  id: XmlId;
+  value: Value;
+};
 
 export type XmlDom = {
-  /**
-   * Loads the document and its direct children. Element descendants are not
-   * loaded: each direct child element has `children` undefined.
-   */
-  getDocument: () => XmlDocument;
+  /** Returns the document and its ID. */
+  getDocument: () => XmlDomEntry<XmlDocument>;
 
   /**
-   * Loads the direct children of the document or an element.
-   * Child elements do not have their own children loaded.
-   *
-   * An empty path addresses the document. Each index selects a child in
-   * document order.
+   * Loads direct children in document order.
+   * Omitting the ID addresses the document.
    */
   getChildren: (
-    path: XmlNodePath,
-  ) => readonly (XmlDocumentChild | XmlElementChild)[];
+    id?: XmlId,
+  ) => readonly XmlDomEntry<XmlDocumentChild | XmlElementChild>[];
 };

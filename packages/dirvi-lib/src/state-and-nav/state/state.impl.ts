@@ -1,4 +1,4 @@
-import type { SerializableKey, TreeNode, TreeMethods } from '../tree/index.js';
+import type { TreeNode, TreeMethods } from '../tree/index.js';
 import type { Folds, FoldMethods } from '../fold-node/index.js';
 import type { Cursor, CursorMethods } from '../cursor.js';
 import type { StateMethods, State } from './state.types.js';
@@ -19,21 +19,19 @@ import type { StateMethods, State } from './state.types.js';
  * @typeParam Id - Tree-node sibling ID type.
  * @typeParam Value - Application-owned value stored in every tree node.
  */
-type StateData<Id extends SerializableKey, Value> = Readonly<{
+type StateData<Id, Value> = Readonly<{
   root: TreeNode<Id, Value>;
   folds: Folds<Id>;
   cursor: Cursor<Id>;
 }>;
 
-function getStateData<Id extends SerializableKey, Value>(
+function getStateData<Id, Value>(
   state: State<Id, Value>,
 ): StateData<Id, Value> {
   return state as unknown as StateData<Id, Value>;
 }
 
-function createState<Id extends SerializableKey, Value>(
-  data: StateData<Id, Value>,
-): State<Id, Value> {
+function createState<Id, Value>(data: StateData<Id, Value>): State<Id, Value> {
   return data as unknown as State<Id, Value>;
 }
 
@@ -41,14 +39,14 @@ function createState<Id extends SerializableKey, Value>(
 // StateApi Init
 // =============================================================================
 
-type ReloadResult<Id extends SerializableKey, Value> = Readonly<{
+type ReloadResult<Id, Value> = Readonly<{
   root: TreeNode<Id, Value>;
 }>;
 
 /**
  * Creates operations for navigating and resynchronizing tree-surfer state.
  */
-export function createStateApi<Id extends SerializableKey, Value>(
+export function createStateApi<Id, Value>(
   treeNodeApi: TreeMethods<Id, Value>,
   foldsApi: FoldMethods<Id>,
   cursorApi: CursorMethods<Id>,

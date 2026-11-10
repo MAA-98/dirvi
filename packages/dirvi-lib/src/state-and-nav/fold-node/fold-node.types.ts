@@ -1,4 +1,3 @@
-import type { SerializableKey } from '../tree/index.js';
 import type { FoldSlotModel, FoldsModel } from './fold-node.model.js';
 
 declare const foldsBrand: unique symbol;
@@ -39,13 +38,13 @@ export type FoldInfo = Readonly<{
  * Every contained fold tree uses the same ID paths as the source TreeNode
  * tree. Slot zero always contains a fold tree.
  */
-export type Folds<Id extends SerializableKey> = {
+export type Folds<Id> = {
   readonly [foldsBrand]: {
     readonly id: Id;
   };
 };
 
-export type FoldMethods<Id extends SerializableKey> = Readonly<{
+export type FoldMethods<Id> = Readonly<{
   /**
    * Creates Folds with its required primary fold tree in slot zero.
    *

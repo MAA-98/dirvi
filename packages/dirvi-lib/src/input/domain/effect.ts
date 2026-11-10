@@ -1,5 +1,5 @@
 import type { InputModeState } from './input-mode-state.js';
-import type { SerializableKey, TreeNode } from '../../state-and-nav/index.js';
+import type { TreeNode } from '../../state-and-nav/index.js';
 
 /**
  * An effect is some execution to be done in `App`, that could affect the shell
@@ -10,7 +10,7 @@ import type { SerializableKey, TreeNode } from '../../state-and-nav/index.js';
  * @typeParam Id - The sibling-unique tree-node ID type.
  * @typeParam Value - Application-owned data stored in each tree node.
  */
-export type Effect<Id extends SerializableKey, Value> =
+export type Effect<Id, Value> =
   | Readonly<{
       effectType: 'quit';
       exitMessage: string;
@@ -79,7 +79,7 @@ export type FoldTreeReference =
  * @typeParam Id - The sibling-unique tree-node ID type.
  * @typeParam Value - Application-owned data stored in each tree node.
  */
-export type EffectAction<Id extends SerializableKey, Value> =
+export type EffectAction<Id, Value> =
   | Readonly<{
       effectActionType: 'nextEntry';
     }>

@@ -1,4 +1,4 @@
-import type { SerializableKey, TreeNode, TreeMethods } from '../tree/index.js';
+import type { TreeNode, TreeMethods } from '../tree/index.js';
 import type { Folds, FoldMethods } from '../fold-node/index.js';
 import type { CursorMethods } from '../cursor.js';
 import type {
@@ -16,7 +16,7 @@ import { createNavTraversalMethods } from './nav.traversal.js';
  * Source sibling order is preserved. Each maximal contiguous run of hidden
  * direct children becomes one inline fold marker.
  */
-export function createOrderedNavMethods<Id extends SerializableKey, Value>(
+export function createOrderedNavMethods<Id, Value>(
   treeMethods: TreeMethods<Id, Value>,
   foldMethods: FoldMethods<Id>,
   cursorMethods: CursorMethods<Id>,
@@ -126,7 +126,7 @@ export function createOrderedNavMethods<Id extends SerializableKey, Value>(
   };
 }
 
-type NavLeafOrBranch<Id extends SerializableKey, Value> = Exclude<
+type NavLeafOrBranch<Id, Value> = Exclude<
   NavEntry<Id, Value>,
   NavFold<Id, Value>
 >;
