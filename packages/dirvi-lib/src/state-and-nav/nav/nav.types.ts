@@ -167,4 +167,11 @@ export type NavMethods<Id, Value> = {
     navigation: NavNode<Id, Value>,
     parentPath?: readonly Id[],
   ): Id[][];
+
+  /**
+   * Counts direct folded entries represented by a parent-row summary.
+   *
+   * Returns undefined for ordered navigation, where folds are inline.
+   */
+  foldedCountIfUnordered(navigation: NavBranch<Id, Value>): number | undefined;
 };

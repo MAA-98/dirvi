@@ -25,7 +25,7 @@ export type ViewRow =
     })
   | (ViewRowBase & {
       type: 'branch';
-      foldedCount: number;
+      foldedCount?: number;
     })
   | (ViewRowBase & {
       type: 'fold';
@@ -71,9 +71,7 @@ export const View = {
       null,
       cursorMethods.equal(cursor, rootCursor),
       navMethods,
-      cursorMethods,
       presentNode,
-      allFoldCursors,
     );
 
     if (rootNode.children === null) {
@@ -203,15 +201,7 @@ function viewRowsAtNode<Id, Value>(
     const isCursor = cursorMethods.equal(cursor, entryCursor);
 
     rows.push(
-      viewRowForEntry(
-        entry,
-        parentPath,
-        isCursor,
-        navMethods,
-        cursorMethods,
-        presentNode,
-        foldCursors,
-      ),
+      viewRowForEntry(entry, parentPath, isCursor, navMethods, presentNode),
     );
 
     // Case where there's no branches
@@ -236,39 +226,29 @@ function viewRowsAtNode<Id, Value>(
 }
 
 /**
- * Creates one row for a node. For branches, summarizes direct child folds
- * that do not have their own inline rows.
+ * Creates one row for a node. For branches, summarizes direct child folds that
+ * do not have their own inline rows.
  * @param entry
  * @param parentPath
  * @param cursor
  * @param navMethods
- * @param cursorMethods
  * @param presentNode
- * @param foldCursors
  */
 function viewRowForEntry<Id, Value>(
   entry: Exclude<NavEntry<Id, Value>, NavFold<Id, Value>>,
   parentPath: Id[] | null,
   cursor: boolean,
   navMethods: NavMethods<Id, Value>,
-  cursorMethods: CursorMethods<Id>,
   presentNode: PresentNode<Id, Value>,
-  foldCursors: FoldCursor<Id>[],
 ): ViewRow {
   const indent = parentPath ? parentPath.length + 1 : 0;
   const selected = false;
 
   if (navMethods.entryIsBranch(entry)) {
-    const { content, highlight } = presentNode(entry.id, entry.value, true);
-    const entryPath = parentPath === null ? [] : [...parentPath, entry.id];
-
     // For unordered trees: count folded entries to display, by assuming the
     // `NavFold` is the first in the `NavNode` entries.
-    const firstEntry = entry.children?.entries[0];
-    const foldedCount =
-      firstEntry !== undefined && navMethods.entryIsFold(firstEntry)
-        ? firstEntry.folded.length
-        : 0;
+    const foldedCount = navMethods.foldedCountIfUnordered(entry) ?? 0;
+    const { content, highlight } = presentNode(entry.id, entry.value, true);
 
     return {
       indent,
@@ -277,7 +257,7 @@ function viewRowForEntry<Id, Value>(
       content,
       highlight,
       type: 'branch',
-      foldedCount,
+      ...(foldedCount > 0 ? { foldedCount } : {}),
     };
   }
 

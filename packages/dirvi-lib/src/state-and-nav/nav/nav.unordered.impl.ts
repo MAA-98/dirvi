@@ -117,9 +117,21 @@ export function createUnorderedNavMethods<Id, Value>(
     });
   }
 
+  const traversalMethods = createNavTraversalMethods<Id, Value>(
+    cursorMethods,
+    false,
+  );
+
   return {
-    ...createNavTraversalMethods<Id, Value>(cursorMethods, false),
+    ...traversalMethods,
     from: createRootNavBranch,
+    foldedCountIfUnordered: (branch) => {
+      const firstEntry = branch.children?.entries[0];
+      return firstEntry !== undefined &&
+        traversalMethods.entryIsFold(firstEntry)
+        ? firstEntry.folded.length
+        : 0;
+    },
   };
 }
 

@@ -88,7 +88,7 @@ export function ViewRowComponent({ row, config }: ViewRowComponentProps) {
 
           <Text color={branchColor}>{row.content}</Text>
 
-          {row.foldedCount > 0 && (
+          {row.foldedCount !== undefined && row.foldedCount > 0 && (
             <Text color={foldedCountColor} dimColor>
               {` … ${row.foldedCount}`}
             </Text>

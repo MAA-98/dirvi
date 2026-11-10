@@ -17,7 +17,7 @@ import type {
 export function createNavTraversalMethods<Id, Value>(
   cursorMethods: CursorMethods<Id>,
   navigateFolds: boolean,
-): Omit<NavMethods<Id, Value>, 'from'> {
+): Omit<NavMethods<Id, Value>, 'from' | 'foldedCountIfUnordered'> {
   function entryIsBranch(
     entry: NavEntry<Id, Value>,
   ): entry is NavBranch<Id, Value> {

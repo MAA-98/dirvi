@@ -123,6 +123,7 @@ export function createOrderedNavMethods<Id, Value>(
   return {
     ...createNavTraversalMethods<Id, Value>(cursorMethods, true),
     from: createRootNavBranch,
+    foldedCountIfUnordered: () => undefined,
   };
 }
 
