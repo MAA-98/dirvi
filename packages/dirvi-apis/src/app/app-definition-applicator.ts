@@ -16,8 +16,6 @@ export type AppDefinitionConsumer<Result> = <Id, Value>(
   appDefinition: AppDefinition<Id, Value>,
 ) => Result;
 
-export type AppPlugin = {
-  readonly createAppDefinitionApplicator: (
-    input: string | undefined,
-  ) => AppDefinitionApplicator;
-};
+export type CreateAppDefinitionApplicator = (
+  input: string | undefined,
+) => AppDefinitionApplicator;

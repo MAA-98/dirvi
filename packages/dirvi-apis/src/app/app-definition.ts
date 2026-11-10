@@ -15,7 +15,7 @@ export type AppRoot<Id, Value> = Readonly<{
 /**
  * A direct child returned by an application.
  *
- * Branches start unloaded. Dirvi loads their children separately when needed.
+ * Branches start unloaded. Dirvi loads their children when needed.
  * Child IDs must be unique among siblings.
  */
 export type AppChild<Id, Value> = Readonly<{
