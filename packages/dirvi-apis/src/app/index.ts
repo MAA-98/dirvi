@@ -7,4 +7,9 @@ export type {
   AppDefinitionConsumer,
   CreateAppDefinitionApplicator,
 } from './app-definition-applicator.js';
-export type { PresentNode } from './present-node.js';
+export type {
+  HighlightToken,
+  HighlightSpan,
+  NodeKind,
+  NodePresenter,
+} from './node-presenter.js';

@@ -1,6 +1,6 @@
 import { basename, join } from 'node:path';
 
-import type { CreateAppDefinitionApplicator } from 'dirvi-apis';
+import type { CreateAppDefinitionApplicator, NodeKind } from 'dirvi-apis';
 
 import type { PosixValue, PosixId } from './domain/posix-tree.js';
 import { posixFilenameSchema, posixValueSchema } from './domain/posix-tree.js';
@@ -29,28 +29,27 @@ export const posixApp: CreateAppDefinitionApplicator = (input) => {
       id: rootId,
       value: { kind: 'directory' as const },
     }),
-    presentNode: (id: PosixId, _value: PosixValue, isBranch: boolean) => {
-      // TODO: NerdFonts and semantic highlighting
-      return {
-        content: id,
-        highlight: isBranch ? 'directory' : 'leaf',
-      };
+    presentNode: (id: PosixId, value: PosixValue, nodeKind: NodeKind) => {
+      if (value.kind === 'file' && id.endsWith('.ts')) {
+        return [
+          {
+            content: '\ue628 ',
+            highlight: 'icon.typescript',
+          },
+          {
+            content: id.slice(0, -3),
+            highlight: 'file.name',
+          },
+        ];
+      }
+      return [
+        {
+          content: id,
+          highlight: nodeKind,
+        },
+      ];
     },
     subscribeToResync: createFsResyncSubscription(join(unixAbsPath)),
-    createNavNodeApiOptions: {
-      compareSiblings: (
-        left: Readonly<{
-          id: PosixId;
-          value: PosixValue;
-        }>,
-        right: Readonly<{
-          id: PosixId;
-          value: PosixValue;
-        }>,
-      ) => {
-        return left.id.localeCompare(right.id);
-      },
-    },
   };
 
   return (appDefinitionConsumer) => {

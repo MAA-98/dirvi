@@ -1,5 +1,5 @@
 import type { ZodType } from 'zod';
-import type { PresentNode } from './present-node.js';
+import type { NodePresenter } from './node-presenter.js';
 
 /**
  * Data used by Dirvi to construct the application's root.
@@ -71,7 +71,7 @@ export type AppDefinition<Id, Value> = Readonly<{
    * Must be synchronous and side-effect-free. The host owns indentation,
    * cursor styling, selection styling, and fold decorations.
    */
-  readonly presentNode: PresentNode<Id, Value>;
+  readonly presentNode: NodePresenter<Id, Value>;
 
   /**
    * Listener for when to reload to add or remove new children in loaded

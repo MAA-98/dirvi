@@ -5,6 +5,7 @@ import type {
   AppChild,
   AppDefinition,
   CreateAppDefinitionApplicator,
+  NodeKind,
 } from 'dirvi-apis';
 
 import type { XmlId, XmlNodeValue } from './domain/xml-tree.js';
@@ -64,10 +65,12 @@ export const xmlApp: CreateAppDefinitionApplicator = (input) => {
       return dom.getDocument();
     },
 
-    presentNode: (_id: XmlId, value: XmlNodeValue, isBranch: boolean) => ({
-      content: value.kind,
-      highlight: isBranch ? 'branch' : 'leaf',
-    }),
+    presentNode: (_id: XmlId, value: XmlNodeValue, nodeKind: NodeKind) => [
+      {
+        content: value.kind,
+        highlight: nodeKind,
+      },
+    ],
 
     subscribeToResync: createXmlFileResyncSubscription(xmlAbsolutePath),
   } satisfies AppDefinition<XmlId, XmlNodeValue>;

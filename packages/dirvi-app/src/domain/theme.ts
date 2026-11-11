@@ -1,11 +1,11 @@
 import { z } from 'zod';
 import type {
-  BackgroundHighlightConfig,
+  BgHlConfig,
   BasicColorName,
-  ColorConfig,
-  ForegroundBackgroundHighlightConfig,
-  ForegroundHighlightConfig,
-  OptionalForegroundHighlightConfig,
+  LogicalColor,
+  FgAndBgHlConfig,
+  FgHlConfig,
+  OptionalFgHlConfig,
   Theme,
 } from 'dirvi-apis';
 
@@ -60,7 +60,7 @@ export const ColorConfigSchema = z
     {
       message: 'Expected at least one terminal color profile',
     },
-  ) satisfies z.ZodType<ColorConfig>;
+  ) satisfies z.ZodType<LogicalColor>;
 
 // =============================================================================
 // Highlights: Schemas
@@ -69,74 +69,74 @@ export const ColorConfigSchema = z
 
 export const ForegroundHighlightConfigSchema = z.object({
   fg: ColorConfigSchema,
-}) satisfies z.ZodType<ForegroundHighlightConfig>;
+}) satisfies z.ZodType<FgHlConfig>;
 
 export const OptionalForegroundHighlightConfigSchema = z.object({
   fg: ColorConfigSchema.optional(),
-}) satisfies z.ZodType<OptionalForegroundHighlightConfig>;
+}) satisfies z.ZodType<OptionalFgHlConfig>;
 
 export const BackgroundHighlightConfigSchema = z.object({
   bg: ColorConfigSchema,
-}) satisfies z.ZodType<BackgroundHighlightConfig>;
+}) satisfies z.ZodType<BgHlConfig>;
 
 export const ForegroundBackgroundHighlightConfigSchema = z.object({
   fg: ColorConfigSchema,
   bg: ColorConfigSchema,
-}) satisfies z.ZodType<ForegroundBackgroundHighlightConfig>;
+}) satisfies z.ZodType<FgAndBgHlConfig>;
 
 // =============================================================================
 // Theme defaults
 // =============================================================================
 
-const black: ColorConfig = {
+const black: LogicalColor = {
   hex: '#28282a',
   ansi256: 235,
   basic: 'black',
 };
 
-const lightGray: ColorConfig = {
+const lightGray: LogicalColor = {
   hex: '#eaeaec',
   ansi256: 254,
   basic: 'gray',
 };
 
-const leaf: ColorConfig = {
+const leaf: LogicalColor = {
   hex: '#e5e5e5',
   ansi256: 254,
   basic: 'white',
 };
 
-const branch: ColorConfig = {
+const branch: LogicalColor = {
   hex: '#2472c8',
   ansi256: 26,
   basic: 'blue',
 };
 
-const folded: ColorConfig = {
+const folded: LogicalColor = {
   hex: '#808080',
   ansi256: 245,
   basic: 'gray',
 };
 
-const indentGuide: ColorConfig = {
+const indentGuide: LogicalColor = {
   hex: '#808080',
   ansi256: 245,
   basic: 'gray',
 };
 
-const cursorLine: ColorConfig = {
+const cursorLine: LogicalColor = {
   hex: '#3a3a3c',
   ansi256: 237,
   basic: 'gray',
 };
 
-const success: ColorConfig = {
+const success: LogicalColor = {
   hex: '#238c4b',
   ansi256: 28,
   basic: 'green',
 };
 
-const error: ColorConfig = {
+const error: LogicalColor = {
   hex: '#be2d2d',
   ansi256: 160,
   basic: 'red',

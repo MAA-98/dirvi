@@ -1,4 +1,4 @@
-import type { HighlightToken, PresentNode } from 'dirvi-apis';
+import type { NodePresenter } from 'dirvi-apis';
 
 import type {
   Cursor,
@@ -10,13 +10,13 @@ import type {
   CursorMethods,
   FoldCursor,
 } from 'dirvi-lib';
+import type { HighlightSpan } from 'dirvi-apis';
 
 type ViewRowBase = {
   indent: number;
-  content: string;
   cursor: boolean;
   selected: boolean;
-  highlight: HighlightToken;
+  spans: readonly HighlightSpan[];
 };
 
 export type ViewRow =
@@ -50,7 +50,7 @@ export const View = {
     navMethods: NavMethods<Id, Value>,
     cursor: Cursor<Id>,
     cursorMethods: CursorMethods<Id>,
-    presentNode: PresentNode<Id, Value>,
+    presentNode: NodePresenter<Id, Value>,
   ): ViewRow[] {
     const rootCursor: Cursor<Id> = { path: [] };
 
@@ -99,7 +99,7 @@ export const View = {
     cursorMethods: CursorMethods<Id>,
     viewportHeight: number,
     viewportStart: number,
-    presentNode: PresentNode<Id, Value>,
+    presentNode: NodePresenter<Id, Value>,
   ): View {
     const rows = View.createRows(
       rootNode,
@@ -146,47 +146,50 @@ function viewRowsAtNode<Id, Value>(
   navMethods: NavMethods<Id, Value>,
   cursor: Cursor<Id>,
   cursorMethods: CursorMethods<Id>,
-  presentNode: PresentNode<Id, Value>,
+  presentNode: NodePresenter<Id, Value>,
   foldCursors: FoldCursor<Id>[],
 ): ViewRow[] {
   const rows: ViewRow[] = [];
 
   for (const entry of node.entries) {
     if (navMethods.entryIsFold(entry)) {
-      const firstEntry = entry.folded[0];
+      const firstFoldedNavEntry = entry.folded[0];
 
       // Match navigation's guard for empty or richer future fold contents.
-      if (firstEntry === undefined || navMethods.entryIsFold(firstEntry)) {
+      if (
+        firstFoldedNavEntry === undefined ||
+        navMethods.entryIsFold(firstFoldedNavEntry)
+      ) {
         continue;
       }
 
-      const id = [...parentPath, firstEntry.id];
-
       // Unordered summaries belong to the parent, not separate rows.
       if (
-        !isInlineFold(foldCursors, parentPath, firstEntry.id, cursorMethods)
+        !isInlineFold(
+          foldCursors,
+          parentPath,
+          firstFoldedNavEntry.id,
+          cursorMethods,
+        )
       ) {
         continue;
       }
 
       const entryCursor: Cursor<Id> = {
         parentPath: [...parentPath],
-        firstId: firstEntry.id,
+        firstId: firstFoldedNavEntry.id,
       };
-
-      // Reuse the first hidden entry's highlight until folds have a presenter.
-      const { highlight } = presentNode(
-        firstEntry.id,
-        firstEntry.value,
-        navMethods.entryIsBranch(firstEntry),
-      );
 
       rows.push({
         indent: parentPath.length + 1,
-        content: `… ${entry.folded.length} folded`,
         cursor: cursorMethods.equal(cursor, entryCursor),
         selected: false,
-        highlight,
+        spans: [
+          {
+            content: `… ${entry.folded.length} folded`,
+            highlight: 'fold-count',
+          },
+        ],
         type: 'fold',
         foldedCount: entry.folded.length,
       });
@@ -239,7 +242,7 @@ function viewRowForEntry<Id, Value>(
   parentPath: Id[] | null,
   cursor: boolean,
   navMethods: NavMethods<Id, Value>,
-  presentNode: PresentNode<Id, Value>,
+  presentNode: NodePresenter<Id, Value>,
 ): ViewRow {
   const indent = parentPath ? parentPath.length + 1 : 0;
   const selected = false;
@@ -248,26 +251,28 @@ function viewRowForEntry<Id, Value>(
     // For unordered trees: count folded entries to display, by assuming the
     // `NavFold` is the first in the `NavNode` entries.
     const foldedCount = navMethods.foldedCountIfUnordered(entry) ?? 0;
-    const { content, highlight } = presentNode(entry.id, entry.value, true);
+    const spans = presentNode(
+      entry.id,
+      entry.value,
+      entry.children ? 'loaded-branch' : 'unloaded-branch',
+    );
 
     return {
       indent,
       selected,
       cursor,
-      content,
-      highlight,
+      spans,
       type: 'branch',
       ...(foldedCount > 0 ? { foldedCount } : {}),
     };
   }
 
-  const { content, highlight } = presentNode(entry.id, entry.value, false);
+  const spans = presentNode(entry.id, entry.value, 'leaf');
   return {
     indent,
     selected,
     cursor,
-    content,
-    highlight,
+    spans,
     type: 'leaf',
   };
 }

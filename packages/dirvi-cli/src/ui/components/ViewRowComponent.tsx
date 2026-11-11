@@ -3,10 +3,12 @@ import { Box, Text } from 'ink';
 import type { Config } from 'dirvi-apis';
 import type { ViewRow } from '@mak-98/dirvi-app';
 import { colorConfigToInkColor } from '@mak-98/dirvi-app';
+import { HighlightStyle } from 'dirvi-apis';
 
 type ViewRowComponentProps = {
   row: ViewRow;
   config: Config;
+  resolveHighlight?: (token: string) => HighlightStyle | undefined;
 };
 
 function indentationPrefix(
@@ -26,7 +28,11 @@ function indentationPrefix(
   return `${firstIndent}${remainingIndentation.repeat(indent - 1)}`;
 }
 
-export function ViewRowComponent({ row, config }: ViewRowComponentProps) {
+export function ViewRowComponent({
+  row,
+  config,
+  resolveHighlight,
+}: ViewRowComponentProps) {
   const leafColor = colorConfigToInkColor(config.theme.tree.leaf.fg);
   const branchColor = colorConfigToInkColor(config.theme.tree.branch.fg);
   const foldedCountColor = colorConfigToInkColor(config.theme.tree.folded.fg);
@@ -49,6 +55,47 @@ export function ViewRowComponent({ row, config }: ViewRowComponentProps) {
     indentationGuideColor !== undefined,
   );
 
+  function renderSpans(
+    fallbackColor: ReturnType<typeof colorConfigToInkColor>,
+    dimFallback = false,
+  ) {
+    return (
+      <Text>
+        {row.spans.map((span, index) => {
+          const style = resolveHighlight?.(span.highlight);
+
+          const color =
+            style === undefined
+              ? fallbackColor
+              : style.fg === undefined
+                ? undefined
+                : colorConfigToInkColor(style.fg);
+
+          const backgroundColor =
+            row.cursor || style?.bg === undefined
+              ? undefined
+              : colorConfigToInkColor(style.bg);
+
+          return (
+            <Text
+              key={index}
+              {...(color === undefined ? {} : { color })}
+              {...(backgroundColor === undefined ? {} : { backgroundColor })}
+              {...(style?.bold === undefined ? {} : { bold: style.bold })}
+              {...(style?.italic === undefined ? {} : { italic: style.italic })}
+              {...(style?.underline === undefined
+                ? {}
+                : { underline: style.underline })}
+              dimColor={style === undefined && dimFallback}
+            >
+              {span.content}
+            </Text>
+          );
+        })}
+      </Text>
+    );
+  }
+
   switch (row.type) {
     case 'leaf':
       return (
@@ -66,7 +113,7 @@ export function ViewRowComponent({ row, config }: ViewRowComponentProps) {
             </Text>
           )}
 
-          <Text color={leafColor}>{row.content}</Text>
+          {renderSpans(leafColor)}
         </Box>
       );
 
@@ -86,7 +133,7 @@ export function ViewRowComponent({ row, config }: ViewRowComponentProps) {
             </Text>
           )}
 
-          <Text color={branchColor}>{row.content}</Text>
+          {renderSpans(branchColor)}
 
           {row.foldedCount !== undefined && row.foldedCount > 0 && (
             <Text color={foldedCountColor} dimColor>
@@ -112,9 +159,7 @@ export function ViewRowComponent({ row, config }: ViewRowComponentProps) {
             </Text>
           )}
 
-          <Text color={foldedCountColor} dimColor>
-            {row.content}
-          </Text>
+          {renderSpans(foldedCountColor, true)}
         </Box>
       );
   }

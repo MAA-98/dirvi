@@ -7,7 +7,7 @@ import type {
   State,
   StateMethods,
 } from 'dirvi-lib';
-import type { PresentNode } from 'dirvi-apis';
+import type { NodePresenter } from 'dirvi-apis';
 import { View, type ViewRow } from '../view.js';
 
 const STATUS_BAR_HEIGHT = 1;
@@ -21,7 +21,7 @@ export function useView<Id, Value>(
   navNodeApi: NavMethods<Id, Value>,
   cursorMethods: CursorMethods<Id>,
   rowCount: number,
-  presentNode: PresentNode<Id, Value>,
+  presentNode: NodePresenter<Id, Value>,
 ): View {
   const viewportStartRef = useRef(0);
   const viewportHeight = Math.max(0, rowCount - STATUS_BAR_HEIGHT);

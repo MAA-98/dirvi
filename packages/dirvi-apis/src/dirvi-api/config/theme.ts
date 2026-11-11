@@ -29,46 +29,46 @@ export type BasicColorName =
  *
  * At least one profile must be provided; the runtime schema enforces this.
  */
-export type ColorConfig = {
+export type LogicalColor = {
   hex?: string | undefined;
   ansi256?: number | undefined;
   basic?: BasicColorName | undefined;
 };
 
-export type ForegroundHighlightConfig = {
-  fg: ColorConfig;
+export type FgHlConfig = {
+  fg: LogicalColor;
 };
 
-export type OptionalForegroundHighlightConfig = {
-  fg?: ColorConfig | undefined;
+export type OptionalFgHlConfig = {
+  fg?: LogicalColor | undefined;
 };
 
-export type BackgroundHighlightConfig = {
-  bg: ColorConfig;
+export type BgHlConfig = {
+  bg: LogicalColor;
 };
 
-export type ForegroundBackgroundHighlightConfig = {
-  fg: ColorConfig;
-  bg: ColorConfig;
+export type FgAndBgHlConfig = {
+  fg: LogicalColor;
+  bg: LogicalColor;
 };
 
 /** Resolved theme used to render Dirvi's interface. */
 export type Theme = {
   statusBar: {
-    command: ForegroundHighlightConfig;
-    normal: ForegroundHighlightConfig;
-    background: BackgroundHighlightConfig;
+    command: FgHlConfig;
+    normal: FgHlConfig;
+    background: BgHlConfig;
   };
   tree: {
-    leaf: ForegroundHighlightConfig;
-    branch: ForegroundHighlightConfig;
-    folded: ForegroundHighlightConfig;
-    cursorLine: BackgroundHighlightConfig;
-    indentGuide: OptionalForegroundHighlightConfig;
+    leaf: FgHlConfig;
+    branch: FgHlConfig;
+    folded: FgHlConfig;
+    cursorLine: BgHlConfig;
+    indentGuide: OptionalFgHlConfig;
   };
   feedbackBar: {
-    message: ForegroundBackgroundHighlightConfig;
-    success: ForegroundBackgroundHighlightConfig;
-    error: ForegroundBackgroundHighlightConfig;
+    message: FgAndBgHlConfig;
+    success: FgAndBgHlConfig;
+    error: FgAndBgHlConfig;
   };
 };

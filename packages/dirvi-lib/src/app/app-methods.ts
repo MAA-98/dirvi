@@ -1,6 +1,6 @@
 import type { NavMethods, StateMethods } from '../state-and-nav/index.js';
 import { TreeNode } from '../state-and-nav/index.js';
-import { PresentNode } from 'dirvi-apis';
+import { NodePresenter } from 'dirvi-apis';
 
 /**
  * Application-specific tree operations.
@@ -28,7 +28,7 @@ export type AppMethods<Id, Value, ViewKey = string> = Readonly<{
    */
   loadRoot: () => Promise<TreeNode<Id, Value>>;
 
-  presentNode: PresentNode<Id, Value>;
+  presentNode: NodePresenter<Id, Value>;
 
   /**
    * Subscribes to external data changes that require tree state to be loaded

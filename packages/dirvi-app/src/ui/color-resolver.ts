@@ -1,4 +1,4 @@
-import type { ColorConfig } from 'dirvi-apis';
+import type { LogicalColor } from 'dirvi-apis';
 
 type RgbColor = [number, number, number];
 
@@ -22,7 +22,7 @@ const ansi16Colors: readonly RgbColor[] = [
 ];
 
 export function colorConfigToInkColor(
-  colorConfig: ColorConfig,
+  colorConfig: LogicalColor,
   colorDepth: number = process.stderr.getColorDepth(),
 ): string {
   const { hex, ansi256, basic } = colorConfig;
