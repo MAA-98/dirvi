@@ -17,7 +17,7 @@ export function ViewRowsComponent({
   highlightResolver,
 }: ViewRowsComponentProps) {
   return (
-    <Box flexDirection="column" flexShrink={0}>
+    <Box flexDirection="column" flexShrink={0} width="100%">
       {view.rows.length === 0 ? (
         <Text dimColor>Empty.</Text>
       ) : (

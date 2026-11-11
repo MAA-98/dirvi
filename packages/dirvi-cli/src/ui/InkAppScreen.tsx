@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { Box, Text, useInput, useWindowSize } from 'ink';
+import { Box, useInput, useWindowSize } from 'ink';
 
 import type { Config, FeedbackType, HighlightResolver } from 'dirvi-apis';
 import type {

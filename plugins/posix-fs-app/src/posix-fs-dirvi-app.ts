@@ -30,15 +30,58 @@ export const posixApp: CreateAppDefinitionApplicator = (input) => {
       value: { kind: 'directory' as const },
     }),
     presentNode: (id: PosixId, value: PosixValue, nodeKind: NodeKind) => {
-      if (value.kind === 'file' && id.endsWith('.ts')) {
+      if (value.kind === 'file') {
+        const filenameHighlightToken = {
+          content: id,
+          highlight: 'file.name',
+        };
+
+        if (id.endsWith('.ts')) {
+          return [
+            {
+              content: '\ue8ca ',
+              highlight: 'icon.typescript',
+            },
+            filenameHighlightToken,
+          ];
+        }
+        if (id.endsWith('.tsx')) {
+          return [
+            {
+              content: '\ue7ba ',
+              highlight: 'icon.typescript',
+            },
+            filenameHighlightToken,
+          ];
+        }
+        if (id.endsWith('.js')) {
+          return [
+            {
+              content: '\ue781 ',
+              highlight: 'icon.javascript',
+            },
+            filenameHighlightToken,
+          ];
+        }
+        if (id.endsWith('.tsx')) {
+          return [
+            {
+              content: '\ue7ba ',
+              highlight: 'icon.javascript',
+            },
+            filenameHighlightToken,
+          ];
+        }
+      }
+      if (value.kind === 'directory') {
         return [
           {
-            content: '\ue628 ',
-            highlight: 'icon.typescript',
+            content: '\uf07b ',
+            highlight: 'icon.folder',
           },
           {
-            content: id.slice(0, -3),
-            highlight: 'file.name',
+            content: id + '/',
+            highlight: 'foldername',
           },
         ];
       }
