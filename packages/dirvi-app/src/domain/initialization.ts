@@ -1,4 +1,8 @@
-import { AppPackageReference, Config } from 'dirvi-apis';
+import type {
+  AppPackageReference,
+  Config,
+  HighlightResolver,
+} from 'dirvi-apis';
 
 import { ExCommand } from './ex-command.js';
 
@@ -27,4 +31,10 @@ export type Initialization = {
    * then command name.
    * */
   readonly exCommands: ReadonlyMap<string, ReadonlyMap<string, ExCommand>>;
+
+  /**
+   * App-specific highlight resolvers, keyed by app ID.
+   * Apps without an entry use the default rendering.
+   */
+  readonly highlightResolvers: ReadonlyMap<string, HighlightResolver>;
 };

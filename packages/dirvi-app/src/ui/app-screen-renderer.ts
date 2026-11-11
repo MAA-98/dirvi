@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react';
 
-import type { Config } from 'dirvi-apis';
+import type { Config, HighlightResolver } from 'dirvi-apis';
 import type {
   Feedback,
   FeedbackApi,
@@ -21,6 +21,7 @@ export type AppScreenProps = {
   readonly feedback: Feedback | undefined;
   readonly feedbackApi: FeedbackApi;
   readonly config: Config;
+  readonly highlightResolver: HighlightResolver;
   readonly inputState: InputModeState;
 
   readonly handleInput: (userInput: UserInput) => void;

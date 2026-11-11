@@ -1,14 +1,13 @@
 import { Box, Text } from 'ink';
 
-import type { Config } from 'dirvi-apis';
+import type { Config, HighlightResolver } from 'dirvi-apis';
 import type { ViewRow } from '@mak-98/dirvi-app';
 import { colorConfigToInkColor } from '@mak-98/dirvi-app';
-import { HighlightStyle } from 'dirvi-apis';
 
 type ViewRowComponentProps = {
   row: ViewRow;
   config: Config;
-  resolveHighlight?: (token: string) => HighlightStyle | undefined;
+  highlightResolver?: HighlightResolver;
 };
 
 function indentationPrefix(
@@ -28,10 +27,20 @@ function indentationPrefix(
   return `${firstIndent}${remainingIndentation.repeat(indent - 1)}`;
 }
 
+/**
+ * Draws the full width row.
+ *
+ * @param param0
+ * @param param0.row - the view row
+ * @param param0.config - the config
+ * @param param0.highlightResolver - the resolver from highlight tokens to
+ * logical color types.
+ * @constructor
+ */
 export function ViewRowComponent({
   row,
   config,
-  resolveHighlight,
+  highlightResolver,
 }: ViewRowComponentProps) {
   const leafColor = colorConfigToInkColor(config.theme.tree.leaf.fg);
   const branchColor = colorConfigToInkColor(config.theme.tree.branch.fg);
@@ -62,7 +71,7 @@ export function ViewRowComponent({
     return (
       <Text>
         {row.spans.map((span, index) => {
-          const style = resolveHighlight?.(span.highlight);
+          const style = highlightResolver?.(span.highlight);
 
           const color =
             style === undefined

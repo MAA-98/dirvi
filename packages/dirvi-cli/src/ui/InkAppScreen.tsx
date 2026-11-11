@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { Box, Text, useInput, useWindowSize } from 'ink';
 
-import type { Config, FeedbackType } from 'dirvi-apis';
+import type { Config, FeedbackType, HighlightResolver } from 'dirvi-apis';
 import type {
   Feedback,
   FeedbackApi,
@@ -9,9 +9,10 @@ import type {
   UserInput,
 } from 'dirvi-lib';
 import type { AppScreenRenderer } from '@mak-98/dirvi-app';
-import { View } from '@mak-98/dirvi-app';
+import type { View } from '@mak-98/dirvi-app';
+import { colorConfigToInkColor } from '@mak-98/dirvi-app';
 
-import { ViewRowComponent } from './components/ViewRowComponent.js';
+import { ViewRowsComponent } from './components/ViewRowsComponent.js';
 import { FeedbackBar } from './components/FeedbackBar.js';
 import { STATUS_BAR_HEIGHT, StatusBar } from './components/StatusBar.js';
 import { inkInputToUserInput } from '../infrastructure/ink-input-to-user-input.js';
@@ -22,6 +23,7 @@ export const InkAppScreen: AppScreenRenderer = ({
   feedback,
   feedbackApi,
   config,
+  highlightResolver,
   inputState,
   handleInput,
   onRowsChange,
@@ -30,6 +32,7 @@ export const InkAppScreen: AppScreenRenderer = ({
   feedback: Feedback | undefined;
   feedbackApi: FeedbackApi;
   config: Config;
+  highlightResolver: HighlightResolver;
   inputState: InputModeState;
   handleInput: (userInput: UserInput) => void;
   onRowsChange: (rows: number) => void;
@@ -52,9 +55,10 @@ export const InkAppScreen: AppScreenRenderer = ({
   // Report back row count
   // ===========================================================================
   const { columns: terminalColumns, rows: terminalRows } = useWindowSize();
+  const viewportHeight = Math.max(0, terminalRows - STATUS_BAR_HEIGHT);
   useEffect(() => {
-    onRowsChange(terminalRows);
-  }, [onRowsChange, terminalRows]);
+    onRowsChange(viewportHeight);
+  }, [onRowsChange, viewportHeight]);
 
   // ===========================================================================
   // Ink specific display hooks
@@ -70,28 +74,45 @@ export const InkAppScreen: AppScreenRenderer = ({
     return createFeedbackDisplay(
       feedbackApi.getMessage(feedback),
       terminalColumns,
-      Math.max(0, terminalRows - STATUS_BAR_HEIGHT),
+      viewportHeight,
     );
-  }, [feedback, terminalColumns, terminalRows]);
+  }, [feedback, terminalColumns, viewportHeight]);
 
   return (
     <Box flexDirection="column" height={terminalRows}>
-      <Box flexDirection="column" flexGrow={1} flexShrink={1}>
-        {view.rows.length === 0 ? (
-          <Text dimColor>Empty.</Text>
-        ) : (
-          view.rows.map((row) => (
-            // TODO Later: A key?
-            <ViewRowComponent row={row} config={config} />
-          ))
+      <Box
+        position="relative"
+        height={viewportHeight}
+        width="100%"
+        flexShrink={0}
+        overflow="hidden"
+      >
+        <ViewRowsComponent
+          view={view}
+          config={config}
+          highlightResolver={highlightResolver}
+        />
+
+        {feedbackDisplay.height > 0 && (
+          <Box
+            position="absolute"
+            top={viewportHeight - feedbackDisplay.height}
+            left={0}
+            width="100%"
+            height={feedbackDisplay.height}
+            backgroundColor={colorConfigToInkColor(
+              config.theme.feedbackBar[feedbackType].bg,
+            )}
+          >
+            <FeedbackBar
+              display={feedbackDisplay}
+              type={feedbackType}
+              config={config}
+            />
+          </Box>
         )}
       </Box>
 
-      <FeedbackBar
-        display={feedbackDisplay}
-        type={feedbackType}
-        config={config}
-      />
       <StatusBar inputState={inputState} config={config} />
     </Box>
   );

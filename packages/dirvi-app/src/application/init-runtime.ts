@@ -1,8 +1,12 @@
+import type {
+  PublicInitApi,
+  AppPackageReference,
+  HighlightResolver,
+} from 'dirvi-apis';
+
 import type { Initialization } from '../domain/initialization.js';
 import { ConfigSchema, defaultConfig, merge } from '../domain/config.js';
-import type { PublicInitApi } from 'dirvi-apis';
 import type { ExCommand } from '../domain/ex-command.js';
-import { AppPackageReference } from 'dirvi-apis';
 import {
   DuplicateAppRegistrationError,
   DuplicateExCommandRegistrationError,
@@ -58,6 +62,7 @@ export function createInitRuntime(): InitRuntime {
   let initialAppId: string | undefined;
   const registeredApps = new Map<string, AppPackageReference>();
   const exCommands = new Map<string, Map<string, ExCommand>>();
+  const highlightResolvers = new Map<string, HighlightResolver>();
   let finished = false;
 
   // === Error Helpers =========================================================
@@ -107,7 +112,8 @@ export function createInitRuntime(): InitRuntime {
           throw new InvalidInitializationValueError('App', 'must be an object');
         }
 
-        const { id: appId, packRef, ex } = app;
+        const { id: appId, packRef, ex, highlightResolver } = app;
+
         validateNonEmptyString(appId, 'App ID');
 
         if (registeredApps.has(appId)) {
@@ -121,6 +127,7 @@ export function createInitRuntime(): InitRuntime {
           throw new InvalidAppPackageReferenceError(cause);
         }
 
+        // TODO: Better Ex command parsing
         if (ex !== undefined && !Array.isArray(ex)) {
           throw new InvalidInitializationValueError(
             'Ex commands',
@@ -156,8 +163,21 @@ export function createInitRuntime(): InitRuntime {
           appExCommands.set(command, { name: command, execute });
         }
 
+        if (
+          highlightResolver !== undefined &&
+          typeof highlightResolver !== 'function'
+        ) {
+          throw new InvalidInitializationValueError(
+            'Highlight resolver',
+            'must be a function',
+          );
+        }
+
         registeredApps.set(appId, appReference);
         exCommands.set(appId, appExCommands);
+        if (highlightResolver !== undefined) {
+          highlightResolvers.set(appId, highlightResolver);
+        }
       },
 
       initial: (appId) => {
@@ -212,6 +232,7 @@ export function createInitRuntime(): InitRuntime {
       exCommands: new Map(
         [...exCommands].map(([appId, commands]) => [appId, new Map(commands)]),
       ),
+      highlightResolvers: new Map(highlightResolvers),
     };
   };
 

@@ -10,8 +10,6 @@ import type {
 import type { NodePresenter } from 'dirvi-apis';
 import { View, type ViewRow } from '../view.js';
 
-const STATUS_BAR_HEIGHT = 1;
-
 // Hooks that keeps Ref of the viewport's start, and returns View sliced to
 // only the rows that should be visible.
 export function useView<Id, Value>(
@@ -24,9 +22,8 @@ export function useView<Id, Value>(
   presentNode: NodePresenter<Id, Value>,
 ): View {
   const viewportStartRef = useRef(0);
-  const viewportHeight = Math.max(0, rowCount - STATUS_BAR_HEIGHT);
 
-  if (viewportHeight === 0) {
+  if (rowCount === 0) {
     return { rows: [] };
   }
 
@@ -40,7 +37,7 @@ export function useView<Id, Value>(
 
   viewportStartRef.current = viewportStart(
     rows,
-    viewportHeight,
+    rowCount,
     viewportStartRef.current,
   );
 
@@ -49,7 +46,7 @@ export function useView<Id, Value>(
     navNodeApi,
     stateApi.getCursor(state),
     cursorMethods,
-    viewportHeight,
+    rowCount,
     viewportStartRef.current,
     presentNode,
   );

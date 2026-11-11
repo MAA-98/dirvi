@@ -1,7 +1,10 @@
 import { AppPackageReference } from './app-pack-ref.js';
 import { ConfigPatch } from './config/config.js';
 import { DirviApi } from './dirvi-api.js';
-import { HighlightStyle } from './config/resolve-highlight.js';
+import {
+  HighlightStyle,
+  HighlightResolver,
+} from './config/highlight-resolver.js';
 
 /**
  * The public API exposed to `init.mjs` as the global `dirvi` object.
@@ -51,7 +54,7 @@ export type PublicInitApi = {
        * An empty style {} would mean “recognized, with no explicit styling,” while
        * undefined means “not resolved.”
        */
-      resolveHighlight?: (token: string) => HighlightStyle | undefined;
+      highlightResolver?: HighlightResolver;
     }) => void;
   };
 };

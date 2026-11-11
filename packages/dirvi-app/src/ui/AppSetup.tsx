@@ -11,12 +11,13 @@ import type { LoadingScreenRenderer } from './loading-screen-renderer.js';
 import type { AppScreenRenderer } from './app-screen-renderer.js';
 import { App } from './App.js';
 import type { Initialization } from '../domain/initialization.js';
-import type { ShellApi } from 'dirvi-apis';
+import type { HighlightResolver, ShellApi } from 'dirvi-apis';
 import type { ExCommand } from '../domain/ex-command.js';
 
 // TODO Later: configuration watched for changes
 
 const emptyExCommands: ReadonlyMap<string, ExCommand> = new Map();
+const emptyHighlightResolver: HighlightResolver = (string) => undefined;
 
 type AppSetupProps<Id, Value, ViewKey = string> = {
   appScreenRenderer: AppScreenRenderer;
@@ -105,6 +106,12 @@ export function AppSetup<Id, Value, ViewKey = string>({
     [initialization.exCommands, appId],
   );
 
+  const highlightResolver = useMemo(
+    () =>
+      initialization.highlightResolvers.get(appId) ?? emptyHighlightResolver,
+    [initialization.highlightResolvers, appId],
+  );
+
   const reducer = useMemo(
     () => createReducer(appMethods.stateMethods, appMethods.navMethods),
     [appMethods.stateMethods, appMethods.navMethods],
@@ -142,6 +149,7 @@ export function AppSetup<Id, Value, ViewKey = string>({
       shellApi={shellApi}
       appMethods={appMethods}
       exCommands={exCommands}
+      highlightResolver={highlightResolver}
       config={initialization.config}
       initialState={loadState.initialState}
       reducer={reducer}

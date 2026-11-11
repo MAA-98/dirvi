@@ -1,6 +1,6 @@
 {
   "name": "dirvi",
-  "version": "0.11.0-beta.19",
+  "version": "0.11.0-beta.20",
   "description": "A Vim-inspired terminal UI for browsing directories.",
   "private": true,
   "type": "module",
@@ -16,7 +16,7 @@
     "dev": "pnpm --filter @mak-98/dirvi-cli dev",
     "start": "pnpm --filter @mak-98/dirvi-cli start",
     "login": "pnpm login --registry https://registry.npmjs.org/",
-    "publish": "pnpm build && pnpm --filter dirvi-lib publish --access public && pnpm --filter dirvi-apis publish --access public && pnpm --filter dirvi-app publish --access public && pnpm --filter @mak-98/dirvi-cli publish --access public",
+    "publish-cli": "pnpm build && pnpm --filter dirvi-lib publish --access public && pnpm --filter dirvi-apis publish --access public && pnpm --filter dirvi-app publish --access public && pnpm --filter @mak-98/dirvi-cli publish --access public",
     "deps": "depcruise packages plugins",
     "deps:check": "depcruise --validate .dependency-cruiser.cjs packages plugins",
     "deps:svg": "depcruise --config .dependency-cruiser.cjs packages plugins --output-type dot | dot -T svg > dependency-graph.svg",

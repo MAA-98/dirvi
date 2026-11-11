@@ -7,7 +7,13 @@ import {
   useState,
 } from 'react';
 
-import { AppApi, Config, FeedbackType, ShellApi } from 'dirvi-apis';
+import {
+  AppApi,
+  Config,
+  FeedbackType,
+  HighlightResolver,
+  ShellApi,
+} from 'dirvi-apis';
 import type {
   AppMethods,
   Effect,
@@ -32,6 +38,7 @@ type AppProps<Id, Value, ViewKey = string> = {
   appMethods: AppMethods<Id, Value, ViewKey>;
   exCommands: ReadonlyMap<string, ExCommand>;
   config: Readonly<Config>;
+  highlightResolver: HighlightResolver;
   initialState: State<Id, Value>;
   reducer: Reducer<Id, Value>;
   intentToEffect: IntentToEffect<Id, Value>;
@@ -45,6 +52,7 @@ export function App<Id, Value, ViewKey = string>({
   appMethods,
   exCommands,
   config,
+  highlightResolver,
   initialState,
   reducer,
   intentToEffect,
@@ -407,6 +415,7 @@ export function App<Id, Value, ViewKey = string>({
       feedback={feedback}
       feedbackApi={feedbackApi}
       config={config}
+      highlightResolver={highlightResolver}
       inputState={inputState}
       handleInput={handleInput}
       onRowsChange={handleRowsChange}
