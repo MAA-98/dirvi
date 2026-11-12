@@ -35,10 +35,10 @@ export const app: CreateAppDefinitionApplicator = (
       if (value.kind === 'file') {
         const filenameHighlightToken = {
           content: id,
-          highlight: 'file.name',
+          highlight: 'content',
         };
-
-        if (id.endsWith('.ts')) {
+        
+        if (['.ts', '.mts', '.cts'].some((suffix) => id.endsWith(suffix))) {
           return [
             {
               content: '\ue8ca ',
@@ -47,6 +47,7 @@ export const app: CreateAppDefinitionApplicator = (
             filenameHighlightToken,
           ];
         }
+        
         if (id.endsWith('.tsx')) {
           return [
             {
@@ -56,15 +57,17 @@ export const app: CreateAppDefinitionApplicator = (
             filenameHighlightToken,
           ];
         }
-        if (id.endsWith('.js')) {
+        
+        if (['.js', '.mjs', '.cjs'].some((suffix) => id.endsWith(suffix))) {
           return [
             {
-              content: '\ue781 ',
+              content: '\udb80\udf1e ',
               highlight: 'icon.javascript',
             },
             filenameHighlightToken,
           ];
         }
+        
         if (id.endsWith('.tsx')) {
           return [
             {
@@ -74,6 +77,57 @@ export const app: CreateAppDefinitionApplicator = (
             filenameHighlightToken,
           ];
         }
+        
+        if (id.endsWith('.json')) {
+          return [
+            {
+              content: '\udb80\udd69 ',
+              highlight: 'icon.json',
+            },
+            filenameHighlightToken,
+          ];
+        }
+        
+        if (id.endsWith('.md')) {
+          return [
+            {
+              content: '\uf48a ',
+              highlight: 'content'
+            },
+            filenameHighlightToken
+          ];
+        }
+        
+        if (id.endsWith('.svg')) {
+          return [
+            {
+              content: '\udb81\udf21 ',
+              highlight: 'icon.svg'
+            },
+            filenameHighlightToken
+          ];
+        }
+        
+        if (id === '.DS_Store') {
+          return [
+            {
+              content: '\ue711 ',
+              highlight: 'content',
+            },
+            filenameHighlightToken,
+          ];
+        }
+        
+        if (id === '.gitignore') {
+          return [
+            {
+              content: '\udb80\udea2 ',
+              highlight: 'icon.git',
+            },
+            filenameHighlightToken,
+          ];
+        }
+        
         return [
           {
             content: '  ' + id,
@@ -82,15 +136,27 @@ export const app: CreateAppDefinitionApplicator = (
         ];
       }
       if (value.kind === 'directory') {
+        const foldernameHighlightToken = {
+          content: id + '/',
+          highlight: 'content',
+        };
+        
+        if (id === '.git') {
+          return [
+            {
+              content: '\udb80\udea2 ',
+              highlight: 'icon.git',
+            },
+            foldernameHighlightToken
+          ];
+        }
+        
         return [
           {
             content: '\uf07b ',
             highlight: 'icon.folder',
           },
-          {
-            content: id + '/',
-            highlight: 'foldername',
-          },
+          foldernameHighlightToken
         ];
       }
       return [
