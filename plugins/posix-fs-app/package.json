@@ -1,15 +1,19 @@
 {
   "name": "@mak-98/posix-fs-dirvi-app",
-  "version": "0.11.0-beta.22",
-  "description": "POSIX filesystem app for dirvi.",
+  "version": "0.11.0-beta.22.2",
+  "description": "Filesystem app for dirvi.",
   "license": "GPL-3.0-or-later",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+    "./app": {
+      "types": "./dist/app.d.ts",
+      "default": "./dist/app.js"
+    },
+    "./highlight": {
+      "types": "./dist/highlight.d.ts",
+      "default": "./dist/highlight.js"
     }
   },
   "files": [
@@ -25,11 +29,14 @@
     "publish": "pnpm --filter @mak-98/posix-fs-dirvi-app publish --access public --no-git-checks"
   },
   "dependencies": {
-    "dirvi-apis": "workspace:*",
     "zod": "^4.4.3",
     "env-paths": "^4.0.0"
   },
+  "peerDependencies": {
+    "dirvi-apis": "workspace:^"
+  },
   "devDependencies": {
+    "dirvi-apis": "workspace:*",
     "dirvi-lib": "workspace:*",
     "@types/node": "^22.0.0",
     "typescript": "^5.0.0"

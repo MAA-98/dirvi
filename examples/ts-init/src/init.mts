@@ -2,19 +2,17 @@ import type {} from 'dirvi-apis/dirvi';
 
 dirvi.app.register({
   id: 'xml',
-  packRef: {
-    source: 'npm',
-    packageName: '@mak-98/xml-dirvi-app',
-    version: '0.11.0-beta.13',
+  create: async (input) => {
+    const { xmlApp } = await import('@mak-98/xml-dirvi-app');
+    return xmlApp(input);
   },
 });
 
 dirvi.app.register({
   id: 'fs',
-  packRef: {
-    source: 'npm',
-    packageName: '@mak-98/posix-fs-dirvi-app',
-    version: '0.11.0-beta.13',
+  create: async (input) => {
+    const { posixApp } = await import('@mak-98/posix-fs-dirvi-app');
+    return posixApp(input);
   },
   ex: [
     {

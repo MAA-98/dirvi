@@ -13,7 +13,9 @@ import { getDirEntries } from './infrastructure/get-dir-entries.js';
  *
  * Input for this app is the absolute path to the directory to open on.
  */
-export const posixApp: CreateAppDefinitionApplicator = (input) => {
+export const app: CreateAppDefinitionApplicator = (
+  input,
+) => {
   const unixAbsPath = getUnixAbsPath(input ?? process.cwd());
   const rootId = posixFilenameSchema.parse(basename(unixAbsPath));
   function loadDirectoryEntries(path: readonly PosixId[]) {
