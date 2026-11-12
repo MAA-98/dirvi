@@ -1,7 +1,7 @@
 # dirvi
 
 TUI for navigating and editing [trees (the abstract data type)](https://en.wikipedia.org/wiki/Tree_(abstract_data_type)),
-with concrete implementations provided through a small API by plugins called "dirvi apps". 
+with concrete implementations provided through a small API by plugins called *dirvi apps*. 
 
 Provides a similar extensible editing environment to Vim/Neovim for trees, rather than text buffers.
 
