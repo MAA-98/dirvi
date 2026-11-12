@@ -1,7 +1,7 @@
 import type {
   PublicInitApi,
-  AppPackageReference,
   HighlightResolver,
+  AsyncCreateAppDefinitionApplicator,
 } from 'dirvi-apis';
 
 import type { Initialization } from '../domain/initialization.js';
@@ -12,12 +12,10 @@ import {
   DuplicateExCommandRegistrationError,
   InitializationAlreadyFinishedError,
   InitRuntimeInvariantError,
-  InvalidAppPackageReferenceError,
   InvalidExCommandHandlerError,
   InvalidInitializationConfigError,
   InvalidInitializationValueError,
 } from './init-runtime.error.js';
-import { AppPackageReferenceMethods } from './app-pack-ref.js';
 
 /**
  * A session for collecting and resolving initialization-script registrations.
@@ -60,7 +58,7 @@ export type InitRuntime = {
 export function createInitRuntime(): InitRuntime {
   let config = defaultConfig;
   let initialAppId: string | undefined;
-  const registeredApps = new Map<string, AppPackageReference>();
+  const registeredApps = new Map<string, AsyncCreateAppDefinitionApplicator>();
   const exCommands = new Map<string, Map<string, ExCommand>>();
   const highlightResolvers = new Map<string, HighlightResolver>();
   let finished = false;
@@ -112,7 +110,7 @@ export function createInitRuntime(): InitRuntime {
           throw new InvalidInitializationValueError('App', 'must be an object');
         }
 
-        const { id: appId, packRef, ex, highlightResolver } = app;
+        const { id: appId, create, ex, highlightResolver } = app;
 
         validateNonEmptyString(appId, 'App ID');
 
@@ -120,11 +118,11 @@ export function createInitRuntime(): InitRuntime {
           throw new DuplicateAppRegistrationError(appId);
         }
 
-        let appReference: AppPackageReference;
-        try {
-          appReference = AppPackageReferenceMethods.parse(packRef);
-        } catch (cause) {
-          throw new InvalidAppPackageReferenceError(cause);
+        if (typeof create !== 'function') {
+          throw new InvalidInitializationValueError(
+            'App create',
+            'must be a function',
+          );
         }
 
         // TODO: Better Ex command parsing
@@ -173,7 +171,7 @@ export function createInitRuntime(): InitRuntime {
           );
         }
 
-        registeredApps.set(appId, appReference);
+        registeredApps.set(appId, create);
         exCommands.set(appId, appExCommands);
         if (highlightResolver !== undefined) {
           highlightResolvers.set(appId, highlightResolver);
@@ -203,7 +201,7 @@ export function createInitRuntime(): InitRuntime {
     if (registeredApps.size === 0) {
       throw new Error(
         'Initialization did not register any apps. Call ' +
-          'dirvi.apps.register(id, appReference) at least once in init.mjs.',
+          'dirvi.app.register({ id, create }) at least once in init.mjs.',
       );
     }
 
@@ -251,7 +249,7 @@ export function createInitRuntime(): InitRuntime {
  * @throws {InitRuntimeInvariantError} If called with an empty map.
  */
 function getLastRegisteredAppId(
-  apps: ReadonlyMap<string, AppPackageReference>,
+  apps: ReadonlyMap<string, AsyncCreateAppDefinitionApplicator>,
 ): string {
   const appIds = [...apps.keys()];
   const lastAppId = appIds.at(-1);

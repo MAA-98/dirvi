@@ -1,19 +1,19 @@
 # dirvi
 
-TUI for navigating and editing [trees (the abstract data type)](https://en.wikipedia.org/wiki/Tree_(abstract_data_type)),
-with concrete implementations provided through a small API by plugins called *dirvi apps*. 
+TUI for navigating and editing [trees (the abstract data type)](<https://en.wikipedia.org/wiki/Tree_(abstract_data_type)>),
+with concrete implementations provided through a small API by plugins called _dirvi apps_.
 
 Provides a similar extensible editing environment to Vim/Neovim for trees, rather than text buffers.
 
 > Current Status:
-> In beta, breaking API changes common. 
+> In beta, breaking API changes common.
 
 ## Goals
 
-- Modal editing adapted from Vim for any abstract trees. 
+- Modal editing adapted from Vim for any abstract trees.
 - Focused: **Be really good at one thing: interacting with trees.**
-- Extensible: `init.mjs` **config file runs on startup, allowing you to use any JS/TS package for 
-commands/apps/themes/control, etc.** Includes basic security: initialization is fixed after startup.
+- Extensible: `init.mjs` **config file runs on startup, allowing you to use any JS/TS package for
+  commands/apps/themes/control, etc.** Includes basic security: initialization is fixed after startup.
 - Good clean code. Good documentation for users and plugin authors.
 - Two examples of `dirvi` apps: file system editor and XML editor.
 
@@ -205,14 +205,14 @@ Fold state is independent of the materialized directory buffer:
 
 I use the directory app for navigating project files, with folds now becoming
 the indispensable way for me to quickly view files relevant to a specific part
-of a project. I use the XML editor for controlling LLM context. I plan to create 
-a process deamon dirvi app in the future, to be able to easily control a tree of 
-processes. 
+of a project. I use the XML editor for controlling LLM context. I plan to create
+a process deamon dirvi app in the future, to be able to easily control a tree of
+processes.
 
 - Why make it a separate app instead of a Vim/Neovim plugin?
 
 1. I don't know Vimscript or Lua well enough to make a good quality codebase I'm happy with.
-2. I wanted to focus on design and easy iteration rather than how to make it work as a plugin. 
+2. I wanted to focus on design and easy iteration rather than how to make it work as a plugin.
 3. I'm not a fan of putting everything inside Neovim, I prefer it as a focused text editor.
 
 By making it standalone, I do believe it's a better product in the end than a plugin.
@@ -225,10 +225,10 @@ incremental rewrites in Rust.
 
 - What is your AI use policy?
 
-LLMs are used to write function implementations given a natural language specification. 
-It is never used to write the types or overall architecture, although suggestions 
-from LLMs may be taken into account. Unit tests may be written by LLMs without exposure 
-to implementations, property tests are usually handmade with LLM assistance. Contributions 
+LLMs are used to write function implementations given a natural language specification.
+It is never used to write the types or overall architecture, although suggestions
+from LLMs may be taken into account. Unit tests may be written by LLMs without exposure
+to implementations, property tests are usually handmade with LLM assistance. Contributions
 are expected to use a similar workflow.
 
 ## Licensing

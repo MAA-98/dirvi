@@ -1,5 +1,5 @@
 import type {
-  AppPackageReference,
+  AsyncCreateAppDefinitionApplicator,
   Config,
   HighlightResolver,
 } from 'dirvi-apis';
@@ -23,7 +23,7 @@ export type Initialization = {
     initial: string;
 
     /** App package references keyed by app ID. */
-    registered: ReadonlyMap<string, AppPackageReference>;
+    registered: ReadonlyMap<string, AsyncCreateAppDefinitionApplicator>;
   };
 
   /**

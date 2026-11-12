@@ -6,7 +6,6 @@ import type { AppScreenRenderer } from './app-screen-renderer.js';
 import type { LoadingScreenRenderer } from './loading-screen-renderer.js';
 import { AppSetup } from './AppSetup.js';
 import type { Initialization } from '../domain/initialization.js';
-import type { PackageLoader } from '../application/package-loader.js';
 import { createAppMethodsApplicator } from '../application/create-app-methods.js';
 import type { ShellApi } from 'dirvi-apis';
 
@@ -40,7 +39,6 @@ export type ShellAppProps = {
 
   readonly initialAppOptions: InitialAppOptions;
   readonly initialization: Initialization;
-  readonly packageLoader: PackageLoader;
 
   /** Request to exit dirvi with an optional message. */
   readonly onQuit: (message?: string) => void;
@@ -62,7 +60,6 @@ export function Shell({
   appScreenRenderer,
   initialAppOptions,
   initialization,
-  packageLoader,
   onQuit,
   stdout,
   clipboard,
@@ -81,20 +78,28 @@ export function Shell({
       listApps: () => [...initialization.app.registered.keys()],
       loadApp: async (appId, input) => {
         try {
-          const appReference = initialization.app.registered.get(appId);
+          const asyncCreateAppDefinitionApplicator =
+            initialization.app.registered.get(appId);
 
-          if (appReference === undefined) {
+          if (asyncCreateAppDefinitionApplicator === undefined) {
             return {
               kind: 'notRegistered',
               appId,
-              message: `App "${appId}" has not been registered in initial configuration script.`,
+              message: `App "${appId}" has not been registered in init.mjs.`,
             };
           }
 
-          const createAppDefinitionApplicator =
-            await packageLoader.loadAppPlugin(appReference);
+          const appDefinitionApplicator =
+            await asyncCreateAppDefinitionApplicator(input);
+
+          if (typeof appDefinitionApplicator !== 'function') {
+            throw new Error(
+              'App create must return an app definition applicator.',
+            );
+          }
+
           const loadedAppMethodsApplicator = createAppMethodsApplicator(
-            createAppDefinitionApplicator(input),
+            appDefinitionApplicator,
           );
 
           setLoadedApp({
@@ -117,7 +122,7 @@ export function Shell({
       ...(stdout === undefined ? {} : { stdout }),
       quit: onQuit,
     };
-  }, [packageLoader, onQuit, initialization.app.registered, stdout, clipboard]);
+  }, [onQuit, initialization.app.registered, stdout, clipboard]);
 
   /**
    * Load initial `AppMethods` on startup, using the shell API just created and

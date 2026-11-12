@@ -86,17 +86,6 @@ export class InvalidInitializationConfigError extends InitRuntimeError {
   }
 }
 
-/** An app registration supplied a package reference that failed validation. */
-export class InvalidAppPackageReferenceError extends InitRuntimeError {
-  constructor(cause: unknown) {
-    super(
-      'INVALID_APP_PACKAGE_REFERENCE',
-      `Invalid app package reference: ${getErrorMessage(cause)}`,
-      { cause },
-    );
-  }
-}
-
 /** Initialization completed without registering any apps. */
 export class NoAppsRegisteredError extends InitRuntimeError {
   constructor() {

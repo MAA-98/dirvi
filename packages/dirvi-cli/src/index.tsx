@@ -6,7 +6,6 @@ import { render } from 'ink';
 import type { InitialAppOptions } from '@mak-98/dirvi-app';
 
 import { createInitialization } from './infrastructure/create-initialization.js';
-import { createPackageLoader } from './infrastructure/create-package-loader.js';
 import {
   getXdgDataHome,
   getXdgConfigHome,
@@ -66,7 +65,7 @@ const packagesDirectory = join(dirviDataDirectory, 'site', 'pack');
 program
   .name('dirvi')
   .description('View and manage trees.')
-  .version('0.11.0-beta.21')
+  .version('0.11.0-beta.22')
   .helpOption('--help')
   .option('-a, --app <id>', 'App name to open at startup.')
   .option('-i, --input <value>', 'Input for the app at startup.')
@@ -76,7 +75,6 @@ program
     const options = program.opts<InitialAppOptions>();
 
     const initialization = await createInitialization(initPath);
-    const packageLoader = createPackageLoader(packagesDirectory);
     const useAlternateScreen = uiOutput.isTTY === true;
     const stdoutIsInteractive = process.stdout.isTTY === true;
 
@@ -98,7 +96,6 @@ program
           appScreenRenderer={InkAppScreen}
           initialAppOptions={options}
           initialization={initialization}
-          packageLoader={packageLoader}
           {...(stdoutIsInteractive ? {} : { stdout: stdoutWrite })}
           {...(clipboard === undefined ? {} : { clipboard })}
         />,

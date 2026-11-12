@@ -19,3 +19,7 @@ export type AppDefinitionConsumer<Result> = <Id, Value>(
 export type CreateAppDefinitionApplicator = (
   input: string | undefined,
 ) => AppDefinitionApplicator;
+
+export type AsyncCreateAppDefinitionApplicator = (
+  input: string | undefined,
+) => Promise<AppDefinitionApplicator>;

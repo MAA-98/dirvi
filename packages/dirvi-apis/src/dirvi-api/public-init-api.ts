@@ -1,7 +1,7 @@
-import { AppPackageReference } from './app-pack-ref.js';
 import { ConfigPatch } from './config/config.js';
 import { DirviApi } from './dirvi-api.js';
 import { HighlightResolver } from './config/highlight-resolver.js';
+import { AsyncCreateAppDefinitionApplicator } from '../app/index.js';
 
 /**
  * The public API exposed to `init.mjs` as the global `dirvi` object.
@@ -32,7 +32,7 @@ export type PublicInitApi = {
      */
     register: (app: {
       id: string;
-      packRef: AppPackageReference;
+      create: AsyncCreateAppDefinitionApplicator;
       /**
        * Ex commands invoked as `:${command}` while this app is active.
        *

@@ -6,6 +6,7 @@ export type {
   AppDefinitionApplicator,
   AppDefinitionConsumer,
   CreateAppDefinitionApplicator,
+  AsyncCreateAppDefinitionApplicator,
 } from './app-definition-applicator.js';
 export type {
   HighlightToken,
