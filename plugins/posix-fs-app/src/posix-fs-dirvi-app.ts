@@ -72,6 +72,12 @@ export const posixApp: CreateAppDefinitionApplicator = (input) => {
             filenameHighlightToken,
           ];
         }
+        return [
+          {
+            content: '  ' + id,
+            highlight: 'file.name',
+          },
+        ];
       }
       if (value.kind === 'directory') {
         return [
@@ -87,7 +93,7 @@ export const posixApp: CreateAppDefinitionApplicator = (input) => {
       }
       return [
         {
-          content: id,
+          content: '  ' + id,
           highlight: nodeKind,
         },
       ];
