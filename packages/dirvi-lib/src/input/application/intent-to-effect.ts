@@ -19,13 +19,17 @@ export type IntentToEffect<Id, Value> = (
 ) => Effect<Id, Value> | undefined;
 
 export function createIntentToEffect<Id, Value>(
-  registeredCommands: ReadonlySet<string>,
+  userNormalCommands: ReadonlySet<string>,
+  userExCommands: ReadonlySet<string>,
   stateApi: StateMethods<Id, Value>,
 ): IntentToEffect<Id, Value> {
   return (intent, state) => {
     switch (intent.intentType) {
       case 'setNormalBuffer':
-        return normalBufferToEffectResult<Id, Value>(intent.normalBuffer);
+        return normalBufferToEffectResult<Id, Value>(
+          userNormalCommands,
+          intent.normalBuffer,
+        );
 
       case 'normalRight':
         return normalInteractRightToEffect(state, stateApi);
@@ -61,7 +65,7 @@ export function createIntentToEffect<Id, Value>(
           },
         };
 
-      case 'exitCommandLineMode':
+      case 'exitCommandLineMode': {
         return {
           effectType: 'setInputState',
           inputState: {
@@ -69,10 +73,13 @@ export function createIntentToEffect<Id, Value>(
             normalBuffer: '',
           },
         };
+      }
 
-      case 'executeCommandLine':
+      // Clears and exits for empty commands, but emits error for unregistered
+      // commands.
+      case 'executeCommandLine': {
         return (
-          parseExCommand(intent.commandLine, registeredCommands) ?? {
+          parseExCommand(intent.commandLine, userExCommands) ?? {
             effectType: 'setInputState',
             inputState: {
               inputMode: 'normal',
@@ -80,6 +87,7 @@ export function createIntentToEffect<Id, Value>(
             },
           }
         );
+      }
     }
   };
 }
@@ -127,8 +135,16 @@ function clearBuffer<Id, Value>(): Effect<Id, Value> {
  * - The buffer is not a valid prefix: clear it.
  */
 function normalBufferToEffectResult<Id, Value>(
+  registeredNormalCommands: ReadonlySet<string>,
   updatedNormalBuffer: string,
 ): Effect<Id, Value> {
+  if (registeredNormalCommands.has(updatedNormalBuffer)) {
+    return {
+      effectType: 'userNormalCommand',
+      command: updatedNormalBuffer,
+    };
+  }
+
   const commandResult = parseNormalCommand<Id, Value>(updatedNormalBuffer);
 
   switch (commandResult.kind) {

@@ -34,10 +34,29 @@ export type PublicInitApi = {
       id: string;
       create: AsyncCreateAppDefinitionApplicator;
       /**
+       * Normal commands invoked in normal mode while the app is active.
+       *
+       * Each closure receives the live DirviApi when invoked, not while init.mjs
+       * is being evaluated.
+       *
+       * An exact registered command takes precedence over a built-in command
+       * with the same sequence. However, a shorter complete command may execute
+       * before a longer registered sequence can be entered.
+       *
+       * Sequences must be nonempty and must not start with `:`, which is reserved
+       * for entering command-line mode.
+       */
+      normal?: readonly {
+        command: string;
+        execute: (api: DirviApi) => void | Promise<void>;
+      }[];
+      /**
        * Ex commands invoked as `:${command}` while this app is active.
        *
        * Each closure receives the live DirviApi and the unparsed argument text
-       * when invoked, not while init.mjs is being evaluated.
+       * when invoked, not while init.mjs is being evaluated. Registered commands
+       * take precedence over built-ins and receive their arguments as a raw
+       * string, with the beginning space ignored.
        *
        * `rawArgs` is undefined if no additional arguments were given to the
        * command.

@@ -65,28 +65,21 @@ const packagesDirectory = join(dirviDataDirectory, 'site', 'pack');
 program
   .name('dirvi')
   .description('View and manage trees.')
-  .version('0.11.0-beta.22')
+  .version('0.11.0-beta.23')
   .helpOption('--help')
   .option('-a, --app <id>', 'App name to open at startup.')
   .option('-i, --input <value>', 'Input for the app at startup.')
   .action(async () => {
-    // Input is a generic startup value supplied by the host;
-    // its interpretation belongs to the selected app.
-    const options = program.opts<InitialAppOptions>();
-
+    const initialAppOptions = program.opts<InitialAppOptions>();
     const initialization = await createInitialization(initPath);
+
     const useAlternateScreen = uiOutput.isTTY === true;
     const stdoutIsInteractive = process.stdout.isTTY === true;
-
     if (useAlternateScreen) {
       uiOutput.write(enterAlternateScreen);
       alternateScreenActive = true;
     }
-
-    // Note: if you pipe output you'll need to use FORCE_COLOR=1/2/3 to keep
-    // interactive screen colored.
     const stdoutWrite = process.stdout.write.bind(process.stdout);
-
     const clipboard = createClipboard();
 
     try {
@@ -94,7 +87,7 @@ program
         <InkShell
           loadingScreenRenderer={InkLoadingScreen}
           appScreenRenderer={InkAppScreen}
-          initialAppOptions={options}
+          initialAppOptions={initialAppOptions}
           initialization={initialization}
           {...(stdoutIsInteractive ? {} : { stdout: stdoutWrite })}
           {...(clipboard === undefined ? {} : { clipboard })}

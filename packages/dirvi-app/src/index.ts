@@ -1,5 +1,5 @@
 export type { Initialization } from './domain/initialization.js';
-export type { ExCommand } from './domain/ex-command.js';
+export type { ExCommand } from './domain/command.js';
 
 export { createInitRuntime } from './application/init-runtime.js';
 export { createAppMethods } from './application/create-app-methods.js';

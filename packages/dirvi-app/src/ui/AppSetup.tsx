@@ -12,12 +12,13 @@ import type { AppScreenRenderer } from './app-screen-renderer.js';
 import { App } from './App.js';
 import type { Initialization } from '../domain/initialization.js';
 import type { HighlightResolver, ShellApi } from 'dirvi-apis';
-import type { ExCommand } from '../domain/ex-command.js';
+import type { ExCommand, NormalCommand } from '../domain/command.js';
 
 // TODO Later: configuration watched for changes
 
 const emptyExCommands: ReadonlyMap<string, ExCommand> = new Map();
-const emptyHighlightResolver: HighlightResolver = (string) => undefined;
+const emptyNormalCommands: ReadonlyMap<string, NormalCommand> = new Map();
+const emptyHighlightResolver: HighlightResolver = (_string) => undefined;
 
 type AppSetupProps<Id, Value, ViewKey = string> = {
   appScreenRenderer: AppScreenRenderer;
@@ -105,6 +106,10 @@ export function AppSetup<Id, Value, ViewKey = string>({
     () => initialization.exCommands.get(appId) ?? emptyExCommands,
     [initialization.exCommands, appId],
   );
+  const normalCommands = useMemo(
+    () => initialization.normalCommands.get(appId) ?? emptyNormalCommands,
+    [initialization.normalCommands, appId],
+  );
 
   const highlightResolver = useMemo(
     () =>
@@ -119,8 +124,12 @@ export function AppSetup<Id, Value, ViewKey = string>({
 
   const intentToEffect = useMemo(
     () =>
-      createIntentToEffect(new Set(exCommands.keys()), appMethods.stateMethods),
-    [appMethods.stateMethods, exCommands],
+      createIntentToEffect(
+        new Set(normalCommands.keys()),
+        new Set(exCommands.keys()),
+        appMethods.stateMethods,
+      ),
+    [appMethods.stateMethods, exCommands, normalCommands],
   );
 
   const effectToAction = useMemo(
@@ -149,6 +158,7 @@ export function AppSetup<Id, Value, ViewKey = string>({
       shellApi={shellApi}
       appMethods={appMethods}
       exCommands={exCommands}
+      normalCommands={normalCommands}
       highlightResolver={highlightResolver}
       config={initialization.config}
       initialState={loadState.initialState}

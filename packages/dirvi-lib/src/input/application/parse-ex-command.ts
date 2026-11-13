@@ -1,7 +1,80 @@
 import type { Effect } from '../domain/index.js';
 
-// const DEFAULT_VIEW_NAME = 'default';
 const DEFAULT_FOLD_TREE_NAME = 'default';
+
+/**
+ * Parses an Ex command into an application effect.
+ *
+ * Any combination of whitespace, then multiple `:`, then whitespace is optional
+ * and ignored.
+ *
+ * Registered commands take precedence over built-ins and receive their
+ * arguments as a raw string, with the beginning space ignored.
+ *
+ * @param commandLine - The raw command line with the beginning filler, command
+ * and options.
+ * @param registeredCommands - Names of registered commands that override
+ * built-ins.
+ * @returns An effect, or `undefined` for an empty command.
+ */
+export function parseExCommand<Id, Value>(
+  commandLine: string,
+  registeredCommands: ReadonlySet<string>,
+): Effect<Id, Value> | undefined {
+  const command = commandLine.trimStart().replace(/^:+/, '').trimStart();
+
+  if (command === '') {
+    return undefined;
+  }
+
+  // Split into:
+  // match[0]; // the full matched string
+  // match[1]; // command name
+  // match[2]; // arguments, or undefined if there was no separator
+  const match = /^(\S+)(?:\s+([\s\S]*))?$/.exec(command);
+  const commandName = match?.[1];
+  // Empty args changed to undefined
+  const rawArgs = match?.[2] === '' ? undefined : match?.[2];
+
+  // Empty command
+  if (commandName === undefined) {
+    return undefined;
+  }
+
+  if (registeredCommands.has(commandName)) {
+    return {
+      effectType: 'userExCommand',
+      command: commandName,
+      rawArgs,
+    };
+  }
+
+  // Built-ins have whitespace-based argument parsing.
+  const commandArgs =
+    rawArgs === undefined || rawArgs.trim() === ''
+      ? []
+      : rawArgs.trim().split(/\s+/);
+
+  switch (commandName) {
+    case 'q':
+      return {
+        effectType: 'quit',
+        exitMessage: '',
+      };
+
+    case 'app':
+      return parseAppCommand<Id, Value>(commandArgs);
+
+    case 'fold':
+      return parseFoldCommand<Id, Value>(commandArgs);
+
+    default:
+      return {
+        effectType: 'emitError',
+        message: `Unrecognized command: "${commandLine}"`,
+      };
+  }
+}
 
 function parseAppCommand<Id, Value>(
   commandArgs: readonly string[],
@@ -137,98 +210,4 @@ function parseFoldCommand<Id, Value>(
     default:
       return badArgs;
   }
-}
-
-/**
- * Parses a Vim-style Ex command into an application effect.
- *
- * Leading `:` characters are optional. Arguments are split on whitespace;
- * quoting and escaping are not supported.
- *
- * Registered commands take precedence over built-ins and receive their
- * arguments without validation. This function does not execute them.
- *
- * @param commandLine - The raw command line.
- * @param registeredCommands - User-command names that override built-ins.
- * @returns An effect, or `undefined` for an empty command.
- */
-export function parseExCommand<Id, Value>(
-  commandLine: string,
-  registeredCommands: ReadonlySet<string>,
-): Effect<Id, Value> | undefined {
-  const command = commandLine.trimStart().replace(/^:+/, '').trimStart();
-
-  if (command === '') {
-    return undefined;
-  }
-
-  const match = /^(\S+)(?:\s+([\s\S]*))?$/.exec(command);
-
-  if (match === null) {
-    return undefined;
-  }
-
-  const commandName = match[1]!;
-  const rawArgs = match[2];
-
-  if (commandName !== undefined && registeredCommands.has(commandName)) {
-    return {
-      effectType: 'userExCommand',
-      name: commandName,
-      rawArgs,
-    };
-  }
-
-  // Built-ins have whitespace-based argument parsing.
-  const commandArgs =
-    rawArgs === undefined || rawArgs.trim() === ''
-      ? []
-      : rawArgs.trim().split(/\s+/);
-
-  switch (commandName) {
-    case 'q':
-      return {
-        effectType: 'quit',
-        exitMessage: '',
-      };
-
-    case 'app':
-      return parseAppCommand<Id, Value>(commandArgs);
-
-    case 'fold':
-      return parseFoldCommand<Id, Value>(commandArgs);
-
-    // case 'mkview!':
-    //   return {
-    //     effectType: 'saveView',
-    //     name: commandArgs[0] || DEFAULT_VIEW_NAME,
-    //     overwrite: true,
-    //   };
-    //
-    // case 'loadview':
-    //   return {
-    //     effectType: 'loadView',
-    //     name: commandArgs[0] || DEFAULT_VIEW_NAME,
-    //   };
-
-    default:
-      return {
-        effectType: 'emitError',
-        message: `Unrecognized command: "${commandLine}"`,
-      };
-  }
-
-  /*
-   * Vim-style view commands:
-   *
-   *   :mkview!
-   *   :mkview! project
-   *   :loadview
-   *   :loadview project
-   *
-   * The name may contain spaces, so capture the remainder of the command
-   * instead of splitting on whitespace.
-   *
-   * TODO Later: mkview that checks if a same-named view already exists.
-   */
 }

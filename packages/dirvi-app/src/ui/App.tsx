@@ -7,7 +7,7 @@ import {
   useState,
 } from 'react';
 
-import {
+import type {
   AppApi,
   Config,
   FeedbackType,
@@ -30,12 +30,13 @@ import { createFeedbackApi, userInputToIntent } from 'dirvi-lib';
 
 import { useView } from './hooks/useView.js';
 import type { AppScreenRenderer } from './app-screen-renderer.js';
-import { ExCommand } from '../domain/ex-command.js';
+import type { ExCommand, NormalCommand } from '../domain/command.js';
 
 type AppProps<Id, Value, ViewKey = string> = {
   screenRenderer: AppScreenRenderer;
   shellApi: ShellApi;
   appMethods: AppMethods<Id, Value, ViewKey>;
+  normalCommands: ReadonlyMap<string, NormalCommand>;
   exCommands: ReadonlyMap<string, ExCommand>;
   config: Readonly<Config>;
   highlightResolver: HighlightResolver;
@@ -50,6 +51,7 @@ export function App<Id, Value, ViewKey = string>({
   screenRenderer,
   shellApi,
   appMethods,
+  normalCommands,
   exCommands,
   config,
   highlightResolver,
@@ -183,14 +185,40 @@ export function App<Id, Value, ViewKey = string>({
       }
 
       switch (effect.effectType) {
-        /** Execute a command, using shell API and app API. */
-        case 'userExCommand': {
+        case 'userNormalCommand': {
           setInputState(clearInputState);
-          const command = exCommands.get(effect.name);
+          const command = normalCommands.get(effect.command);
 
           if (command === undefined) {
             appApi.addMessage(
-              `Command is no longer registered: ${effect.name}`,
+              `Command is no longer registered: ${effect.command}`,
+              'error',
+            );
+            return;
+          }
+
+          void Promise.resolve()
+            .then(() => command.execute({ shell: shellApi, app: appApi }))
+            .catch((error: unknown) => {
+              const appError =
+                error instanceof Error ? error : new Error(String(error));
+
+              appApi.addMessage(
+                `Command "${effect.command}" failed: ${appError.message}`,
+                'error',
+              );
+            });
+
+          return;
+        }
+
+        case 'userExCommand': {
+          setInputState(clearInputState);
+          const command = exCommands.get(effect.command);
+
+          if (command === undefined) {
+            appApi.addMessage(
+              `Command is no longer registered: ${effect.command}`,
               'error',
             );
             return;
@@ -205,7 +233,7 @@ export function App<Id, Value, ViewKey = string>({
                 error instanceof Error ? error : new Error(String(error));
 
               appApi.addMessage(
-                `Command "${effect.name}" failed: ${appError.message}`,
+                `Command "${effect.command}" failed: ${appError.message}`,
                 'error',
               );
             });
@@ -282,58 +310,6 @@ export function App<Id, Value, ViewKey = string>({
           return;
         }
 
-        case 'saveView': {
-          // void appApi.viewApi
-          //   .save(appApi.viewKey, effect.name, stateRef.current)
-          //   .then(() => {
-          //     setInputState({
-          //       inputMode: 'normal',
-          //       normalBuffer: '',
-          //     });
-          //     feedbackApi.addMessage(`Saved view: ${effect.name}`);
-          //   })
-          //   .catch((error: unknown) => {
-          //     feedbackApi.addMessage(
-          //       `Unable to save view: ${toError(error).message}`,
-          //     );
-          //   });
-
-          return;
-        }
-
-        case 'loadView': {
-          // void appApi.viewApi
-          //   .load(appApi.viewKey, effect.name)
-          //   .then((loadedState) => {
-          //     if (loadedState === undefined) {
-          //       throw new Error(`View not found: ${effect.name}`);
-          //     }
-          //
-          //     // The saved buffer may be stale because the filesystem could have
-          //     // changed since the view was saved.
-          //     return appApi.stateApi.resync(loadedState, appApi.loadBranches);
-          //   })
-          //   .then((newState) => {
-          //     const oldState = stateRef.current;
-          //
-          //     dispatch({
-          //       kind: 'setState',
-          //       oldState,
-          //       newState,
-          //     });
-          //
-          //     setInputState({
-          //       inputMode: 'normal',
-          //       normalBuffer: '',
-          //     });
-          //   })
-          //   .catch((error: unknown) => {
-          //     onError?.(toError(error));
-          //   });
-
-          return;
-        }
-
         case 'listFolds': {
           const folds = appMethods.stateMethods.getFolds(state);
 
@@ -381,6 +357,7 @@ export function App<Id, Value, ViewKey = string>({
       shellApi,
       appApi,
       clearInputState,
+      normalCommands,
       exCommands,
     ],
   );

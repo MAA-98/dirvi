@@ -35,11 +35,19 @@ function normalUserInputToIntent(
     };
   }
 
-  if (userInput.userInputType === 'character') {
-    return normalCharacterToIntent(userInput.string, normalBuffer);
-  }
-
   switch (userInput.userInputType) {
+    case 'character':
+      if (normalBuffer === '' && userInput.string === ':') {
+        return {
+          intentType: 'enterCommandLineMode',
+        };
+      }
+
+      return {
+        intentType: 'setNormalBuffer',
+        normalBuffer: normalBuffer + userInput.string,
+      };
+
     case 'rightArrow':
       return {
         intentType: 'normalRight',
@@ -60,45 +68,6 @@ function normalUserInputToIntent(
         intentType: 'normalUp',
       };
   }
-}
-
-function normalCharacterToIntent(
-  character: string,
-  normalBuffer: string,
-): Intent | undefined {
-  if (normalBuffer === '') {
-    switch (character) {
-      case 'h':
-        return {
-          intentType: 'normalLeft',
-        };
-
-      case 'j':
-        return {
-          intentType: 'normalDown',
-        };
-
-      case 'k':
-        return {
-          intentType: 'normalUp',
-        };
-
-      case 'l':
-        return {
-          intentType: 'normalRight',
-        };
-
-      case ':':
-        return {
-          intentType: 'enterCommandLineMode',
-        };
-    }
-  }
-
-  return {
-    intentType: 'setNormalBuffer',
-    normalBuffer: normalBuffer + character,
-  };
 }
 
 function commandUserInputToIntent(

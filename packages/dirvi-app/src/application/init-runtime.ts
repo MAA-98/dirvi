@@ -6,7 +6,7 @@ import type {
 
 import type { Initialization } from '../domain/initialization.js';
 import { ConfigSchema, defaultConfig, merge } from '../domain/config.js';
-import type { ExCommand } from '../domain/ex-command.js';
+import type { ExCommand, NormalCommand } from '../domain/command.js';
 import {
   DuplicateAppRegistrationError,
   DuplicateExCommandRegistrationError,
@@ -59,6 +59,7 @@ export function createInitRuntime(): InitRuntime {
   let config = defaultConfig;
   let initialAppId: string | undefined;
   const registeredApps = new Map<string, AsyncCreateAppDefinitionApplicator>();
+  const normalCommands = new Map<string, Map<string, NormalCommand>>();
   const exCommands = new Map<string, Map<string, ExCommand>>();
   const highlightResolvers = new Map<string, HighlightResolver>();
   let finished = false;
@@ -110,7 +111,7 @@ export function createInitRuntime(): InitRuntime {
           throw new InvalidInitializationValueError('App', 'must be an object');
         }
 
-        const { id: appId, create, ex, highlightResolver } = app;
+        const { id: appId, create, normal, ex, highlightResolver } = app;
 
         validateNonEmptyString(appId, 'App ID');
 
@@ -125,7 +126,62 @@ export function createInitRuntime(): InitRuntime {
           );
         }
 
-        // TODO: Better Ex command parsing
+        // Normal commands registration
+        if (normal !== undefined && !Array.isArray(normal)) {
+          throw new InvalidInitializationValueError(
+            'Normal commands',
+            'must be an array',
+          );
+        }
+
+        const appNormalCommands = new Map<string, NormalCommand>();
+
+        for (const normalCommand of normal ?? []) {
+          if (
+            typeof normalCommand !== 'object' ||
+            normalCommand === null ||
+            Array.isArray(normalCommand)
+          ) {
+            throw new InvalidInitializationValueError(
+              'Normal command',
+              'must be an object',
+            );
+          }
+
+          const { command, execute } = normalCommand;
+
+          if (typeof command !== 'string' || command.length === 0) {
+            throw new InvalidInitializationValueError(
+              'Normal command sequence',
+              'must be a nonempty string',
+            );
+          }
+
+          if (command.startsWith(':')) {
+            throw new InvalidInitializationValueError(
+              'Normal command sequence',
+              'must not start with the reserved ":" key',
+            );
+          }
+
+          if (typeof execute !== 'function') {
+            throw new InvalidInitializationValueError(
+              'Normal command handler',
+              'must be a function',
+            );
+          }
+
+          if (appNormalCommands.has(command)) {
+            throw new InvalidInitializationValueError(
+              'Normal command sequence',
+              `is already registered: "${command}"`,
+            );
+          }
+
+          appNormalCommands.set(command, { execute });
+        }
+
+        // Ex command registration
         if (ex !== undefined && !Array.isArray(ex)) {
           throw new InvalidInitializationValueError(
             'Ex commands',
@@ -158,7 +214,7 @@ export function createInitRuntime(): InitRuntime {
             throw new DuplicateExCommandRegistrationError(command);
           }
 
-          appExCommands.set(command, { name: command, execute });
+          appExCommands.set(command, { execute });
         }
 
         if (
@@ -227,6 +283,12 @@ export function createInitRuntime(): InitRuntime {
         initial,
         registered: new Map(registeredApps),
       },
+      normalCommands: new Map(
+        [...normalCommands].map(([appId, commands]) => [
+          appId,
+          new Map(commands),
+        ]),
+      ),
       exCommands: new Map(
         [...exCommands].map(([appId, commands]) => [appId, new Map(commands)]),
       ),

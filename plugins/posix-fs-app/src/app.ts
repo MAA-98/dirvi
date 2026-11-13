@@ -13,9 +13,7 @@ import { getDirEntries } from './infrastructure/get-dir-entries.js';
  *
  * Input for this app is the absolute path to the directory to open on.
  */
-export const app: CreateAppDefinitionApplicator = (
-  input,
-) => {
+export const app: CreateAppDefinitionApplicator = (input) => {
   const unixAbsPath = getUnixAbsPath(input ?? process.cwd());
   const rootId = posixFilenameSchema.parse(basename(unixAbsPath));
   function loadDirectoryEntries(path: readonly PosixId[]) {
@@ -37,7 +35,7 @@ export const app: CreateAppDefinitionApplicator = (
           content: id,
           highlight: 'content',
         };
-        
+
         if (['.ts', '.mts', '.cts'].some((suffix) => id.endsWith(suffix))) {
           return [
             {
@@ -47,7 +45,7 @@ export const app: CreateAppDefinitionApplicator = (
             filenameHighlightToken,
           ];
         }
-        
+
         if (id.endsWith('.tsx')) {
           return [
             {
@@ -57,7 +55,7 @@ export const app: CreateAppDefinitionApplicator = (
             filenameHighlightToken,
           ];
         }
-        
+
         if (['.js', '.mjs', '.cjs'].some((suffix) => id.endsWith(suffix))) {
           return [
             {
@@ -67,7 +65,7 @@ export const app: CreateAppDefinitionApplicator = (
             filenameHighlightToken,
           ];
         }
-        
+
         if (id.endsWith('.tsx')) {
           return [
             {
@@ -77,7 +75,7 @@ export const app: CreateAppDefinitionApplicator = (
             filenameHighlightToken,
           ];
         }
-        
+
         if (id.endsWith('.json')) {
           return [
             {
@@ -87,27 +85,27 @@ export const app: CreateAppDefinitionApplicator = (
             filenameHighlightToken,
           ];
         }
-        
+
         if (id.endsWith('.md')) {
           return [
             {
               content: '\uf48a ',
-              highlight: 'content'
+              highlight: 'content',
             },
-            filenameHighlightToken
+            filenameHighlightToken,
           ];
         }
-        
+
         if (id.endsWith('.svg')) {
           return [
             {
               content: '\udb81\udf21 ',
-              highlight: 'icon.svg'
+              highlight: 'icon.svg',
             },
-            filenameHighlightToken
+            filenameHighlightToken,
           ];
         }
-        
+
         if (id === '.DS_Store') {
           return [
             {
@@ -117,7 +115,7 @@ export const app: CreateAppDefinitionApplicator = (
             filenameHighlightToken,
           ];
         }
-        
+
         if (id === '.gitignore') {
           return [
             {
@@ -127,7 +125,7 @@ export const app: CreateAppDefinitionApplicator = (
             filenameHighlightToken,
           ];
         }
-        
+
         return [
           {
             content: '  ' + id,
@@ -140,23 +138,23 @@ export const app: CreateAppDefinitionApplicator = (
           content: id + '/',
           highlight: 'content',
         };
-        
+
         if (id === '.git') {
           return [
             {
               content: '\udb80\udea2 ',
               highlight: 'icon.git',
             },
-            foldernameHighlightToken
+            foldernameHighlightToken,
           ];
         }
-        
+
         return [
           {
             content: '\uf07b ',
             highlight: 'icon.folder',
           },
-          foldernameHighlightToken
+          foldernameHighlightToken,
         ];
       }
       return [

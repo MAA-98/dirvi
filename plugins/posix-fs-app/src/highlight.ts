@@ -16,7 +16,7 @@ export const highlightResolver: HighlightResolver = (token: string) => {
         },
       };
     }
-    
+
     case 'icon.json': {
       return {
         fg: {
@@ -24,7 +24,7 @@ export const highlightResolver: HighlightResolver = (token: string) => {
         },
       };
     }
-    
+
     case 'icon.git': {
       return {
         fg: {
@@ -32,7 +32,7 @@ export const highlightResolver: HighlightResolver = (token: string) => {
         },
       };
     }
-    
+
     case 'icon.svg': {
       return {
         fg: {
@@ -40,7 +40,7 @@ export const highlightResolver: HighlightResolver = (token: string) => {
         },
       };
     }
-    
+
     case 'icon.folder': {
       return {
         fg: {

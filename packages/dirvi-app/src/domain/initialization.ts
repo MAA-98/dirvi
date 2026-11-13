@@ -4,7 +4,7 @@ import type {
   HighlightResolver,
 } from 'dirvi-apis';
 
-import { ExCommand } from './ex-command.js';
+import { ExCommand, NormalCommand } from './command.js';
 
 /**
  * Resolved startup state produced by evaluating `init.mjs`.
@@ -27,9 +27,18 @@ export type Initialization = {
   };
 
   /**
+   * Normal commands registered by the initialization script, keyed by appId and
+   * then command.
+   */
+  readonly normalCommands: ReadonlyMap<
+    string,
+    ReadonlyMap<string, NormalCommand>
+  >;
+
+  /**
    * Ex commands registered by the initialization script, keyed by appId and
    * then command name.
-   * */
+   */
   readonly exCommands: ReadonlyMap<string, ReadonlyMap<string, ExCommand>>;
 
   /**

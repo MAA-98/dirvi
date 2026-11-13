@@ -47,9 +47,13 @@ export type Effect<Id, Value> =
       effectType: 'setInputState';
       inputState: InputModeState;
     }>
+  | {
+      effectType: 'userNormalCommand';
+      command: string;
+    }
   | Readonly<{
       effectType: 'userExCommand';
-      name: string;
+      command: string;
       rawArgs: string | undefined;
     }>
   | Readonly<{
