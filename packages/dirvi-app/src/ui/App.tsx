@@ -191,7 +191,7 @@ export function App<Id, Value, ViewKey = string>({
 
           if (command === undefined) {
             appApi.addMessage(
-              `Command is no longer registered: ${effect.command}`,
+              `Normal command is no longer registered: ${effect.command}`,
               'error',
             );
             return;
@@ -204,7 +204,7 @@ export function App<Id, Value, ViewKey = string>({
                 error instanceof Error ? error : new Error(String(error));
 
               appApi.addMessage(
-                `Command "${effect.command}" failed: ${appError.message}`,
+                `Ex command "${effect.command}" failed: ${appError.message}`,
                 'error',
               );
             });
@@ -218,7 +218,7 @@ export function App<Id, Value, ViewKey = string>({
 
           if (command === undefined) {
             appApi.addMessage(
-              `Command is no longer registered: ${effect.command}`,
+              `Ex command is no longer registered: ${effect.command}`,
               'error',
             );
             return;
@@ -233,7 +233,7 @@ export function App<Id, Value, ViewKey = string>({
                 error instanceof Error ? error : new Error(String(error));
 
               appApi.addMessage(
-                `Command "${effect.command}" failed: ${appError.message}`,
+                `Ex command "${effect.command}" failed: ${appError.message}`,
                 'error',
               );
             });

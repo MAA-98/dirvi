@@ -76,7 +76,7 @@ export function createIntentToEffect<Id, Value>(
       }
 
       // Clears and exits for empty commands, but emits error for unregistered
-      // commands.
+      // nonempty commands.
       case 'executeCommandLine': {
         return (
           parseExCommand(intent.commandLine, userExCommands) ?? {
@@ -135,10 +135,10 @@ function clearBuffer<Id, Value>(): Effect<Id, Value> {
  * - The buffer is not a valid prefix: clear it.
  */
 function normalBufferToEffectResult<Id, Value>(
-  registeredNormalCommands: ReadonlySet<string>,
+  userNormalCommands: ReadonlySet<string>,
   updatedNormalBuffer: string,
 ): Effect<Id, Value> {
-  if (registeredNormalCommands.has(updatedNormalBuffer)) {
+  if (userNormalCommands.has(updatedNormalBuffer)) {
     return {
       effectType: 'userNormalCommand',
       command: updatedNormalBuffer,
@@ -155,7 +155,13 @@ function normalBufferToEffectResult<Id, Value>(
       return dispatchAction(commandResult.action);
 
     case 'invalid':
-      return clearBuffer();
+      const isUserCommandPrefix = [...userNormalCommands].some((command) =>
+        command.startsWith(updatedNormalBuffer),
+      );
+
+      return isUserCommandPrefix
+        ? keepNormalBuffer(updatedNormalBuffer)
+        : clearBuffer();
   }
 }
 

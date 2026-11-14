@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { AppMethods, createTreeMethods, State } from 'dirvi-lib';
+import type { HighlightResolver, ShellApi } from 'dirvi-apis';
+import type { AppMethods, State } from 'dirvi-lib';
+import { createTreeMethods } from 'dirvi-lib';
 import {
   createEffectToAction,
   createIntentToEffect,
@@ -9,10 +11,9 @@ import {
 
 import type { LoadingScreenRenderer } from './loading-screen-renderer.js';
 import type { AppScreenRenderer } from './app-screen-renderer.js';
-import { App } from './App.js';
 import type { Initialization } from '../domain/initialization.js';
-import type { HighlightResolver, ShellApi } from 'dirvi-apis';
 import type { ExCommand, NormalCommand } from '../domain/command.js';
+import { App } from './App.js';
 
 // TODO Later: configuration watched for changes
 
@@ -102,13 +103,13 @@ export function AppSetup<Id, Value, ViewKey = string>({
   }, [appMethods]);
 
   // --- Pure function deps ---
-  const exCommands = useMemo(
-    () => initialization.exCommands.get(appId) ?? emptyExCommands,
-    [initialization.exCommands, appId],
-  );
   const normalCommands = useMemo(
     () => initialization.normalCommands.get(appId) ?? emptyNormalCommands,
     [initialization.normalCommands, appId],
+  );
+  const exCommands = useMemo(
+    () => initialization.exCommands.get(appId) ?? emptyExCommands,
+    [initialization.exCommands, appId],
   );
 
   const highlightResolver = useMemo(

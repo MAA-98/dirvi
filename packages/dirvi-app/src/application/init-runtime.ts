@@ -228,6 +228,7 @@ export function createInitRuntime(): InitRuntime {
         }
 
         registeredApps.set(appId, create);
+        normalCommands.set(appId, appNormalCommands);
         exCommands.set(appId, appExCommands);
         if (highlightResolver !== undefined) {
           highlightResolvers.set(appId, highlightResolver);
